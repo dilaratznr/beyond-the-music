@@ -17,48 +17,42 @@ export default async function TheoryPage({ params }: { params: Promise<{ locale:
   const topics = [dict.theory.soundStructure, dict.theory.rhythm, dict.theory.harmony, dict.theory.texture, dict.theory.production, dict.theory.structural];
 
   return (
-    <div className="bg-[#0a0a0b] text-white min-h-screen">
-      {/* Header - artist page style */}
-      <section className="bg-[#0a0a0b] pt-24 pb-10 border-b border-white/5">
-        <div className="max-w-7xl mx-auto px-6">
-          <h1 className="text-3xl md:text-4xl font-bold font-editorial">{dict.theory.title}</h1>
-          <p className="text-zinc-500 text-sm mt-2">
-            {locale === 'tr' ? 'Müzik yapısı, üretim ve analiz' : 'Music structure, production and analysis'}
-          </p>
-          {/* Topic chips */}
-          <div className="flex flex-wrap gap-2 mt-4">
-            {topics.map((t) => (
-              <span key={t} className="px-4 py-1.5 bg-white/5 border border-white/5 rounded-full text-xs text-zinc-400 hover:text-white hover:bg-white/10 transition-colors cursor-default">
-                {t}
-              </span>
-            ))}
-          </div>
-        </div>
-      </section>
+    <div className="bg-[var(--bg)] text-[var(--text)] min-h-screen pt-16">
+      <div className="max-w-[1600px] mx-auto px-6 py-12">
+        <p className="text-zinc-600 text-[10px] tracking-[0.3em] uppercase mb-3">04</p>
+        <h1 className="font-display font-black" style={{ fontSize: 'var(--display-sm)' }}>{dict.theory.title}</h1>
 
-      {/* Articles grid */}
-      <div className="max-w-7xl mx-auto px-6 py-12">
+        {/* Topics as outline text */}
+        <div className="flex flex-wrap gap-x-6 gap-y-1 mt-8">
+          {topics.map((t) => (
+            <span key={t} className="font-display font-bold text-lg"
+              style={{ WebkitTextStroke: '0.8px rgba(255,255,255,0.15)', color: 'transparent' }}>
+              {t}
+            </span>
+          ))}
+        </div>
+      </div>
+
+      {/* Articles */}
+      <div className="max-w-[1600px] mx-auto px-6 pb-20">
         {articles.length > 0 ? (
-          <div className="gsap-stagger grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="gsap-stagger space-y-1 border-t border-white/5 pt-8">
             {articles.map((a) => (
               <Link key={a.id} href={`/${locale}/article/${a.slug}`}
-                className="group relative block rounded-xl overflow-hidden bg-white/[0.02] border border-white/5 hover:bg-white/[0.05] transition-colors">
-                {a.featuredImage && (
-                  <div className="overflow-hidden">
-                    <img src={a.featuredImage} alt="" className="w-full h-40 object-cover opacity-60 group-hover:opacity-80 transition-opacity duration-500" />
+                className="group flex items-center justify-between py-5 border-b border-white/5 hover:pl-3 transition-all">
+                <div className="flex items-center gap-6">
+                  {a.featuredImage && <img src={a.featuredImage} alt="" className="w-16 h-16 rounded object-cover flex-shrink-0 opacity-60 group-hover:opacity-100 transition-opacity" />}
+                  <div>
+                    <h3 className="text-base font-semibold group-hover:underline underline-offset-4 decoration-1">{locale === 'tr' ? a.titleTr : a.titleEn}</h3>
+                    <p className="text-zinc-600 text-[10px] mt-1">{a.author.name}</p>
                   </div>
-                )}
-                <div className="p-5">
-                  <h3 className="text-sm font-bold group-hover:underline">{locale === 'tr' ? a.titleTr : a.titleEn}</h3>
-                  <p className="text-[10px] text-zinc-500 mt-2">{a.author.name}</p>
                 </div>
+                <span className="text-zinc-700 text-lg group-hover:text-white group-hover:translate-x-1 transition-all">→</span>
               </Link>
             ))}
           </div>
         ) : (
-          <div className="text-center py-20">
-            <p className="text-zinc-600 text-sm">{locale === 'tr' ? 'Henüz içerik yok.' : 'No content yet.'}</p>
-          </div>
+          <p className="text-zinc-600 text-center py-20 text-sm">{locale === 'tr' ? 'Henüz içerik yok.' : 'No content yet.'}</p>
         )}
       </div>
     </div>
