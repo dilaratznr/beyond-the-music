@@ -1,0 +1,262 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  SUPER_ADMIN
+  ADMIN
+  EDITOR
+}
+
+enum ArtistType {
+  SOLO
+  GROUP
+  COMPOSER
+}
+
+enum ArchitectType {
+  PRODUCER
+  STUDIO
+  MANAGER
+  ARRANGER
+  RECORD_LABEL
+}
+
+enum ArticleCategory {
+  GENRE
+  CULTURAL_IMPACT
+  SUBCULTURE
+  CURATED_MOVEMENT
+  THEORY
+  LISTENING_PATH
+  AI_MUSIC
+  DEEP_CUT
+  FASHION
+}
+
+enum ArticleStatus {
+  DRAFT
+  PUBLISHED
+}
+
+enum ListeningPathType {
+  EMOTION
+  ERA
+  CITY
+  CONTRAST
+  INTRO
+  DEEP
+}
+
+enum MediaType {
+  IMAGE
+  VIDEO
+  EMBED
+}
+
+model User {
+  id          String           @id @default(cuid())
+  email       String           @unique
+  password    String
+  name        String
+  role        Role             @default(EDITOR)
+  avatar      String?
+  isActive    Boolean          @default(true)
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  articles    Article[]
+  permissions UserPermission[]
+}
+
+model UserPermission {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  section   String   // GENRE, ARTIST, ALBUM, ARCHITECT, ARTICLE, LISTENING_PATH, MEDIA, THEORY, AI_MUSIC
+  canCreate Boolean  @default(false)
+  canEdit   Boolean  @default(false)
+  canDelete Boolean  @default(false)
+  canPublish Boolean @default(false)
+
+  @@unique([userId, section])
+}
+
+model Genre {
+  id             String    @id @default(cuid())
+  slug           String    @unique
+  nameTr         String    @map("name_tr")
+  nameEn         String    @map("name_en")
+  descriptionTr  String?   @map("description_tr") @db.Text
+  descriptionEn  String?   @map("description_en") @db.Text
+  image          String?
+  parentId       String?
+  parent         Genre?    @relation("GenreHierarchy", fields: [parentId], references: [id])
+  children       Genre[]   @relation("GenreHierarchy")
+  order          Int       @default(0)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  artists        ArtistGenre[]
+  articles       Article[] @relation("GenreArticles")
+}
+
+model Artist {
+  id          String       @id @default(cuid())
+  slug        String       @unique
+  name        String
+  type        ArtistType
+  bioTr       String?      @map("bio_tr") @db.Text
+  bioEn       String?      @map("bio_en") @db.Text
+  image       String?
+  birthDate   DateTime?
+  deathDate   DateTime?
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  genres      ArtistGenre[]
+  albums      Album[]
+  architects  ArchitectArtist[]
+  articles    Article[]    @relation("ArtistArticles")
+  listeningPathItems ListeningPathItem[] @relation("ArtistPathItems")
+}
+
+model ArtistGenre {
+  artistId String
+  genreId  String
+  artist   Artist @relation(fields: [artistId], references: [id], onDelete: Cascade)
+  genre    Genre  @relation(fields: [genreId], references: [id], onDelete: Cascade)
+
+  @@id([artistId, genreId])
+}
+
+model Album {
+  id             String    @id @default(cuid())
+  slug           String    @unique
+  title          String
+  artistId       String
+  artist         Artist    @relation(fields: [artistId], references: [id], onDelete: Cascade)
+  releaseDate    DateTime?
+  coverImage     String?
+  descriptionTr  String?   @map("description_tr") @db.Text
+  descriptionEn  String?   @map("description_en") @db.Text
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  songs          Song[]
+  listeningPathItems ListeningPathItem[] @relation("AlbumPathItems")
+}
+
+model Song {
+  id          String  @id @default(cuid())
+  title       String
+  albumId     String
+  album       Album   @relation(fields: [albumId], references: [id], onDelete: Cascade)
+  trackNumber Int?
+  duration    String?
+  isDeepCut   Boolean @default(false)
+  spotifyUrl  String?
+  youtubeUrl  String?
+  listeningPathItems ListeningPathItem[] @relation("SongPathItems")
+}
+
+model Architect {
+  id        String         @id @default(cuid())
+  slug      String         @unique
+  name      String
+  type      ArchitectType
+  bioTr     String?        @map("bio_tr") @db.Text
+  bioEn     String?        @map("bio_en") @db.Text
+  image     String?
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+  artists   ArchitectArtist[]
+}
+
+model ArchitectArtist {
+  architectId String
+  artistId    String
+  role        String?
+  architect   Architect @relation(fields: [architectId], references: [id], onDelete: Cascade)
+  artist      Artist    @relation(fields: [artistId], references: [id], onDelete: Cascade)
+
+  @@id([architectId, artistId])
+}
+
+model Article {
+  id             String          @id @default(cuid())
+  slug           String          @unique
+  titleTr        String          @map("title_tr")
+  titleEn        String          @map("title_en")
+  contentTr      String?         @map("content_tr") @db.Text
+  contentEn      String?         @map("content_en") @db.Text
+  category       ArticleCategory
+  featuredImage  String?
+  authorId       String
+  author         User            @relation(fields: [authorId], references: [id])
+  status         ArticleStatus   @default(DRAFT)
+  publishedAt    DateTime?
+  relatedGenreId  String?
+  relatedGenre    Genre?         @relation("GenreArticles", fields: [relatedGenreId], references: [id])
+  relatedArtistId String?
+  relatedArtist   Artist?        @relation("ArtistArticles", fields: [relatedArtistId], references: [id])
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+}
+
+model ListeningPath {
+  id             String            @id @default(cuid())
+  slug           String            @unique
+  titleTr        String            @map("title_tr")
+  titleEn        String            @map("title_en")
+  descriptionTr  String?           @map("description_tr") @db.Text
+  descriptionEn  String?           @map("description_en") @db.Text
+  type           ListeningPathType
+  image          String?
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+  items          ListeningPathItem[]
+}
+
+model ListeningPathItem {
+  id        String        @id @default(cuid())
+  pathId    String
+  path      ListeningPath @relation(fields: [pathId], references: [id], onDelete: Cascade)
+  songId    String?
+  song      Song?         @relation("SongPathItems", fields: [songId], references: [id])
+  albumId   String?
+  album     Album?        @relation("AlbumPathItems", fields: [albumId], references: [id])
+  artistId  String?
+  artist    Artist?       @relation("ArtistPathItems", fields: [artistId], references: [id])
+  order     Int           @default(0)
+  noteTr    String?       @map("note_tr") @db.Text
+  noteEn    String?       @map("note_en") @db.Text
+}
+
+model MediaItem {
+  id         String    @id @default(cuid())
+  url        String
+  type       MediaType
+  captionTr  String?   @map("caption_tr")
+  captionEn  String?   @map("caption_en")
+  entityType String
+  entityId   String
+  createdAt  DateTime  @default(now())
+}
+
+model SiteSetting {
+  id    String @id @default(cuid())
+  key   String @unique
+  value String @db.Text
+}
+
+model HeroVideo {
+  id       String  @id @default(cuid())
+  url      String
+  duration Int     @default(10) // seconds to show this video
+  order    Int     @default(0)
+  isActive Boolean @default(true)
+  title    String?
+}

@@ -1,0 +1,78 @@
+{
+  "nav": {
+    "genre": "Tür",
+    "artist": "Sanatçı",
+    "architects": "Mimarlar",
+    "theory": "Teori",
+    "listeningPaths": "Dinleme Rotaları",
+    "aiMusic": "AI Müzik",
+    "search": "Ara..."
+  },
+  "home": {
+    "hero_title": "BEYOND THE MUSIC",
+    "hero_subtitle": "Küratöryel Müzik Platformu",
+    "hero_desc1": "Müziğin ötesindeki kültürü keşfet.",
+    "hero_desc2": "Türler, sanatçılar, hikayeler.",
+    "hero_desc3": "Bir arşiv. Bir atlas. Bir kürasyon.",
+    "featured": "Öne Çıkanlar",
+    "latest": "Son Eklenenler",
+    "explore": "Keşfet"
+  },
+  "genre": {
+    "title": "TÜR",
+    "subgenre": "Alt Tür",
+    "culturalImpact": "Kültürel Etki",
+    "subculture": "Alt Kültür",
+    "curatedMovements": "Küratöryel Hareketler"
+  },
+  "artist": {
+    "title": "SANATÇI",
+    "solo": "Solo",
+    "group": "Grup/Band",
+    "composer": "Besteci",
+    "albums": "Albümler",
+    "deepCuts": "Derin Kesitler",
+    "visualArchive": "Görsel Arşiv",
+    "songs": "Şarkılar"
+  },
+  "architects": {
+    "title": "MİMARLAR",
+    "producer": "Prodüktör",
+    "studio": "Stüdyo",
+    "manager": "Menajer",
+    "arrangers": "Aranjörler",
+    "recordLabels": "Plak Şirketleri"
+  },
+  "theory": {
+    "title": "TEORİ",
+    "soundStructure": "Ses yapısı ve form",
+    "rhythm": "Ritim ve zamansal kimlik",
+    "harmony": "Harmonik dil",
+    "texture": "Doku ve mekansal derinlik",
+    "production": "Prodüksiyon estetiği",
+    "structural": "Türler arası yapısal analiz"
+  },
+  "listeningPaths": {
+    "title": "DİNLEME ROTALARI",
+    "description": "Kronoloji yerine deneyim odaklı küratöryel dinleme yolculukları",
+    "emotion": "Duygu odaklı diziler",
+    "era": "Dönem keşifleri",
+    "city": "Şehir ses rotaları",
+    "contrast": "Gece ve gündüz kontrastları",
+    "intro": "Yeni dinleyiciler için giriş",
+    "deep": "İleri düzey derin dalışlar"
+  },
+  "common": {
+    "readMore": "Devamını Oku",
+    "back": "Geri",
+    "loading": "Yükleniyor...",
+    "noResults": "Sonuç bulunamadı",
+    "publishedAt": "Yayınlanma",
+    "by": "Yazan"
+  },
+  "footer": {
+    "rights": "Tüm hakları saklıdır.",
+    "about": "Hakkında",
+    "contact": "İletişim"
+  }
+}
