@@ -1,0 +1,158 @@
+'use client';
+
+import { useCallback, useEffect, useState } from 'react';
+import Link from 'next/link';
+import Pagination from '@/components/admin/Pagination';
+import DeleteButton from '@/components/admin/DeleteButton';
+import { IconExternal } from '@/components/admin/Icons';
+import { TableSkeleton } from '@/components/admin/Loading';
+
+interface LP {
+  id: string;
+  titleTr: string;
+  type: string;
+  slug: string;
+  _count: { items: number };
+}
+const PER_PAGE = 15;
+
+const TYPE_LABEL: Record<string, string> = {
+  EMOTION: 'Duygu',
+  ERA: 'Dönem',
+  CITY: 'Şehir',
+  CONTRAST: 'Kontrast',
+  INTRO: 'Giriş',
+  DEEP: 'Derin',
+};
+
+const TYPE_PILL: Record<string, string> = {
+  EMOTION: 'bg-rose-500/10 text-rose-300 border-rose-500/20',
+  ERA: 'bg-amber-500/10 text-amber-300 border-amber-500/20',
+  CITY: 'bg-teal-500/10 text-teal-300 border-teal-500/20',
+  CONTRAST: 'bg-violet-500/10 text-violet-300 border-violet-500/20',
+  INTRO: 'bg-emerald-500/10 text-emerald-300 border-emerald-500/20',
+  DEEP: 'bg-indigo-500/10 text-indigo-300 border-indigo-500/20',
+};
+
+export default function ListeningPathsPage() {
+  const [paths, setPaths] = useState<LP[]>([]);
+  const [total, setTotal] = useState(0);
+  const [page, setPage] = useState(1);
+  const [loading, setLoading] = useState(true);
+  const [reloadToken, setReloadToken] = useState(0);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch(`/api/listening-paths?page=${page}&limit=${PER_PAGE}`)
+      .then((r) => r.json())
+      .then((d) => {
+        if (cancelled) return;
+        setPaths(d.items || []);
+        setTotal(d.total || 0);
+        setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [page, reloadToken]);
+
+  const reload = useCallback(() => {
+    setLoading(true);
+    setReloadToken((t) => t + 1);
+  }, []);
+
+  const goToPage = useCallback((p: number) => {
+    setLoading(true);
+    setPage(p);
+  }, []);
+
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-5">
+        <div>
+          <h1 className="text-xl font-semibold text-zinc-100 tracking-tight">Dinleme Rotaları</h1>
+          <p className="text-[13px] text-zinc-500 mt-0.5">{total} rota</p>
+        </div>
+        <Link
+          href="/admin/listening-paths/new"
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white text-zinc-950 rounded-md text-xs font-semibold hover:bg-zinc-200 transition-colors"
+        >
+          + Yeni Rota
+        </Link>
+      </div>
+      {loading ? (
+        <TableSkeleton rows={PER_PAGE} />
+      ) : (
+        <>
+          <div className="bg-zinc-900/40 rounded-lg border border-zinc-800 overflow-hidden">
+            <table className="w-full text-xs">
+              <thead>
+                <tr className="bg-zinc-900/80 border-b border-zinc-800">
+                  <th className="text-left px-4 py-2.5 font-semibold text-[10px] uppercase tracking-wider text-zinc-500">Başlık</th>
+                  <th className="text-left px-4 py-2.5 font-semibold text-[10px] uppercase tracking-wider text-zinc-500 w-28">Tip</th>
+                  <th className="text-left px-4 py-2.5 font-semibold text-[10px] uppercase tracking-wider text-zinc-500 w-20">Öğe</th>
+                  <th className="text-right px-4 py-2.5 font-semibold text-[10px] uppercase tracking-wider text-zinc-500 w-40">İşlemler</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-zinc-800/60">
+                {paths.length === 0 && (
+                  <tr>
+                    <td colSpan={4} className="px-4 py-8 text-center text-zinc-500 text-xs">
+                      Henüz rota yok.
+                    </td>
+                  </tr>
+                )}
+                {paths.map((p) => (
+                  <tr key={p.id} className="hover:bg-zinc-800/30 transition-colors">
+                    <td className="px-4 py-2 font-medium text-zinc-100">{p.titleTr}</td>
+                    <td className="px-4 py-2">
+                      <span
+                        className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold border ${
+                          TYPE_PILL[p.type] || 'bg-zinc-800 text-zinc-300 border-zinc-700'
+                        }`}
+                      >
+                        {TYPE_LABEL[p.type] || p.type}
+                      </span>
+                    </td>
+                    <td className="px-4 py-2 text-zinc-400">{p._count.items}</td>
+                    <td className="px-4 py-2 text-right">
+                      <div className="flex items-center justify-end gap-1">
+                        <Link
+                          href={`/tr/listening-paths/${p.slug}`}
+                          target="_blank"
+                          className="text-zinc-500 hover:text-zinc-100 hover:bg-zinc-800 w-7 h-7 rounded-md flex items-center justify-center transition-colors"
+                          aria-label="Sitede aç"
+                          title="Sitede aç"
+                        >
+                          <IconExternal size={13} />
+                        </Link>
+                        <Link
+                          href={`/admin/listening-paths/${p.id}`}
+                          className="text-zinc-300 hover:text-white hover:bg-zinc-800 px-2.5 py-1 rounded-md text-[11px] font-medium transition-colors"
+                        >
+                          Düzenle
+                        </Link>
+                        <DeleteButton
+                          endpoint={`/api/listening-paths/${p.id}`}
+                          confirmMessage={`"${p.titleTr}" rotasını silmek istediğinizden emin misiniz?`}
+                          onDeleted={reload}
+                        />
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <Pagination
+            page={page}
+            totalPages={Math.ceil(total / PER_PAGE)}
+            onPageChange={goToPage}
+            total={total}
+            perPage={PER_PAGE}
+          />
+        </>
+      )}
+    </div>
+  );
+}

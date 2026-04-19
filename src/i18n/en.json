@@ -1,0 +1,91 @@
+{
+  "nav": {
+    "genre": "Genre",
+    "artist": "Artist",
+    "architects": "The Architects",
+    "theory": "The Theory",
+    "listeningPaths": "Listening Paths",
+    "aiMusic": "AI Music",
+    "search": "Search..."
+  },
+  "home": {
+    "hero_title": "BEYOND THE MUSIC",
+    "hero_subtitle": "Curatorial Music Platform",
+    "hero_desc1": "Discover the culture beyond music.",
+    "hero_desc2": "Genres, artists, stories.",
+    "hero_desc3": "An archive. An atlas. A curation.",
+    "featured": "Featured",
+    "latest": "Latest",
+    "explore": "Explore"
+  },
+  "genre": {
+    "title": "GENRE",
+    "subgenre": "Subgenre",
+    "subgenres": "Subgenres",
+    "artists": "Artists",
+    "articles": "Articles",
+    "culturalImpact": "Cultural Impact",
+    "subculture": "Subculture",
+    "curatedMovements": "Curated Movements"
+  },
+  "artist": {
+    "title": "ARTIST",
+    "solo": "Solo",
+    "group": "Group/Band",
+    "composer": "Composer",
+    "albums": "Albums",
+    "deepCuts": "Deep Cuts",
+    "visualArchive": "Visual Archive",
+    "songs": "Songs",
+    "articles": "Articles",
+    "connectedArchitects": "Connected Architects"
+  },
+  "architects": {
+    "title": "THE ARCHITECTS",
+    "producer": "Producer",
+    "studio": "Studio",
+    "manager": "Manager",
+    "arrangers": "Arrangers",
+    "recordLabels": "Record Labels",
+    "associatedArtists": "Associated Artists"
+  },
+  "theory": {
+    "title": "THE THEORY",
+    "soundStructure": "Sound structure and form",
+    "rhythm": "Rhythm and temporal identity",
+    "harmony": "Harmonic language",
+    "texture": "Texture and spatial depth",
+    "production": "Production aesthetics",
+    "structural": "Structural analysis across genres"
+  },
+  "listeningPaths": {
+    "title": "LISTENING PATHS",
+    "description": "Curated listening journeys designed around experience rather than chronology",
+    "emotion": "Emotion-driven sequences",
+    "era": "Era-based explorations",
+    "city": "City-oriented sound routes",
+    "contrast": "Night and day listening contrasts",
+    "intro": "Introductory pathways for new listeners",
+    "deep": "Deep immersion routes for advanced listeners"
+  },
+  "common": {
+    "readMore": "Read More",
+    "back": "Back",
+    "loading": "Loading...",
+    "noResults": "No results found",
+    "publishedAt": "Published",
+    "by": "By",
+    "skipToContent": "Skip to content",
+    "notFoundTitle": "Page not found",
+    "notFoundDesc": "The page you’re looking for may have been moved or never existed.",
+    "errorTitle": "Something went wrong",
+    "errorDesc": "Give the page another try.",
+    "retry": "Try again",
+    "goHome": "Go home"
+  },
+  "footer": {
+    "rights": "All rights reserved.",
+    "about": "About",
+    "contact": "Contact"
+  }
+}

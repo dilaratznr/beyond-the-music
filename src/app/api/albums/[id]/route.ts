@@ -1,0 +1,49 @@
+import { NextRequest, NextResponse } from 'next/server';
+import prisma from '@/lib/prisma';
+import { requireSectionAccess } from '@/lib/auth-guard';
+import { slugify } from '@/lib/utils';
+
+export async function GET(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  const album = await prisma.album.findUnique({
+    where: { id },
+    include: {
+      artist: { select: { id: true, name: true, slug: true } },
+      songs: { orderBy: { trackNumber: 'asc' } },
+    },
+  });
+  if (!album) return NextResponse.json({ error: 'Album not found' }, { status: 404 });
+  return NextResponse.json(album);
+}
+
+export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { error } = await requireSectionAccess('ALBUM', 'canEdit');
+  if (error) return error;
+
+  const { id } = await params;
+  const body = await request.json();
+  const { title, artistId, releaseDate, coverImage, descriptionTr, descriptionEn } = body;
+
+  const data: Record<string, unknown> = {};
+  if (title !== undefined) {
+    data.title = title;
+    data.slug = slugify(title);
+  }
+  if (artistId !== undefined) data.artistId = artistId;
+  if (releaseDate !== undefined) data.releaseDate = releaseDate ? new Date(releaseDate) : null;
+  if (coverImage !== undefined) data.coverImage = coverImage || null;
+  if (descriptionTr !== undefined) data.descriptionTr = descriptionTr || null;
+  if (descriptionEn !== undefined) data.descriptionEn = descriptionEn || null;
+
+  const album = await prisma.album.update({ where: { id }, data });
+  return NextResponse.json(album);
+}
+
+export async function DELETE(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { error } = await requireSectionAccess('ALBUM', 'canDelete');
+  if (error) return error;
+
+  const { id } = await params;
+  await prisma.album.delete({ where: { id } });
+  return NextResponse.json({ success: true });
+}

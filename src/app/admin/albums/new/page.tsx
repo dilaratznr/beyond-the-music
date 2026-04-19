@@ -1,0 +1,214 @@
+'use client';
+
+import { useCallback, useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import Link from 'next/link';
+import { useToast } from '@/components/admin/Toast';
+import ImageUploader from '@/components/admin/ImageUploader';
+import {
+  FieldLabel,
+  TextInput,
+  TextArea,
+  Select,
+  FormSection,
+  FormActions,
+  FormError,
+} from '@/components/admin/FormField';
+import { translatePairs } from '@/lib/translate-client';
+
+interface ArtistOption {
+  id: string;
+  name: string;
+}
+
+export default function NewAlbumPage() {
+  const [form, setForm] = useState({
+    title: '',
+    artistId: '',
+    releaseDate: '',
+    coverImage: '',
+    descriptionTr: '',
+    descriptionEn: '',
+  });
+  const [artists, setArtists] = useState<ArtistOption[]>([]);
+  const [error, setError] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  const [translating, setTranslating] = useState(false);
+  const router = useRouter();
+  const { toast } = useToast();
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch('/api/artists?all=true')
+      .then((r) => r.json())
+      .then((d: unknown) => {
+        if (cancelled) return;
+        setArtists(Array.isArray(d) ? (d as ArtistOption[]) : []);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const update = useCallback(<K extends keyof typeof form>(key: K, value: (typeof form)[K]) => {
+    setForm((f) => ({ ...f, [key]: value }));
+  }, []);
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setSubmitting(true);
+    setError('');
+
+    setTranslating(true);
+    const translations = await translatePairs([
+      {
+        key: 'descriptionEn',
+        sourceText: form.descriptionTr,
+        targetText: form.descriptionEn,
+      },
+    ]);
+    setTranslating(false);
+
+    const res = await fetch('/api/albums', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        ...form,
+        ...translations,
+        releaseDate: form.releaseDate || null,
+        coverImage: form.coverImage || null,
+      }),
+    });
+    const data = await res.json();
+    setSubmitting(false);
+    if (!res.ok) {
+      setError(data.error || 'Kaydedilemedi');
+      toast(data.error || 'Kaydedilemedi', 'error');
+      return;
+    }
+    toast('Albüm oluşturuldu');
+    router.push('/admin/albums');
+  }
+
+  return (
+    <div className="max-w-5xl">
+      {/* Header */}
+      <div className="flex items-center justify-between gap-4 mb-5">
+        <div>
+          <h1 className="text-xl font-semibold text-zinc-100 tracking-tight">Yeni Albüm</h1>
+          <p className="text-[13px] text-zinc-500 mt-0.5">
+            Albüm eklemek için sanatçının önceden tanımlanmış olması gerekir.
+          </p>
+        </div>
+        <Link
+          href="/admin/albums"
+          className="text-[12px] text-zinc-500 hover:text-zinc-100 transition-colors"
+        >
+          ← Tüm Albümler
+        </Link>
+      </div>
+
+      <form onSubmit={handleSubmit} className="space-y-4">
+        {error && <FormError>{error}</FormError>}
+
+        <div className="grid lg:grid-cols-[1fr_260px] gap-5">
+          {/* Left: main fields */}
+          <div className="bg-zinc-900/40 rounded-lg border border-zinc-800 p-5 space-y-5">
+            <FormSection title="Temel Bilgiler">
+              <div>
+                <FieldLabel htmlFor="album-title" required>
+                  Başlık
+                </FieldLabel>
+                <TextInput
+                  id="album-title"
+                  value={form.title}
+                  onChange={(v) => update('title', v)}
+                  placeholder="örn. Amnesiac"
+                  required
+                  autoFocus
+                />
+              </div>
+
+              <div className="grid grid-cols-[1fr_180px] gap-4">
+                <div>
+                  <FieldLabel htmlFor="album-artist" required>
+                    Sanatçı
+                  </FieldLabel>
+                  <Select
+                    id="album-artist"
+                    value={form.artistId}
+                    onChange={(v) => update('artistId', v)}
+                  >
+                    <option value="">Seçiniz…</option>
+                    {artists.map((a) => (
+                      <option key={a.id} value={a.id}>
+                        {a.name}
+                      </option>
+                    ))}
+                  </Select>
+                </div>
+                <div>
+                  <FieldLabel htmlFor="album-date">Yayın Tarihi</FieldLabel>
+                  <input
+                    id="album-date"
+                    type="date"
+                    value={form.releaseDate}
+                    onChange={(e) => update('releaseDate', e.target.value)}
+                    className="w-full px-3 py-2 text-sm text-zinc-900 bg-white border border-zinc-200 rounded-lg outline-none transition-colors focus:border-zinc-900 focus:ring-2 focus:ring-zinc-900/10"
+                  />
+                </div>
+              </div>
+            </FormSection>
+
+            <FormSection title="Açıklama" description="Albüm için kısa tanıtım metinleri.">
+              <div>
+                <FieldLabel htmlFor="album-desc-tr" hint="Türkçe">
+                  Açıklama (TR)
+                </FieldLabel>
+                <TextArea
+                  id="album-desc-tr"
+                  value={form.descriptionTr}
+                  onChange={(v) => update('descriptionTr', v)}
+                  placeholder="Albümün hikayesi, öne çıkan parçalar, üretim süreci..."
+                  rows={4}
+                />
+              </div>
+              <div>
+                <FieldLabel htmlFor="album-desc-en" hint="English">
+                  Açıklama (EN)
+                </FieldLabel>
+                <TextArea
+                  id="album-desc-en"
+                  value={form.descriptionEn}
+                  onChange={(v) => update('descriptionEn', v)}
+                  placeholder="Short English description..."
+                  rows={4}
+                />
+              </div>
+            </FormSection>
+          </div>
+
+          {/* Right: cover image */}
+          <div className="bg-zinc-900/40 rounded-lg border border-zinc-800 p-5 h-fit lg:sticky lg:top-5">
+            <ImageUploader
+              value={form.coverImage}
+              onChange={(url) => update('coverImage', url)}
+              category="album"
+              label="Albüm Kapağı"
+              aspect="square"
+              helperText="Kare oranlı · JPG · PNG · WebP · en fazla 5MB"
+            />
+          </div>
+        </div>
+
+        <FormActions
+          cancelHref="/admin/albums"
+          submitLabel="Albüm Oluştur"
+          submittingLabel={translating ? 'Çevriliyor…' : 'Oluşturuluyor…'}
+          submitting={submitting}
+          disabled={!form.title || !form.artistId}
+        />
+      </form>
+    </div>
+  );
+}
