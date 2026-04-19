@@ -4,14 +4,19 @@
 import "dotenv/config";
 import { defineConfig } from "prisma/config";
 
-// NOT: datasource.url burada tanımlanmaz — schema.prisma içindeki
-// `url = env("DATABASE_URL")` lazy olarak çözülür, böylece
-// `prisma generate` (DB'ye ihtiyaç duymaz) env var olmadan da
-// çalışabilir (örn. Vercel postinstall).
+// NOT: `env("DATABASE_URL")` strict helper'ı kullanılmıyor — o, env var
+// eksikse dosya yüklenirken throw ediyor ve `prisma generate`'i
+// (DB'ye ihtiyaç duymaz) Vercel postinstall'da kırıyor. Doğrudan
+// process.env kullanıyoruz + boş fallback: generate env var'sız
+// çalışır, gerçek DB işlemleri (db push / runtime) ise boş URL'yi
+// zaten reddeder.
 export default defineConfig({
   schema: "prisma/schema.prisma",
   migrations: {
     path: "prisma/migrations",
   },
   engine: "classic",
+  datasource: {
+    url: process.env.DATABASE_URL ?? "",
+  },
 });
