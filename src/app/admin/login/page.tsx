@@ -1,176 +1,122 @@
-'use client';
+/**
+ * Admin login — Server Component + Server Action.
+ *
+ * Neden client component değil: /admin/login'de React hidrasyonu bazı
+ * ağlarda / Vercel Deployment Protection'ın araya girdiği durumlarda
+ * çalışmıyordu — form native POST ile gitmeye çalışıp credentials'ları
+ * URL'ye döküyor, hiçbir hata da görünmüyordu. Server Action kullanınca
+ * form JavaScript'e hiç ihtiyaç duymadan çalışıyor: tarayıcı direkt
+ * POST atar, Next.js sunucuda action'u çalıştırır, session cookie'sini
+ * kurup dashboard'a redirect eder.
+ *
+ * NextAuth'un /api/auth/callback/credentials akışı yerine burada
+ * doğrudan `next-auth/jwt` encode'ları ile aynı formatta session
+ * cookie'si kuruyoruz — siteneki diğer sayfalar (middleware, session
+ * okuyan API'ler) aynen NextAuth'u kullandığı için değişiklik gerektirmiyor.
+ */
 
-import { signIn } from 'next-auth/react';
-import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { redirect } from 'next/navigation';
+import { cookies } from 'next/headers';
 import Link from 'next/link';
+import bcrypt from 'bcryptjs';
+import { encode } from 'next-auth/jwt';
+import prisma from '@/lib/prisma';
 import AuthLayout from '@/components/admin/AuthLayout';
 
 const inputCls =
   'w-full px-3.5 py-2.5 text-sm bg-zinc-950 border border-zinc-800 rounded-md text-zinc-100 placeholder:text-zinc-600 outline-none transition-colors hover:border-zinc-700 focus:border-zinc-500 focus:ring-2 focus:ring-zinc-500/20';
 
-function LoginForm() {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
-  const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [callbackUrl, setCallbackUrl] = useState('/admin/dashboard');
-  const router = useRouter();
-
-  // `useSearchParams()` yerine window.location — Suspense boundary'e
-  // ihtiyaç kalmıyor, böylece Vercel preview URL'lerinde hidrasyon
-  // "Yükleniyor…" fallback'inde takılıp kalmıyor.
-  useEffect(() => {
-    try {
-      const params = new URLSearchParams(window.location.search);
-      const cb = params.get('callbackUrl');
-      if (cb) setCallbackUrl(cb);
-    } catch {
-      /* noop — malformed URL */
-    }
-  }, []);
-
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    setError('');
-    setLoading(true);
-
-    try {
-      const result = await signIn('credentials', {
-        email,
-        password,
-        redirect: false,
-      });
-
-      setLoading(false);
-
-      if (!result) {
-        setError('Sunucuya ulaşılamadı — bağlantıyı kontrol edip tekrar deneyin.');
-        return;
-      }
-
-      if (result.error) {
-        // CredentialsSignin = yanlış bilgi. CallbackRouteError / diğer = sunucu hatası.
-        setError(
-          result.error === 'CredentialsSignin'
-            ? 'E-posta veya şifre hatalı.'
-            : `Giriş başarısız: ${result.error}`,
-        );
-        return;
-      }
-
-      if (!result.ok) {
-        setError('Giriş isteği reddedildi.');
-        return;
-      }
-
-      router.push(callbackUrl);
-      router.refresh();
-    } catch (err) {
-      setLoading(false);
-      const msg = err instanceof Error ? err.message : 'Bilinmeyen hata';
-      setError(`Beklenmeyen hata: ${msg}`);
-    }
-  }
-
-  return (
-    <form onSubmit={handleSubmit} className="space-y-4" noValidate>
-      {error && (
-        <div
-          role="alert"
-          aria-live="assertive"
-          className="flex items-start gap-2.5 p-3 bg-red-500/10 border border-red-500/30 text-red-300 text-sm rounded-md"
-        >
-          <span className="text-red-400 leading-none mt-0.5" aria-hidden="true">
-            ●
-          </span>
-          <span>{error}</span>
-        </div>
-      )}
-
-      <div>
-        <label
-          htmlFor="admin-login-email"
-          className="block text-[11px] font-semibold text-zinc-400 mb-1.5 uppercase tracking-wider"
-        >
-          E-posta
-        </label>
-        <input
-          id="admin-login-email"
-          name="email"
-          type="email"
-          autoComplete="email"
-          autoFocus
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          placeholder="ornek@beyondthemusic.com"
-          className={inputCls}
-          required
-        />
-      </div>
-
-      <div>
-        <div className="flex items-center justify-between mb-1.5">
-          <label
-            htmlFor="admin-login-password"
-            className="block text-[11px] font-semibold text-zinc-400 uppercase tracking-wider"
-          >
-            Şifre
-          </label>
-          <Link
-            href="/admin/forgot-password"
-            className="text-[11px] text-zinc-500 hover:text-zinc-100 transition-colors"
-          >
-            Şifremi unuttum
-          </Link>
-        </div>
-        <div className="relative">
-          <input
-            id="admin-login-password"
-            name="password"
-            type={showPassword ? 'text' : 'password'}
-            autoComplete="current-password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            placeholder="••••••••"
-            className={`${inputCls} pr-16`}
-            required
-          />
-          <button
-            type="button"
-            onClick={() => setShowPassword((v) => !v)}
-            className="absolute right-2 top-1/2 -translate-y-1/2 text-[11px] text-zinc-500 hover:text-zinc-100 hover:bg-zinc-800 px-2 py-1 rounded transition-colors"
-            aria-label={showPassword ? 'Şifreyi gizle' : 'Şifreyi göster'}
-            tabIndex={-1}
-          >
-            {showPassword ? 'Gizle' : 'Göster'}
-          </button>
-        </div>
-      </div>
-
-      <button
-        type="submit"
-        disabled={loading}
-        className="w-full py-2.5 bg-white text-zinc-950 rounded-md text-sm font-semibold tracking-tight hover:bg-zinc-200 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
-      >
-        {loading ? (
-          <span className="inline-flex items-center justify-center gap-2">
-            <span
-              className="w-3.5 h-3.5 border-2 border-zinc-900/30 border-t-zinc-900 rounded-full animate-spin"
-              aria-hidden="true"
-            />
-            Giriş yapılıyor…
-          </span>
-        ) : (
-          'Giriş Yap'
-        )}
-      </button>
-    </form>
-  );
+// NextAuth v4 — HTTPS deployments (Vercel dahil) __Secure- öneki kullanır.
+function getCookieName() {
+  const useSecure =
+    process.env.NEXTAUTH_URL?.startsWith('https://') ||
+    process.env.VERCEL === '1';
+  return useSecure
+    ? '__Secure-next-auth.session-token'
+    : 'next-auth.session-token';
 }
 
-export default function AdminLoginPage() {
+async function loginAction(formData: FormData) {
+  'use server';
+
+  const email = String(formData.get('email') ?? '').trim().toLowerCase();
+  const password = String(formData.get('password') ?? '');
+  const callbackUrl = String(formData.get('callbackUrl') ?? '/admin/dashboard');
+
+  if (!email || !password) {
+    redirect('/admin/login?error=missing');
+  }
+
+  const secret = process.env.NEXTAUTH_SECRET;
+  if (!secret) {
+    // Env variable'ı unutulmuşsa kullanıcıya somut bir hata göster.
+    redirect('/admin/login?error=config');
+  }
+
+  const user = await prisma.user.findUnique({ where: { email } });
+  if (!user) {
+    redirect('/admin/login?error=invalid');
+  }
+
+  const ok = await bcrypt.compare(password, user.password);
+  if (!ok) {
+    redirect('/admin/login?error=invalid');
+  }
+
+  // NextAuth JWT payload'ı — authOptions callbacks.jwt'nin ürettiğiyle
+  // birebir aynı alan isimleri (id, role, email, name, sub) kullanılıyor
+  // ki middleware ve getServerSession aynı session'ı çözsün.
+  const maxAge = 24 * 60 * 60; // 24 saat, authOptions.session.maxAge ile eşit
+  const token = await encode({
+    token: {
+      sub: user.id,
+      id: user.id,
+      email: user.email,
+      name: user.name ?? undefined,
+      role: user.role,
+    },
+    secret,
+    maxAge,
+  });
+
+  const cookieName = getCookieName();
+  const isSecure = cookieName.startsWith('__Secure-');
+
+  (await cookies()).set(cookieName, token, {
+    httpOnly: true,
+    sameSite: 'lax',
+    path: '/',
+    secure: isSecure,
+    maxAge,
+  });
+
+  // Açık redirect koruması: callback sadece kendi sitemizdeki yollara gidebilir.
+  const safeCallback = callbackUrl.startsWith('/') ? callbackUrl : '/admin/dashboard';
+  redirect(safeCallback);
+}
+
+function errorMessage(code?: string): string | null {
+  switch (code) {
+    case 'missing':
+      return 'E-posta ve şifre gerekli.';
+    case 'invalid':
+      return 'E-posta veya şifre hatalı.';
+    case 'config':
+      return 'Sunucu yapılandırması eksik (NEXTAUTH_SECRET). Yöneticiye bildirin.';
+    default:
+      return null;
+  }
+}
+
+export default async function AdminLoginPage({
+  searchParams,
+}: {
+  searchParams?: Promise<{ error?: string; callbackUrl?: string }>;
+}) {
+  const sp = (await searchParams) ?? {};
+  const error = errorMessage(sp.error);
+  const callbackUrl = sp.callbackUrl ?? '/admin/dashboard';
+
   return (
     <AuthLayout eyebrow="Admin Console" title="Müziğin ötesindeki kültürü yönet.">
       <div className="mb-7">
@@ -182,7 +128,75 @@ export default function AdminLoginPage() {
         </p>
       </div>
 
-      <LoginForm />
+      <form action={loginAction} className="space-y-4" noValidate>
+        {error && (
+          <div
+            role="alert"
+            aria-live="assertive"
+            className="flex items-start gap-2.5 p-3 bg-red-500/10 border border-red-500/30 text-red-300 text-sm rounded-md"
+          >
+            <span className="text-red-400 leading-none mt-0.5" aria-hidden="true">
+              ●
+            </span>
+            <span>{error}</span>
+          </div>
+        )}
+
+        <input type="hidden" name="callbackUrl" value={callbackUrl} />
+
+        <div>
+          <label
+            htmlFor="admin-login-email"
+            className="block text-[11px] font-semibold text-zinc-400 mb-1.5 uppercase tracking-wider"
+          >
+            E-posta
+          </label>
+          <input
+            id="admin-login-email"
+            name="email"
+            type="email"
+            autoComplete="email"
+            autoFocus
+            defaultValue=""
+            placeholder="ornek@beyondthemusic.com"
+            className={inputCls}
+            required
+          />
+        </div>
+
+        <div>
+          <div className="flex items-center justify-between mb-1.5">
+            <label
+              htmlFor="admin-login-password"
+              className="block text-[11px] font-semibold text-zinc-400 uppercase tracking-wider"
+            >
+              Şifre
+            </label>
+            <Link
+              href="/admin/forgot-password"
+              className="text-[11px] text-zinc-500 hover:text-zinc-100 transition-colors"
+            >
+              Şifremi unuttum
+            </Link>
+          </div>
+          <input
+            id="admin-login-password"
+            name="password"
+            type="password"
+            autoComplete="current-password"
+            placeholder="••••••••"
+            className={inputCls}
+            required
+          />
+        </div>
+
+        <button
+          type="submit"
+          className="w-full py-2.5 bg-white text-zinc-950 rounded-md text-sm font-semibold tracking-tight hover:bg-zinc-200 transition-colors"
+        >
+          Giriş Yap
+        </button>
+      </form>
 
       <p className="mt-7 pt-5 border-t border-zinc-800 text-[11px] text-zinc-500 text-center leading-relaxed">
         Hesabınız mı yok? Yeni hesaplar yalnızca{' '}
