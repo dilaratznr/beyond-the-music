@@ -38,7 +38,32 @@ html { scroll-behavior: smooth; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: #27272a; border-radius: 2px; }
 
-.font-editorial { font-family: var(--font-display); letter-spacing: -0.03em; }
+/* ── EDITORIAL FONT + METRIC-MATCHED FALLBACK ──
+   Google Fonts `font-display: swap` gösterirken, Outfit 900 henüz gelmeden
+   tarayıcı sistem fontunu (Inter / Arial / sans-serif) kullanıyor. Sistem
+   fontunun harf genişliği ve x-height'i Outfit'ten dar → 160px'lik hero
+   başlığı "daha küçük" görünüyor (FOUT "shrink" efekti). Aşağıdaki
+   `size-adjust` override'lı @font-face fallback, sistem fontunu Outfit'in
+   metriklerine yakınlaştırıyor. Outfit yüklenince swap olurken görsel
+   boyut atlamıyor. */
+@font-face {
+  font-family: 'Editorial Fallback';
+  src: local('Arial Black'), local('Helvetica Bold'), local('Arial'), local('Helvetica');
+  font-weight: 400 900;
+  font-style: normal;
+  size-adjust: 108%;
+  ascent-override: 95%;
+  descent-override: 22%;
+  line-gap-override: 0%;
+}
+
+.font-editorial {
+  /* `var(--font-display)` zaten kendi fallback zincirini içeriyor, ama
+     'Editorial Fallback'ı öne koyarak FOUT anında bile Outfit boyutunda
+     yer kaplamasını garanti ediyoruz. */
+  font-family: var(--font-display), 'Editorial Fallback', Georgia, serif;
+  letter-spacing: -0.03em;
+}
 
 /* ── KEYFRAMES ── */
 @keyframes fadeInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }

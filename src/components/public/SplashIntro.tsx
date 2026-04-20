@@ -67,7 +67,11 @@ export default function SplashIntro({
             ))}
           </div>
 
-          <h1 className="text-white font-black tracking-[-0.03em] font-editorial text-center leading-[0.95]" style={{ fontSize: 'clamp(2.5rem, 8vw, 6rem)' }}>
+          {/* Splash başlığı ve asıl hero başlığı aynı clamp'i kullanıyor —
+              splash kapanıp hero görünür olduğunda kullanıcı boyut atlaması
+              görmüyor. Daha önce splash 96px, hero 160px → "refresh'te
+              kuçuldü" illüzyonu yaratıyordu. */}
+          <h1 className="text-white font-black tracking-[-0.04em] font-editorial text-center leading-[0.95]" style={{ fontSize: 'clamp(2.5rem, 7vw, 5rem)' }}>
             {title}
           </h1>
           <p className="text-zinc-500 text-[11px] md:text-xs tracking-[0.35em] uppercase mt-5 font-semibold">{tagline}</p>

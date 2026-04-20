@@ -66,6 +66,13 @@ export default async function LocaleLayout({ children, params }: { children: Rea
 
   return (
     <div className="min-h-screen flex flex-col" style={fontVars}>
+      {/* Preconnect to Google Fonts CDNs so the TLS handshake is already
+          done by the time the stylesheet <link> fires its request. Saves
+          ~150-300ms on cold loads — otherwise Outfit 900 doesn't arrive
+          before the hero paints, and the fallback font (narrower letters)
+          makes "BEYOND THE MUSIC" look visibly smaller on refresh. */}
+      <link rel="preconnect" href="https://fonts.googleapis.com" precedence="default" />
+      <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" precedence="default" />
       {fontsHref && (
         <link
           rel="stylesheet"
