@@ -71,11 +71,55 @@ html { scroll-behavior: smooth; }
 .delay-500 { animation-delay: 500ms; }
 
 /* ── EFFECTS ── */
-.hover-lift { transition: transform 0.3s ease, box-shadow 0.3s ease; }
-.hover-lift:hover { transform: translateY(-4px); box-shadow: 0 16px 40px rgba(0,0,0,0.15); }
+.hover-lift { transition: transform 0.45s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.45s ease; }
+.hover-lift:hover { transform: translateY(-6px); box-shadow: 0 22px 60px rgba(0,0,0,0.35); }
 
-.img-zoom img, .img-zoom > div { transition: transform 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94); }
-.img-zoom:hover img, .img-zoom:hover > div { transform: scale(1.06); }
+.img-zoom img, .img-zoom > div { transition: transform 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94); }
+.img-zoom:hover img, .img-zoom:hover > div { transform: scale(1.08); }
+
+/* Hazır (ön-stil) animasyon class'ları — SmoothScroll devreye girmeden
+   önce opacity:0 gözüksün, GSAP devreye girince kontrolü alır. Böylece
+   JS yüklenirken "görsel atlama" olmaz, yumuşak giriş olur. */
+.gsap-fade-up,
+.gsap-slide-left,
+.gsap-slide-right,
+.gsap-zoom-in,
+.gsap-rise {
+  opacity: 0;
+  will-change: transform, opacity;
+}
+.gsap-stagger > * {
+  opacity: 0;
+  will-change: transform, opacity;
+}
+
+/* Kart parlama efekti — fareyi gezdirince soldan sağa ışık parlaması */
+.card-shine { position: relative; overflow: hidden; }
+.card-shine::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(115deg, transparent 30%, rgba(255,255,255,0.09) 50%, transparent 70%);
+  transform: translateX(-100%);
+  transition: transform 0.9s cubic-bezier(0.22, 1, 0.36, 1);
+  pointer-events: none;
+  z-index: 2;
+}
+.card-shine:hover::before { transform: translateX(100%); }
+
+/* Bağlantı altı animasyonlu underline — editorial look'u için */
+.underline-grow { position: relative; display: inline-block; }
+.underline-grow::after {
+  content: '';
+  position: absolute;
+  left: 0; bottom: -2px;
+  width: 100%; height: 1px;
+  background: currentColor;
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.underline-grow:hover::after { transform: scaleX(1); }
 
 /* ── HORIZONTAL REVEAL LINE ── */
 .reveal-line::after {

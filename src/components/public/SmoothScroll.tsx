@@ -156,6 +156,111 @@ export default function SmoothScroll({ children }: { children: React.ReactNode }
         );
       });
 
+      // ── SLIDE RIGHT ──
+      gsap.utils.toArray<HTMLElement>('.gsap-slide-right').forEach((el) => {
+        gsap.set(el, { opacity: 1 });
+        gsap.fromTo(
+          el,
+          { opacity: 0, x: 60 },
+          {
+            opacity: 1,
+            x: 0,
+            duration: 0.9,
+            ease: 'power3.out',
+            scrollTrigger: { trigger: el, start: 'top 85%', toggleActions: 'play none none none' },
+          },
+        );
+      });
+
+      // ── ZOOM IN (hero'dan sonra gelen bölümlerde) ──
+      gsap.utils.toArray<HTMLElement>('.gsap-zoom-in').forEach((el) => {
+        gsap.set(el, { opacity: 1 });
+        gsap.fromTo(
+          el,
+          { opacity: 0, scale: 0.9 },
+          {
+            opacity: 1,
+            scale: 1,
+            duration: 1,
+            ease: 'power3.out',
+            scrollTrigger: { trigger: el, start: 'top 85%', toggleActions: 'play none none none' },
+          },
+        );
+      });
+
+      // ── PARALLAX (bg görseller için, scrub'lı) ──
+      // depth-slow: yavaş kayar, arka plana hissi verir
+      gsap.utils.toArray<HTMLElement>('.depth-slow').forEach((el) => {
+        gsap.to(el, {
+          yPercent: -12,
+          ease: 'none',
+          scrollTrigger: { trigger: el, start: 'top bottom', end: 'bottom top', scrub: 1 },
+        });
+      });
+      // depth-medium: orta hızda parallax
+      gsap.utils.toArray<HTMLElement>('.depth-medium').forEach((el) => {
+        gsap.to(el, {
+          yPercent: -20,
+          ease: 'none',
+          scrollTrigger: { trigger: el, start: 'top bottom', end: 'bottom top', scrub: 1 },
+        });
+      });
+      // depth-fast: hızla kayar, ön plan
+      gsap.utils.toArray<HTMLElement>('.depth-fast').forEach((el) => {
+        gsap.to(el, {
+          yPercent: -30,
+          ease: 'none',
+          scrollTrigger: { trigger: el, start: 'top bottom', end: 'bottom top', scrub: 1 },
+        });
+      });
+
+      // ── TITLE WORDS REVEAL (büyük başlıkları kelime-kelime yumuşakça aç) ──
+      gsap.utils.toArray<HTMLElement>('.gsap-title-reveal').forEach((el) => {
+        const original = el.getAttribute('data-original') ?? el.textContent ?? '';
+        // Idempotent: bir kere bölersek tekrar bölme (re-render'a dayanıklı)
+        if (!el.querySelector('.word')) {
+          el.setAttribute('data-original', original);
+          el.innerHTML = original
+            .split(/(\s+)/)
+            .map((w) =>
+              /\s+/.test(w)
+                ? w
+                : `<span class="word inline-block overflow-hidden align-bottom"><span class="inline-block will-change-transform">${w}</span></span>`,
+            )
+            .join('');
+        }
+        const inners = el.querySelectorAll<HTMLElement>('.word > span');
+        gsap.set(inners, { yPercent: 0, opacity: 1 });
+        gsap.fromTo(
+          inners,
+          { yPercent: 110, opacity: 0 },
+          {
+            yPercent: 0,
+            opacity: 1,
+            duration: 0.9,
+            stagger: 0.06,
+            ease: 'power4.out',
+            scrollTrigger: { trigger: el, start: 'top 88%', toggleActions: 'play none none none' },
+          },
+        );
+      });
+
+      // ── FLOATING COUNTER / ACCENT (mikro hover ipucu) ──
+      gsap.utils.toArray<HTMLElement>('.gsap-rise').forEach((el) => {
+        gsap.set(el, { opacity: 1 });
+        gsap.fromTo(
+          el,
+          { opacity: 0, y: 12 },
+          {
+            opacity: 1,
+            y: 0,
+            duration: 0.7,
+            ease: 'power2.out',
+            scrollTrigger: { trigger: el, start: 'top 90%', toggleActions: 'play none none none' },
+          },
+        );
+      });
+
       ScrollTrigger.refresh();
     };
 
