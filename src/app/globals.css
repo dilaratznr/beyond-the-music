@@ -77,19 +77,16 @@ html { scroll-behavior: smooth; }
 .img-zoom img, .img-zoom > div { transition: transform 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94); }
 .img-zoom:hover img, .img-zoom:hover > div { transform: scale(1.08); }
 
-/* Hazır (ön-stil) animasyon class'ları — SmoothScroll devreye girmeden
-   önce opacity:0 gözüksün, GSAP devreye girince kontrolü alır. Böylece
-   JS yüklenirken "görsel atlama" olmaz, yumuşak giriş olur. */
+/* GSAP animasyon class'ları için will-change ipucu — GSAP devreye girmeden
+   de içerik görünür kalır (FOUC riski yok), sadece GPU'ya hazır olduğunu
+   söyleriz. Daha önce opacity:0 verilmişti ama JS yüklenirken içerik
+   görünmüyordu — hero yazısı kaybolmuştu. */
 .gsap-fade-up,
 .gsap-slide-left,
 .gsap-slide-right,
 .gsap-zoom-in,
-.gsap-rise {
-  opacity: 0;
-  will-change: transform, opacity;
-}
+.gsap-rise,
 .gsap-stagger > * {
-  opacity: 0;
   will-change: transform, opacity;
 }
 
