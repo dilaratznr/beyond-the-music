@@ -1,5 +1,8 @@
+// ISR: ana sayfa her 30 saniyede bir arka planda yeniden üretilir —
+// ziyaretçiler cache'lenmiş statik HTML görür (CDN hızında), DB sadece
+// dakikada ~2 kez sorgulanır. `force-dynamic` kaldırıldı çünkü her
+// istekte DB turu demekti (yavaşlığın baş sorumlusu).
 export const revalidate = 30;
-export const dynamic = 'force-dynamic';
 
 import { getDictionary } from '@/i18n';
 import prisma from '@/lib/prisma';
@@ -15,9 +18,10 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
   const dict = getDictionary(locale);
   const tr = locale === 'tr';
 
-  // Tick the schedule before fetching so any articles whose time has come
-  // show up in this very render.
-  await publishDueArticles();
+  // Zamanlanmış makaleleri yayına çevir, ama bunu render'ı bloklamadan yap —
+  // cache yenilenirken 30s'de bir çalışması yeter, kullanıcıyı bekletmeye
+  // gerek yok. (Eksik kalsa da bir sonraki revalidate'da yakalanır.)
+  publishDueArticles().catch(() => {});
 
   const [genres, featuredArticles, featuredAlbums, artists, paths, settingsRaw, heroVideos] = await Promise.all([
     prisma.genre.findMany({ where: { parentId: null }, orderBy: { order: 'asc' } }),

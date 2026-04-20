@@ -12,7 +12,9 @@ export default async function TheoryPage({ params }: { params: Promise<{ locale:
   if (!(await isSectionEnabled('theory'))) notFound();
   const dict = getDictionary(locale);
 
-  await publishDueArticles();
+  // Zamanlanmış makaleleri yayına çevir — render'ı bloklamıyoruz,
+  // bir sonraki ISR tick'inde (30s) yakalanır.
+  publishDueArticles().catch(() => {});
 
   const articles = await prisma.article.findMany({
     where: { category: 'THEORY', status: 'PUBLISHED' },

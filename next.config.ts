@@ -6,7 +6,14 @@ const nextConfig: NextConfig = {
     remotePatterns: [
       { protocol: 'https', hostname: '**' },
     ],
+    // Modern format tercih et — tarayıcı destekliyorsa AVIF/WebP
+    // sunulur, orijinal dosyaya göre ~%30-70 daha küçük.
+    formats: ['image/avif', 'image/webp'],
+    // Uzak görselleri 1 gün kenar cache'inde tut.
+    minimumCacheTTL: 86400,
   },
+  // Production build'de kaynak haritası yok → küçük bundle.
+  productionBrowserSourceMaps: false,
   async headers() {
     // Note: Content-Security-Policy is intentionally set per-request in
     // src/proxy.ts so it can include a fresh nonce on every render. Keep
