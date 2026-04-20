@@ -7,6 +7,10 @@
  * To add more content later: just append to the arrays below and push.
  * The next deploy will pick up the new items automatically.
  */
+// NOTE: `@prisma/client` is a stub that exports PrismaClient as `any`.
+// The real generated types live at src/generated/prisma but have no
+// path alias, so we skip the enum imports and rely on the runtime
+// Prisma client to validate strings against the schema enums.
 import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
@@ -35,7 +39,7 @@ async function upsertGenre(data: {
 async function upsertArtist(data: {
   slug: string;
   name: string;
-  type: 'GROUP' | 'SOLO' | 'COMPOSER';
+  type: string;
   image?: string;
   bioTr?: string;
   bioEn?: string;
@@ -43,7 +47,7 @@ async function upsertArtist(data: {
   return prisma.artist.upsert({
     where: { slug: data.slug },
     update: {},
-    create: data,
+    create: { ...data } as any,
   });
 }
 
@@ -64,7 +68,10 @@ async function upsertArticle(data: {
   return prisma.article.upsert({
     where: { slug: data.slug },
     update: {},
-    create: { ...data, status: data.status ?? 'PUBLISHED' },
+    create: {
+      ...data,
+      status: data.status ?? 'PUBLISHED',
+    } as any,
   });
 }
 
@@ -80,7 +87,7 @@ async function upsertListeningPath(data: {
   return prisma.listeningPath.upsert({
     where: { slug: data.slug },
     update: {},
-    create: data,
+    create: { ...data } as any,
   });
 }
 
