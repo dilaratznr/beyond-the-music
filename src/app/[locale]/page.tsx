@@ -75,16 +75,16 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
           <div className="absolute inset-0 bg-gradient-to-t from-[#0a0a0b] via-transparent to-black/10" />
         </div>
         <div className="relative z-10 max-w-7xl mx-auto px-6 w-full">
-          <p className="text-zinc-400 text-[11px] tracking-[0.35em] uppercase mb-6 flex items-center gap-3 font-semibold">
+          <p className="text-zinc-400 text-[11px] md:text-[13px] tracking-[0.35em] uppercase mb-6 flex items-center gap-3 font-semibold">
             <span className="w-10 h-px bg-zinc-500" />{loc('hero_subtitle')}
           </p>
-          <h1 className="font-editorial font-black leading-[0.9] tracking-[-0.04em] max-w-4xl" style={{ fontSize: 'clamp(3rem, 9vw, 7.5rem)' }}>
+          <h1 className="font-editorial font-black leading-[0.88] tracking-[-0.045em] max-w-5xl" style={{ fontSize: 'clamp(3.75rem, 13vw, 10rem)' }}>
             {loc('hero_title')}
           </h1>
-          <p className="mt-7 text-zinc-400 text-base md:text-lg font-light leading-relaxed max-w-xl whitespace-pre-line">{loc('hero_desc')}</p>
-          <div className="mt-8 flex gap-3">
-            <MagneticButton href={`/${locale}/genre`} className="px-7 py-3 bg-white text-black text-sm font-bold rounded-full inline-block">{loc('hero_cta_text')} →</MagneticButton>
-            <MagneticButton href={`/${locale}/listening-paths`} className="px-7 py-3 border border-white/20 text-white text-sm rounded-full inline-block">{loc('hero_cta2_text')}</MagneticButton>
+          <p className="mt-8 text-zinc-300 text-lg md:text-xl font-light leading-relaxed max-w-2xl whitespace-pre-line">{loc('hero_desc')}</p>
+          <div className="mt-10 flex gap-3">
+            <MagneticButton href={`/${locale}/genre`} className="px-8 py-4 bg-white text-black text-sm font-bold rounded-full inline-block">{loc('hero_cta_text')} →</MagneticButton>
+            <MagneticButton href={`/${locale}/listening-paths`} className="px-8 py-4 border border-white/20 text-white text-sm rounded-full inline-block">{loc('hero_cta2_text')}</MagneticButton>
           </div>
         </div>
       </section>
@@ -104,7 +104,7 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
             </div>
             {genres.map((g) => (
               <Link key={g.id} href={`/${locale}/genre/${g.slug}`} className="flex-shrink-0 w-[260px] md:w-[300px] group">
-                <div className="relative rounded-2xl overflow-hidden aspect-[3/4] bg-zinc-900 img-reveal card-shine">
+                <div className="relative rounded-2xl overflow-hidden aspect-[3/4] bg-zinc-900 card-shine">
                   {g.image ? (
                     <img
                       src={g.image}

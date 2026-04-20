@@ -67,10 +67,10 @@ export default function SplashIntro({
             ))}
           </div>
 
-          <h1 className="text-white text-2xl md:text-4xl font-black tracking-tight font-editorial">
+          <h1 className="text-white font-black tracking-[-0.03em] font-editorial text-center leading-[0.95]" style={{ fontSize: 'clamp(2.5rem, 8vw, 6rem)' }}>
             {title}
           </h1>
-          <p className="text-zinc-600 text-xs tracking-[0.3em] uppercase mt-3">{tagline}</p>
+          <p className="text-zinc-500 text-[11px] md:text-xs tracking-[0.35em] uppercase mt-5 font-semibold">{tagline}</p>
 
           {/* Scroll indicator - animated arrow */}
           <div className="absolute bottom-12 flex flex-col items-center">

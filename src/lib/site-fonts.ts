@@ -55,7 +55,11 @@ export const FONT_OPTIONS: FontOption[] = [
 ];
 
 export const DEFAULT_BODY_FONT = 'Inter';
-export const DEFAULT_DISPLAY_FONT = 'Space Grotesk';
+// Hero ve büyük başlıklar `font-black` (900) kullanıyor. Space Grotesk
+// yalnızca 300-700 destekliyor → 900 "fake bold" olarak çiziliyor, başlıklar
+// inceltik/stilsiz görünüyordu. Outfit: 100-900 tam aralık, geometrik
+// modern sans — Space Grotesk'e görsel olarak yakın ama gerçek 900'e sahip.
+export const DEFAULT_DISPLAY_FONT = 'Outfit';
 
 /** Look up an option by family name; returns undefined if not in the curated list. */
 export function getFontOption(family: string | null | undefined): FontOption | undefined {
