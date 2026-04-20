@@ -12,6 +12,7 @@ import SplashIntro from '@/components/public/SplashIntro';
 import HeroVideoCarousel from '@/components/public/HeroVideoCarousel';
 import TextRevealOnScroll from '@/components/public/TextRevealOnScroll';
 import MagneticButton from '@/components/public/MagneticButton';
+import HorizontalScroll from '@/components/public/HorizontalScroll';
 
 export default async function HomePage({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params;
@@ -94,17 +95,17 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
       </section>
 
 
-      {/* ▸▸▸ SCENE 3: GENRES - yatay kaydırma (native overflow-x) ▸▸▸
-          Pin'li GSAP yaklaşımı bazı cihazlarda yarım kalıyordu. Native
-          horizontal scroll daha güvenilir: wheel, trackpad, touch swipe
-          hepsinde çalışır; 5-6 kart hep görünür kalır, kaydırdıkça
-          kalanlar gelir ve en sonda büyük "Tümünü Gör" kartı. */}
-      <section className="relative py-24 md:py-32 bg-[#0a0a0b]">
+      {/* ▸▸▸ SCENE 3: GENRES - pin + translate yatay kaydırma ▸▸▸
+          Sayfa dikey scroll'u kartları yana kaydırır (HorizontalScroll
+          komponenti). Başlık üstte sabit kalır, sonra section pin'lenir
+          ve kartlar 1:1 oranda yatay olarak akar. Görünür scrollbar yok,
+          swipe/wheel/trackpad hepsi aynı kayma mekaniğini kullanır. */}
+      <section className="relative bg-[#0a0a0b] pt-24 md:pt-32">
         <div className="max-w-7xl mx-auto px-6 mb-10 flex items-end justify-between gap-6 gsap-fade-up">
           <div>
             <p className="text-zinc-400 text-[11px] tracking-[0.3em] uppercase font-bold mb-3">{tr ? 'Keşfet' : 'Explore'}</p>
             <h2 className="font-editorial font-black tracking-[-0.03em] leading-[0.95]" style={{ fontSize: 'clamp(2.5rem, 6.5vw, 5.5rem)' }}>{dict.genre.title}</h2>
-            <p className="text-zinc-400 text-sm md:text-base mt-5 max-w-xl leading-relaxed">{tr ? 'Müziğin tüm türlerini keşfet — her birinin kültürel hikayesiyle. Yana kaydır →' : 'Explore all genres — each with its cultural story. Scroll sideways →'}</p>
+            <p className="text-zinc-400 text-sm md:text-base mt-5 max-w-xl leading-relaxed">{tr ? 'Aşağı kaydır — türler yanına akacak.' : 'Scroll down — genres will slide sideways.'}</p>
           </div>
           <Link
             href={`/${locale}/genre`}
@@ -114,54 +115,49 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
           </Link>
         </div>
 
-        <div
-          className="relative overflow-x-auto overflow-y-hidden pb-4"
-          style={{ scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch' }}
-        >
-          <div className="flex items-stretch gap-4 md:gap-5 px-6" style={{ width: 'max-content' }}>
-            {genres.map((g) => (
-              <Link
-                key={g.id}
-                href={`/${locale}/genre/${g.slug}`}
-                className="flex-shrink-0 w-[220px] md:w-[260px] group"
-              >
-                <div className="relative rounded-2xl overflow-hidden aspect-[3/4] bg-zinc-900 card-shine hover-lift">
-                  {g.image ? (
-                    <img
-                      src={g.image}
-                      alt=""
-                      loading="lazy"
-                      decoding="async"
-                      className="absolute inset-0 w-full h-full object-cover opacity-65 group-hover:opacity-95 group-hover:scale-105 transition-all duration-700"
-                    />
-                  ) : (
-                    <div className="absolute inset-0 bg-gradient-to-br from-zinc-800 to-zinc-950" />
-                  )}
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/10 to-transparent" />
-                  <div className="absolute bottom-0 left-0 right-0 p-5">
-                    <h3 className="text-xl md:text-2xl font-black font-editorial tracking-[-0.02em]">{tr ? g.nameTr : g.nameEn}</h3>
-                    <div className="mt-2 w-0 group-hover:w-10 h-[2px] bg-white transition-all duration-500" />
-                  </div>
-                </div>
-              </Link>
-            ))}
-            {/* Büyük "Tümünü Gör" kartı — genre kartlarıyla aynı boyut, son pozisyonda */}
+        <HorizontalScroll>
+          {genres.map((g) => (
             <Link
-              href={`/${locale}/genre`}
-              className="flex-shrink-0 w-[220px] md:w-[260px] group"
+              key={g.id}
+              href={`/${locale}/genre/${g.slug}`}
+              className="flex-shrink-0 w-[240px] md:w-[280px] group"
             >
-              <div className="relative rounded-2xl overflow-hidden aspect-[3/4] bg-gradient-to-br from-white/[0.04] to-white/[0.01] border border-white/15 group-hover:border-white/40 group-hover:bg-white/[0.06] transition-all duration-500 flex flex-col items-center justify-center gap-5 p-6">
-                <div className="w-16 h-16 rounded-full border border-white/30 group-hover:border-white flex items-center justify-center text-2xl group-hover:scale-110 group-hover:bg-white group-hover:text-black transition-all duration-500">
-                  →
-                </div>
-                <div className="text-center">
-                  <p className="text-sm font-black font-editorial tracking-[-0.01em]">{tr ? 'Tümünü Gör' : 'View All'}</p>
-                  <p className="text-[10px] uppercase tracking-[0.3em] text-zinc-500 font-bold mt-2">{genreTotal} {tr ? 'Tür' : 'Genres'}</p>
+              <div className="relative rounded-2xl overflow-hidden aspect-[3/4] bg-zinc-900 card-shine hover-lift">
+                {g.image ? (
+                  <img
+                    src={g.image}
+                    alt=""
+                    loading="lazy"
+                    decoding="async"
+                    className="absolute inset-0 w-full h-full object-cover opacity-65 group-hover:opacity-95 group-hover:scale-105 transition-all duration-700"
+                  />
+                ) : (
+                  <div className="absolute inset-0 bg-gradient-to-br from-zinc-800 to-zinc-950" />
+                )}
+                <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/10 to-transparent" />
+                <div className="absolute bottom-0 left-0 right-0 p-5">
+                  <h3 className="text-xl md:text-2xl font-black font-editorial tracking-[-0.02em]">{tr ? g.nameTr : g.nameEn}</h3>
+                  <div className="mt-2 w-0 group-hover:w-10 h-[2px] bg-white transition-all duration-500" />
                 </div>
               </div>
             </Link>
-          </div>
-        </div>
+          ))}
+          {/* Büyük "Tümünü Gör" kartı — en sonda, aynı boyut */}
+          <Link
+            href={`/${locale}/genre`}
+            className="flex-shrink-0 w-[240px] md:w-[280px] group"
+          >
+            <div className="relative rounded-2xl overflow-hidden aspect-[3/4] bg-gradient-to-br from-white/[0.04] to-white/[0.01] border border-white/15 group-hover:border-white/40 group-hover:bg-white/[0.06] transition-all duration-500 flex flex-col items-center justify-center gap-5 p-6">
+              <div className="w-16 h-16 rounded-full border border-white/30 group-hover:border-white flex items-center justify-center text-2xl group-hover:scale-110 group-hover:bg-white group-hover:text-black transition-all duration-500">
+                →
+              </div>
+              <div className="text-center">
+                <p className="text-sm font-black font-editorial tracking-[-0.01em]">{tr ? 'Tümünü Gör' : 'View All'}</p>
+                <p className="text-[10px] uppercase tracking-[0.3em] text-zinc-500 font-bold mt-2">{genreTotal} {tr ? 'Tür' : 'Genres'}</p>
+              </div>
+            </div>
+          </Link>
+        </HorizontalScroll>
       </section>
 
       {/* ▸▸▸ SCENE 4: ARTISTS - zoom-in sahne ▸▸▸ */}
