@@ -9,7 +9,7 @@ export default function PageTransition({ children }: { children: React.ReactNode
     <div
       key={pathname}
       style={{
-        animation: 'btm-page-in 0.35s ease-out both',
+        animation: 'btm-page-in 0.18s ease-out both',
       }}
     >
       <style jsx>{`

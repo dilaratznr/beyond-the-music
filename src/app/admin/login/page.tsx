@@ -1,8 +1,8 @@
 'use client';
 
 import { signIn } from 'next-auth/react';
-import { useState, Suspense } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import AuthLayout from '@/components/admin/AuthLayout';
 
@@ -15,9 +15,21 @@ function LoginForm() {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [callbackUrl, setCallbackUrl] = useState('/admin/dashboard');
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const callbackUrl = searchParams.get('callbackUrl') || '/admin/dashboard';
+
+  // `useSearchParams()` yerine window.location — Suspense boundary'e
+  // ihtiyaç kalmıyor, böylece Vercel preview URL'lerinde hidrasyon
+  // "Yükleniyor…" fallback'inde takılıp kalmıyor.
+  useEffect(() => {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const cb = params.get('callbackUrl');
+      if (cb) setCallbackUrl(cb);
+    } catch {
+      /* noop — malformed URL */
+    }
+  }, []);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -145,11 +157,7 @@ export default function AdminLoginPage() {
         </p>
       </div>
 
-      <Suspense
-        fallback={<div className="text-center text-sm text-zinc-500 py-8">Yükleniyor…</div>}
-      >
-        <LoginForm />
-      </Suspense>
+      <LoginForm />
 
       <p className="mt-7 pt-5 border-t border-zinc-800 text-[11px] text-zinc-500 text-center leading-relaxed">
         Hesabınız mı yok? Yeni hesaplar yalnızca{' '}

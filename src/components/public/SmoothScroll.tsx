@@ -8,7 +8,8 @@ gsap.registerPlugin(ScrollTrigger);
 
 export default function SmoothScroll({ children }: { children: React.ReactNode }) {
   useEffect(() => {
-    // Small delay to let DOM render
+    // Start animations ASAP after DOM is ready. Previously waited 300ms
+    // which made pages feel sluggish on production (fast network = visible lag).
     const timeout = setTimeout(() => {
       // ── SCENE ZOOM: scroll ettikce section zoom ile acilir ──
       gsap.utils.toArray<HTMLElement>('.scene').forEach((el) => {
@@ -85,7 +86,7 @@ export default function SmoothScroll({ children }: { children: React.ReactNode }
       });
 
       ScrollTrigger.refresh();
-    }, 300);
+    }, 50);
 
     return () => { clearTimeout(timeout); ScrollTrigger.getAll().forEach((t) => t.kill()); };
   }, []);
