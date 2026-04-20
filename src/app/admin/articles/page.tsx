@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { Suspense, useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import Pagination from '@/components/admin/Pagination';
@@ -55,6 +55,16 @@ const STATUS_STYLE: Record<string, { label: string; pill: string; dot: string }>
 const ALLOWED_FILTERS = new Set(['', 'PUBLISHED', 'SCHEDULED', 'DRAFT']);
 
 export default function ArticlesPage() {
+  // useSearchParams() içerdiği için Next.js statik pre-render'da bailout
+  // istiyor — Suspense boundary ile sarıyoruz.
+  return (
+    <Suspense fallback={<TableSkeleton rows={PER_PAGE} />}>
+      <ArticlesPageInner />
+    </Suspense>
+  );
+}
+
+function ArticlesPageInner() {
   const searchParams = useSearchParams();
   // Honour ?status=SCHEDULED etc. coming from the dashboard, but only on
   // first render — after that the in-page tab buttons take over so the URL
