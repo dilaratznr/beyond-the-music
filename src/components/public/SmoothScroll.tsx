@@ -7,22 +7,25 @@ import { ScrollTrigger } from 'gsap/ScrollTrigger';
 gsap.registerPlugin(ScrollTrigger);
 
 /**
- * GSAP scroll animasyonlarını bağlar. Production'da görülen iki sorun
- * çözüldü:
+ * GSAP scroll animasyonları.
  *
- * 1) Horizontal scroll sadece 3-4 kart gösteriyordu: Unsplash resimleri
- *    ilk DOM ölçümü sırasında henüz yüklenmediği için `scrollWidth`
- *    yanlış hesaplanıyor → GSAP x-translate mesafesi kısa kalıyor →
- *    kullanıcı aşağı scroll edince "bitmiş" gibi görünüyor. Çözüm:
- *    ScrollTrigger'ı resim yükleme / font hazırlığı / resize
- *    olaylarında yeniden refresh etmek.
+ * Production'da iki sorun vardı:
  *
- * 2) `.gsap-fade-up` ve benzeri elementler `opacity: 0` ile başlıyor —
- *    ScrollTrigger herhangi bir sebeple tetiklenmezse (viewport
- *    hesaplama hatası, pin conflict, vs.) element hep görünmez kalıyor.
- *    Çözüm: setup aşamasında elementi direkt visible yap, sadece
- *    enter/exit için animate et. Böylece GSAP yok / başarısız olsa bile
- *    içerik gösterilir (graceful degradation).
+ * 1) Horizontal "türler" bölümü yalnızca 3-4 kart gösteriyordu. Sebep:
+ *    Unsplash resimleri yüklenmeden önce GSAP scrollWidth'i okuyor,
+ *    pin mesafesi olması gerekenden kısa çıkıyor, bölüm erken bitiyor.
+ *    Çözüm: pin mesafesi ve x-translate'i *aynı* distance fonksiyonundan
+ *    türetmek + fonts.ready / window.load / ResizeObserver / her img load
+ *    olayında ScrollTrigger.refresh() çağırmak. invalidateOnRefresh
+ *    sayesinde her refresh'te distance yeniden hesaplanıyor.
+ *
+ * 2) .gsap-fade-up / .gsap-stagger elementleri opacity:0 ile başlıyor;
+ *    ScrollTrigger tetiklenmezse içerik hep gizli kalıyor. Çözüm:
+ *    setup sırasında görünür yapıp fromTo ile animate etmek. GSAP
+ *    başarısız olsa bile içerik görünür kalır (graceful degradation).
+ *
+ * Mobilde: horizontal-viewport'a `overflow-x-auto` verildi. Pin
+ * tetiklenmese bile parmakla yatay kaydırılabilir.
  */
 export default function SmoothScroll({ children }: { children: React.ReactNode }) {
   useEffect(() => {
@@ -38,7 +41,7 @@ export default function SmoothScroll({ children }: { children: React.ReactNode }
         gsap.set(inner, { transformOrigin: 'center center' });
         gsap.fromTo(
           inner,
-          { scale: 0.92, opacity: 0.35 },
+          { scale: 0.94, opacity: 0.5 },
           {
             scale: 1,
             opacity: 1,
@@ -50,8 +53,6 @@ export default function SmoothScroll({ children }: { children: React.ReactNode }
 
       // ── IMAGE REVEAL ──
       gsap.utils.toArray<HTMLElement>('.img-reveal').forEach((el) => {
-        // Başta görünür ama hafif kırpılmış olarak bırak; GSAP tetiklenirse
-        // açılır, tetiklenmezse yine de içerik görünür.
         gsap.fromTo(
           el,
           { clipPath: 'inset(8% 8% 8% 8%)', scale: 1.08 },
@@ -66,33 +67,35 @@ export default function SmoothScroll({ children }: { children: React.ReactNode }
       });
 
       // ── HORIZONTAL SCROLL ──
+      // Mobilde pin etme — küçük ekranlarda native touch scroll (overflow-x-auto)
+      // zaten yeterli ve daha doğal bir deneyim.
       const hScroll = document.querySelector<HTMLElement>('.gsap-horizontal-scroll');
-      if (hScroll) {
-        const inner = hScroll.querySelector<HTMLElement>('.gsap-horizontal-inner');
-        if (inner) {
-          gsap.to(inner, {
-            x: () => -(inner.scrollWidth - window.innerWidth + 40),
-            ease: 'none',
-            scrollTrigger: {
-              trigger: hScroll,
-              start: 'top top',
-              end: () => `+=${inner.scrollWidth}`,
-              scrub: 1,
-              pin: true,
-              anticipatePin: 1,
-              // Her yenilemede mesafeyi yeniden hesapla — resim yükleme
-              // sonrası scrollWidth değişince doğru scroll uzunluğu alınır.
-              invalidateOnRefresh: true,
-            },
-          });
-        }
+      const hInner = hScroll?.querySelector<HTMLElement>('.gsap-horizontal-inner') ?? null;
+      const canPin =
+        typeof window !== 'undefined' && window.matchMedia('(min-width: 768px)').matches;
+
+      if (hScroll && hInner && canPin) {
+        // x-translate ve pin mesafesi AYNI distance'ten türer ki sonuna kadar
+        // tam olarak kayıp bitsin — biri biterken diğeri devam etmesin.
+        const distance = () => Math.max(0, hInner.scrollWidth - window.innerWidth);
+        gsap.to(hInner, {
+          x: () => -distance(),
+          ease: 'none',
+          scrollTrigger: {
+            trigger: hScroll,
+            start: 'top top',
+            end: () => `+=${distance()}`,
+            scrub: 0.6,
+            pin: true,
+            anticipatePin: 1,
+            invalidateOnRefresh: true,
+          },
+        });
       }
 
-      // ── STAGGER — content görünür başlıyor, GSAP varsa animate olur ──
+      // ── STAGGER — içerik görünür başlıyor, GSAP varsa animate eder ──
       gsap.utils.toArray<HTMLElement>('.gsap-stagger').forEach((container) => {
         const kids = Array.from(container.children) as HTMLElement[];
-        // İlk anda görünür yap; aşağıdaki fromTo GSAP hazırsa opaklığı 0'a
-        // çekip sonra yükseltecek, hazır değilse zaten visible kalır.
         gsap.set(kids, { opacity: 1 });
         gsap.fromTo(
           kids,
@@ -158,37 +161,43 @@ export default function SmoothScroll({ children }: { children: React.ReactNode }
       ScrollTrigger.refresh();
     };
 
-    // İlk kurulumu bir frame sonrasına erteliyoruz — React DOM'u yazsın.
     const rafId = requestAnimationFrame(setup);
 
-    // Resim / font yüklendikçe ScrollTrigger'ı yenile ki scrollWidth'lar doğru hesaplansın.
     const refresh = () => {
       if (!cancelled) ScrollTrigger.refresh();
     };
 
-    // Font ready
-    if ('fonts' in document) {
+    if (typeof document !== 'undefined' && 'fonts' in document) {
       (document as Document & { fonts: FontFaceSet }).fonts.ready.then(refresh);
     }
 
-    // Tüm kaynaklar (resimler dahil) yüklendiğinde
-    if (document.readyState === 'complete') {
-      // Zaten yüklü — bir sonraki frame'de refresh
-      requestAnimationFrame(refresh);
-    } else {
-      window.addEventListener('load', refresh, { once: true });
+    if (typeof document !== 'undefined') {
+      if (document.readyState === 'complete') {
+        requestAnimationFrame(refresh);
+      } else {
+        window.addEventListener('load', refresh, { once: true });
+      }
     }
 
-    // Horizontal container'ın boyutu değişirse yenile (resim geldikçe scrollWidth büyüyor).
+    // Emniyet refresh'leri — ilk render'daki yarış koşullarına karşı (resim
+    // cache hit/miss, font swap, hydration gecikmesi). Toplam maliyet: 4 çağrı.
+    const safetyRefreshes = [400, 900, 1800, 3000].map((ms) =>
+      window.setTimeout(refresh, ms),
+    );
+
+    const onResize = () => refresh();
+    window.addEventListener('resize', onResize);
+
     let resizeObserver: ResizeObserver | null = null;
-    const hScroll = document.querySelector<HTMLElement>('.gsap-horizontal-scroll .gsap-horizontal-inner');
-    if (hScroll && 'ResizeObserver' in window) {
-      resizeObserver = new ResizeObserver(() => refresh());
-      resizeObserver.observe(hScroll);
+    const hInner = document.querySelector<HTMLElement>(
+      '.gsap-horizontal-scroll .gsap-horizontal-inner',
+    );
+    if (hInner && 'ResizeObserver' in window) {
+      resizeObserver = new ResizeObserver(refresh);
+      resizeObserver.observe(hInner);
     }
 
-    // Resim her yüklendiğinde de yenile — observer yakalamadıysa garanti olsun.
-    const imgs = Array.from(document.querySelectorAll('img'));
+    const imgs = Array.from(document.querySelectorAll<HTMLImageElement>('img'));
     const imgHandler = () => refresh();
     imgs.forEach((img) => {
       if (!img.complete) img.addEventListener('load', imgHandler, { once: true });
@@ -197,7 +206,9 @@ export default function SmoothScroll({ children }: { children: React.ReactNode }
     return () => {
       cancelled = true;
       cancelAnimationFrame(rafId);
+      safetyRefreshes.forEach((t) => window.clearTimeout(t));
       window.removeEventListener('load', refresh);
+      window.removeEventListener('resize', onResize);
       resizeObserver?.disconnect();
       imgs.forEach((img) => img.removeEventListener('load', imgHandler));
       ScrollTrigger.getAll().forEach((t) => t.kill());

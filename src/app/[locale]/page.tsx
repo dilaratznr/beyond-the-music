@@ -90,21 +90,33 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
       </section>
 
 
-      {/* ▸▸▸ SCENE 3: GENRES - yatay scroll ▸▸▸ */}
-      <div className="gsap-horizontal-scroll">
-        <div className="h-screen flex items-center overflow-hidden">
-          <div className="gsap-horizontal-inner flex items-center gap-5 pl-6 pr-20">
-            <div className="flex-shrink-0 w-[35vw] md:w-[28vw] pr-6">
-              <p className="text-zinc-600 text-[10px] tracking-[0.3em] uppercase font-bold mb-2">{tr ? 'Keşfet' : 'Explore'}</p>
+      {/* ▸▸▸ SCENE 3: GENRES - yatay scroll ▸▸▸
+          Pin + scrub mantığı için dış kapsayıcı h-screen olmalı; inner sadece
+          yatay flex, üzerine x translate uygulanır. Fallback olarak (JS gecikince
+          / GSAP hata verince) overflow-x-auto ile kullanıcı manuel kaydırabilir. */}
+      <div className="gsap-horizontal-scroll relative h-screen overflow-hidden">
+        <div className="gsap-horizontal-viewport absolute inset-0 flex items-center overflow-x-auto md:overflow-hidden" style={{ scrollbarWidth: 'none' }}>
+          <div className="gsap-horizontal-inner flex items-center gap-5 pl-6 pr-20 will-change-transform">
+            <div className="flex-shrink-0 w-[75vw] sm:w-[45vw] md:w-[28vw] pr-6">
+              <p className="text-zinc-400 text-[11px] tracking-[0.3em] uppercase font-bold mb-2">{tr ? 'Keşfet' : 'Explore'}</p>
               <h2 className="font-editorial font-black tracking-[-0.03em] leading-[0.95]" style={{ fontSize: 'clamp(2.25rem, 5.5vw, 4.5rem)' }}>{dict.genre.title}</h2>
               <div className="w-12 h-[2px] bg-white/20 mt-5 mb-4" />
-              <p className="text-zinc-600 text-xs max-w-[220px] leading-relaxed">{tr ? 'Müziğin tüm türlerini keşfet — her birinin kültürel hikayesiyle.' : 'Explore all genres — each with its cultural story.'}</p>
+              <p className="text-zinc-500 text-sm max-w-[260px] leading-relaxed">{tr ? 'Müziğin tüm türlerini keşfet — her birinin kültürel hikayesiyle.' : 'Explore all genres — each with its cultural story.'}</p>
             </div>
             {genres.map((g) => (
               <Link key={g.id} href={`/${locale}/genre/${g.slug}`} className="flex-shrink-0 w-[260px] md:w-[300px] group">
                 <div className="relative rounded-2xl overflow-hidden aspect-[3/4] bg-zinc-900 img-reveal">
-                  {g.image ? <img src={g.image} alt="" className="absolute inset-0 w-full h-full object-cover opacity-50 group-hover:opacity-80 transition-opacity duration-500" />
-                    : <div className="absolute inset-0 bg-gradient-to-br from-zinc-800 to-zinc-950" />}
+                  {g.image ? (
+                    <img
+                      src={g.image}
+                      alt=""
+                      loading="lazy"
+                      decoding="async"
+                      className="absolute inset-0 w-full h-full object-cover opacity-60 group-hover:opacity-90 transition-opacity duration-500"
+                    />
+                  ) : (
+                    <div className="absolute inset-0 bg-gradient-to-br from-zinc-800 to-zinc-950" />
+                  )}
                   <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
                   <div className="absolute bottom-0 left-0 right-0 p-5">
                     <h3 className="text-2xl font-black font-editorial tracking-[-0.02em]">{tr ? g.nameTr : g.nameEn}</h3>
@@ -113,8 +125,11 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
                 </div>
               </Link>
             ))}
-            <Link href={`/${locale}/genre`} className="flex-shrink-0 w-[140px] flex items-center justify-center">
-              <div className="w-14 h-14 rounded-full border border-white/10 flex items-center justify-center hover:scale-110 transition-transform text-lg">→</div>
+            <Link href={`/${locale}/genre`} className="flex-shrink-0 w-[180px] flex items-center justify-center">
+              <div className="flex flex-col items-center gap-3">
+                <div className="w-14 h-14 rounded-full border border-white/20 flex items-center justify-center hover:scale-110 transition-transform text-lg">→</div>
+                <span className="text-[10px] uppercase tracking-[0.3em] text-zinc-500 font-bold">{tr ? 'Tümü' : 'All'}</span>
+              </div>
             </Link>
           </div>
         </div>
