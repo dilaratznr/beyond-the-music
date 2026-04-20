@@ -67,16 +67,14 @@ export default function SmoothScroll({ children }: { children: React.ReactNode }
       });
 
       // ── HORIZONTAL SCROLL ──
-      // Mobilde pin etme — küçük ekranlarda native touch scroll (overflow-x-auto)
-      // zaten yeterli ve daha doğal bir deneyim.
+      // Tüm ekran boylarında pin + scrub çalıştırıyoruz (kullanıcı "mobilde de
+      // kayıyordu" dedi). x-translate ve pin mesafesi AYNI `distance()`ten
+      // türer — böylece son karta gelindiğinde pin de biter, biri bitip
+      // diğeri devam etmez.
       const hScroll = document.querySelector<HTMLElement>('.gsap-horizontal-scroll');
       const hInner = hScroll?.querySelector<HTMLElement>('.gsap-horizontal-inner') ?? null;
-      const canPin =
-        typeof window !== 'undefined' && window.matchMedia('(min-width: 768px)').matches;
 
-      if (hScroll && hInner && canPin) {
-        // x-translate ve pin mesafesi AYNI distance'ten türer ki sonuna kadar
-        // tam olarak kayıp bitsin — biri biterken diğeri devam etmesin.
+      if (hScroll && hInner) {
         const distance = () => Math.max(0, hInner.scrollWidth - window.innerWidth);
         gsap.to(hInner, {
           x: () => -distance(),

@@ -91,11 +91,10 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
 
 
       {/* ▸▸▸ SCENE 3: GENRES - yatay scroll ▸▸▸
-          Pin + scrub mantığı için dış kapsayıcı h-screen olmalı; inner sadece
-          yatay flex, üzerine x translate uygulanır. Fallback olarak (JS gecikince
-          / GSAP hata verince) overflow-x-auto ile kullanıcı manuel kaydırabilir. */}
+          Dış kapsayıcı h-screen + overflow-hidden: pin oturacağı yeri net
+          bilsin ve GSAP transform'u native scroll ile çakışmasın. */}
       <div className="gsap-horizontal-scroll relative h-screen overflow-hidden">
-        <div className="gsap-horizontal-viewport absolute inset-0 flex items-center overflow-x-auto md:overflow-hidden" style={{ scrollbarWidth: 'none' }}>
+        <div className="absolute inset-0 flex items-center overflow-hidden">
           <div className="gsap-horizontal-inner flex items-center gap-5 pl-6 pr-20 will-change-transform">
             <div className="flex-shrink-0 w-[75vw] sm:w-[45vw] md:w-[28vw] pr-6">
               <p className="text-zinc-400 text-[11px] tracking-[0.3em] uppercase font-bold mb-2">{tr ? 'Keşfet' : 'Explore'}</p>
