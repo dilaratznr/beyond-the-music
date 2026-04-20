@@ -40,12 +40,9 @@ export default function Footer({ locale, dict }: FooterProps) {
             </ul>
           </div>
         </div>
-        <div className="pt-8 flex flex-col md:flex-row items-center justify-between gap-4">
+        <div className="pt-8 flex items-center justify-center">
           <p className="text-xs text-zinc-600">
             &copy; {new Date().getFullYear()} Beyond The Music. {dict.footer.rights}
-          </p>
-          <p className="text-xs text-zinc-700">
-            {locale === 'tr' ? 'Konsept: Ziya Burak Erol' : 'Concept: Ziya Burak Erol'}
           </p>
         </div>
       </div>

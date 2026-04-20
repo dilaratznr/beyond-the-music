@@ -268,7 +268,7 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
           <img src={s.culture_banner_image || 'https://images.unsplash.com/photo-1519892300165-cb5542fb47c7?w=1920&q=80'} alt="" className="w-full h-[130%] -mt-[15%] object-cover opacity-15" />
         </div>
         <div className="relative z-10 max-w-5xl mx-auto px-6 text-center gsap-fade-up py-20">
-          <p className="text-[10px] uppercase tracking-[0.4em] text-zinc-600 font-bold mb-6">Fashion · Music · Culture</p>
+          <p className="text-[10px] uppercase tracking-[0.4em] text-zinc-600 font-bold mb-6">{tr ? 'Moda · Müzik · Kültür' : 'Fashion · Music · Culture'}</p>
           <h2 className="font-black font-editorial leading-[1.1] whitespace-pre-line" style={{ fontSize: 'clamp(2rem, 5vw, 4rem)' }}>
             {loc('culture_banner_title')}
           </h2>
