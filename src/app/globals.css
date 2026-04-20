@@ -1,4 +1,8 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Space+Grotesk:wght@400;500;600;700&display=swap');
+/* Site fontları artık [locale]/layout.tsx içinde admin'den seçilen aileyle
+   <link rel="stylesheet"> olarak yükleniyor (300-900 dahil tüm ağırlıklar
+   ile). Burada ayrı bir @import tutmak: a) gereksiz network isteği,
+   b) Space Grotesk'i 700'e kadar çekiyordu → font-black (900) sentetik
+   bold üretiyor, başlıklar inceltik / stilsiz görünüyordu. */
 @import "tailwindcss";
 
 :root {

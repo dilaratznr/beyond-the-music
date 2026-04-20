@@ -75,13 +75,13 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
           <div className="absolute inset-0 bg-gradient-to-t from-[#0a0a0b] via-transparent to-black/10" />
         </div>
         <div className="relative z-10 max-w-7xl mx-auto px-6 w-full gsap-fade-up">
-          <p className="text-zinc-500 text-xs tracking-[0.3em] uppercase mb-5 flex items-center gap-3">
-            <span className="w-8 h-px bg-zinc-600" />{loc('hero_subtitle')}
+          <p className="text-zinc-400 text-[11px] tracking-[0.35em] uppercase mb-6 flex items-center gap-3 font-semibold">
+            <span className="w-10 h-px bg-zinc-500" />{loc('hero_subtitle')}
           </p>
-          <h1 className="font-editorial font-black leading-[0.88] max-w-3xl" style={{ fontSize: 'clamp(2.5rem, 6.5vw, 5.5rem)' }}>
+          <h1 className="font-editorial font-black leading-[0.9] tracking-[-0.04em] max-w-4xl" style={{ fontSize: 'clamp(3rem, 9vw, 7.5rem)' }}>
             {loc('hero_title')}
           </h1>
-          <p className="mt-6 text-zinc-500 text-sm md:text-base font-light leading-relaxed max-w-md whitespace-pre-line">{loc('hero_desc')}</p>
+          <p className="mt-7 text-zinc-400 text-base md:text-lg font-light leading-relaxed max-w-xl whitespace-pre-line">{loc('hero_desc')}</p>
           <div className="mt-8 flex gap-3">
             <MagneticButton href={`/${locale}/genre`} className="px-7 py-3 bg-white text-black text-sm font-bold rounded-full inline-block">{loc('hero_cta_text')} →</MagneticButton>
             <MagneticButton href={`/${locale}/listening-paths`} className="px-7 py-3 border border-white/20 text-white text-sm rounded-full inline-block">{loc('hero_cta2_text')}</MagneticButton>
@@ -96,7 +96,7 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
           <div className="gsap-horizontal-inner flex items-center gap-5 pl-6 pr-20">
             <div className="flex-shrink-0 w-[35vw] md:w-[28vw] pr-6">
               <p className="text-zinc-600 text-[10px] tracking-[0.3em] uppercase font-bold mb-2">{tr ? 'Keşfet' : 'Explore'}</p>
-              <h2 className="font-editorial font-black" style={{ fontSize: 'clamp(1.8rem, 4vw, 3.5rem)' }}>{dict.genre.title}</h2>
+              <h2 className="font-editorial font-black tracking-[-0.03em] leading-[0.95]" style={{ fontSize: 'clamp(2.25rem, 5.5vw, 4.5rem)' }}>{dict.genre.title}</h2>
               <div className="w-12 h-[2px] bg-white/20 mt-5 mb-4" />
               <p className="text-zinc-600 text-xs max-w-[220px] leading-relaxed">{tr ? 'Müziğin tüm türlerini keşfet — her birinin kültürel hikayesiyle.' : 'Explore all genres — each with its cultural story.'}</p>
             </div>
@@ -107,7 +107,7 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
                     : <div className="absolute inset-0 bg-gradient-to-br from-zinc-800 to-zinc-950" />}
                   <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
                   <div className="absolute bottom-0 left-0 right-0 p-5">
-                    <h3 className="text-lg font-black font-editorial">{tr ? g.nameTr : g.nameEn}</h3>
+                    <h3 className="text-2xl font-black font-editorial tracking-[-0.02em]">{tr ? g.nameTr : g.nameEn}</h3>
                     <div className="mt-2 w-0 group-hover:w-8 h-[2px] bg-white transition-all duration-500" />
                   </div>
                 </div>
@@ -126,7 +126,7 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
           <div className="flex items-end justify-between mb-10">
             <div>
               <p className="text-[10px] uppercase tracking-[0.3em] text-zinc-400 font-bold">Spotlight</p>
-              <h2 className="text-2xl md:text-3xl font-black font-editorial mt-1">{dict.artist.title}</h2>
+              <h2 className="text-3xl md:text-5xl font-black font-editorial mt-1 tracking-[-0.03em]">{dict.artist.title}</h2>
             </div>
             <Link href={`/${locale}/artist`} className="text-[10px] font-bold text-zinc-400 hover:text-white uppercase tracking-wider">{tr ? 'Tümü' : 'All'} →</Link>
           </div>
@@ -152,7 +152,7 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
           <div className="scene-inner max-w-7xl mx-auto px-6">
             <div className="gsap-fade-up mb-12">
               <p className="text-[10px] uppercase tracking-[0.3em] text-zinc-600 font-bold">{dict.home.latest}</p>
-              <h2 className="text-xl font-bold font-editorial mt-1">{tr ? 'Editörün Seçimi' : "Editor's Pick"}</h2>
+              <h2 className="text-3xl md:text-4xl font-black font-editorial mt-1 tracking-[-0.03em]">{tr ? 'Editörün Seçimi' : "Editor's Pick"}</h2>
             </div>
             <div className="grid lg:grid-cols-12 gap-5">
               <div className="lg:col-span-7 gsap-slide-left">
@@ -161,7 +161,7 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
                   <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/20 to-transparent" />
                   <div className="absolute bottom-0 p-7 z-10">
                     <span className="inline-block px-3 py-1 bg-white/10 backdrop-blur-sm rounded-full text-[10px] font-bold text-white/60 uppercase tracking-widest mb-3">{articles[0].category.replace(/_/g, ' ')}</span>
-                    <h3 className="text-xl md:text-2xl font-bold font-editorial leading-tight group-hover:underline decoration-2 underline-offset-4">{tr ? articles[0].titleTr : articles[0].titleEn}</h3>
+                    <h3 className="text-2xl md:text-4xl font-black font-editorial leading-tight tracking-[-0.02em] group-hover:underline decoration-2 underline-offset-4">{tr ? articles[0].titleTr : articles[0].titleEn}</h3>
                   </div>
                 </Link>
               </div>
@@ -188,7 +188,7 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
             <div className="gsap-fade-up mb-10 flex items-end justify-between">
               <div>
                 <p className="text-[10px] uppercase tracking-[0.3em] text-zinc-600 font-bold">{tr ? 'Öne Çıkan' : 'Featured'}</p>
-                <h2 className="text-xl font-bold font-editorial mt-1">{tr ? 'Seçili Albümler' : 'Curated Albums'}</h2>
+                <h2 className="text-3xl md:text-4xl font-black font-editorial mt-1 tracking-[-0.03em]">{tr ? 'Seçili Albümler' : 'Curated Albums'}</h2>
               </div>
               <Link href={`/${locale}/albums`} className="text-[10px] font-bold text-zinc-500 hover:text-white uppercase tracking-wider">{tr ? 'Tümü' : 'All'} →</Link>
             </div>
@@ -221,7 +221,7 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
         <div className="scene-inner max-w-7xl mx-auto px-6">
           <div className="text-center mb-14 gsap-fade-up">
             <p className="text-[10px] uppercase tracking-[0.4em] text-zinc-400 font-bold mb-2">Discover</p>
-            <h2 className="text-2xl md:text-3xl font-black font-editorial">{tr ? 'Keşfet' : 'Explore'}</h2>
+            <h2 className="text-3xl md:text-5xl font-black font-editorial tracking-[-0.03em]">{tr ? 'Keşfet' : 'Explore'}</h2>
           </div>
           <div className="gsap-stagger grid md:grid-cols-3 gap-4">
             {[
@@ -233,7 +233,7 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
                 <img src={c.img} alt="" className="absolute inset-0 w-full h-full object-cover opacity-30 group-hover:opacity-50 transition-opacity duration-700" />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent" />
                 <div className="absolute bottom-0 left-0 right-0 p-6 z-10">
-                  <h3 className="text-xl font-black font-editorial text-white">{c.title}</h3>
+                  <h3 className="text-2xl md:text-3xl font-black font-editorial text-white tracking-[-0.02em]">{c.title}</h3>
                   <p className="text-white/30 text-xs mt-1">{c.sub}</p>
                   <div className="mt-3 w-0 group-hover:w-10 h-[2px] bg-white transition-all duration-500" />
                 </div>
@@ -248,7 +248,7 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
         <div className="scene-inner max-w-7xl mx-auto px-6">
           <div className="gsap-fade-up mb-12">
             <p className="text-[10px] uppercase tracking-[0.3em] text-emerald-500/50 font-bold">Curated Journeys</p>
-            <h2 className="text-xl font-bold font-editorial mt-1">{dict.listeningPaths.title}</h2>
+            <h2 className="text-3xl md:text-4xl font-black font-editorial mt-1 tracking-[-0.03em]">{dict.listeningPaths.title}</h2>
           </div>
           <div className="gsap-stagger flex gap-4 overflow-x-auto pb-4" style={{ scrollbarWidth: 'none' }}>
             {paths.map((p) => (
