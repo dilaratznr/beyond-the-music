@@ -36,18 +36,41 @@ function LoginForm() {
     setError('');
     setLoading(true);
 
-    const result = await signIn('credentials', {
-      email,
-      password,
-      redirect: false,
-    });
+    try {
+      const result = await signIn('credentials', {
+        email,
+        password,
+        redirect: false,
+      });
 
-    setLoading(false);
+      setLoading(false);
 
-    if (result?.error) {
-      setError('E-posta veya şifre hatalı');
-    } else {
+      if (!result) {
+        setError('Sunucuya ulaşılamadı — bağlantıyı kontrol edip tekrar deneyin.');
+        return;
+      }
+
+      if (result.error) {
+        // CredentialsSignin = yanlış bilgi. CallbackRouteError / diğer = sunucu hatası.
+        setError(
+          result.error === 'CredentialsSignin'
+            ? 'E-posta veya şifre hatalı.'
+            : `Giriş başarısız: ${result.error}`,
+        );
+        return;
+      }
+
+      if (!result.ok) {
+        setError('Giriş isteği reddedildi.');
+        return;
+      }
+
       router.push(callbackUrl);
+      router.refresh();
+    } catch (err) {
+      setLoading(false);
+      const msg = err instanceof Error ? err.message : 'Bilinmeyen hata';
+      setError(`Beklenmeyen hata: ${msg}`);
     }
   }
 
@@ -75,6 +98,7 @@ function LoginForm() {
         </label>
         <input
           id="admin-login-email"
+          name="email"
           type="email"
           autoComplete="email"
           autoFocus
@@ -104,6 +128,7 @@ function LoginForm() {
         <div className="relative">
           <input
             id="admin-login-password"
+            name="password"
             type={showPassword ? 'text' : 'password'}
             autoComplete="current-password"
             value={password}
