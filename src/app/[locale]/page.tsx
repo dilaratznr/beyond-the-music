@@ -8,7 +8,6 @@ import { getDictionary } from '@/i18n';
 import prisma from '@/lib/prisma';
 import { publishDueArticles } from '@/lib/article-publishing';
 import Link from 'next/link';
-import SplashIntro from '@/components/public/SplashIntro';
 import HeroVideoCarousel from '@/components/public/HeroVideoCarousel';
 import TextRevealOnScroll from '@/components/public/TextRevealOnScroll';
 import MagneticButton from '@/components/public/MagneticButton';
@@ -70,7 +69,9 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
 
   return (
     <div className="bg-[#0a0a0b] text-white">
-      <SplashIntro title={loc('hero_title') || undefined} tagline={loc('hero_subtitle') || undefined} />
+      {/* SplashIntro kaldırıldı — açılışta siyah perde + küçük başlık
+          kullanıcıya "sayfa boş" hissi veriyordu. Hero artık direkt
+          yükleniyor, ilk paint'te içerik görünür. */}
 
       {/* ▸▸▸ SCENE 1: HERO - Full viewport ▸▸▸ */}
       <section className="relative h-screen flex items-center overflow-hidden">
