@@ -55,10 +55,7 @@ export const FONT_OPTIONS: FontOption[] = [
 ];
 
 export const DEFAULT_BODY_FONT = 'Inter';
-// Editorial/dergi estetik hedefi → Fraunces (değişken serif). Hero ve tüm büyük
-// başlıkları NYT/Pitchfork kıvamına çeker. Admin istediği zaman Settings'ten
-// Space Grotesk / Bricolage / Playfair vb. tercih edebilir.
-export const DEFAULT_DISPLAY_FONT = 'Fraunces';
+export const DEFAULT_DISPLAY_FONT = 'Space Grotesk';
 
 /** Look up an option by family name; returns undefined if not in the curated list. */
 export function getFontOption(family: string | null | undefined): FontOption | undefined {

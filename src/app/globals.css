@@ -10,7 +10,7 @@
   --color-text: #ffffff;
   --color-muted: #71717a;
   --color-accent: #ffffff;
-  --header-height: 92px;
+  --header-height: 56px;
   /* Fluid typography */
   --text-display: clamp(2.5rem, 6vw, 5rem);
   --text-hero: clamp(3rem, 8vw, 7rem);
@@ -38,56 +38,7 @@ html { scroll-behavior: smooth; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: #27272a; border-radius: 2px; }
 
-/* Editorial display: serif fontta sıkı tracking çirkin görünür; -0.015em
-   civarı NYT/Pitchfork tipografi stili için sweet spot. Variable font
-   (Fraunces) için opsiyonel axis ayarları — SOFT 50, WONK 0: modern &
-   okunaklı, aşırı dekoratif değil. */
-.font-editorial {
-  font-family: var(--font-display);
-  letter-spacing: -0.015em;
-  font-feature-settings: 'ss01', 'ss02';
-  font-variation-settings: 'SOFT' 50, 'WONK' 0;
-}
-
-/* ── EDITORIAL UTILITIES ── */
-/* Dergi-stili "eyebrow" — üstte küçük, harflerarası aralıklı etiket. */
-.eyebrow {
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.28em;
-  text-transform: uppercase;
-  color: rgb(161 161 170);
-}
-
-/* Bölüm numarası (§ 01). Masthead hissi için monospace. */
-.section-number {
-  font-family: ui-monospace, 'SF Mono', 'IBM Plex Mono', monospace;
-  font-size: 10px;
-  font-weight: 600;
-  letter-spacing: 0.12em;
-  color: rgb(113 113 122);
-}
-
-/* Hairline — 1px opak olmayan ince ayırıcı çizgi. */
-.hairline {
-  height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.14) 20%, rgba(255,255,255,0.14) 80%, transparent);
-}
-.hairline-strong {
-  height: 1px;
-  background: rgba(255,255,255,0.12);
-}
-
-/* Drop-cap — makale / uzun paragraflarda ilk harfe dergi kapağı */
-.drop-cap::first-letter {
-  font-family: var(--font-display);
-  font-size: 4.5rem;
-  font-weight: 700;
-  float: left;
-  line-height: 0.85;
-  margin: 0.08em 0.1em 0 0;
-  color: white;
-}
+.font-editorial { font-family: var(--font-display); letter-spacing: -0.03em; }
 
 /* ── KEYFRAMES ── */
 @keyframes fadeInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
