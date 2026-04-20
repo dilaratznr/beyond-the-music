@@ -74,11 +74,12 @@ export function getFontOption(family: string | null | undefined): FontOption | u
 export function buildGoogleFontsHref(families: string[]): string | null {
   const unique = Array.from(new Set(families.filter(Boolean)));
   if (unique.length === 0) return null;
-  // 900'ü dahil et — büyük başlıklarda `font-black` (Tailwind 900) kullanılıyor.
-  // 900 yüklü değilse tarayıcı 800'den fake-bold yapar, yazılar incecik
-  // / stilsiz görünür (kullanıcıdan gelen "stil bozuldu" şikayetinin sebebi).
+  // Sadece gerçekten kullanılan 3 ağırlığı yüklüyoruz (400 regular, 600 semi,
+  // 900 black). Her ek ağırlık ayrı bir network request — önceden 300-900
+  // tüm aralık yükleniyordu (7 dosya × 2 aile = 14 request), sayfayı
+  // ağırlaştırıyordu. 600 varlığı navbar/chip metinleri için yeterli.
   const familyParams = unique
-    .map((f) => `family=${encodeURIComponent(f)}:wght@300;400;500;600;700;800;900`)
+    .map((f) => `family=${encodeURIComponent(f)}:wght@400;600;900`)
     .join('&');
   return `https://fonts.googleapis.com/css2?${familyParams}&display=swap`;
 }

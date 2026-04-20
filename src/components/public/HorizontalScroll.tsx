@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, useEffect, useState, useLayoutEffect } from 'react';
+import { useRef, useEffect, useLayoutEffect, useState } from 'react';
 
 interface Props {
   children: React.ReactNode;
@@ -8,35 +8,37 @@ interface Props {
 }
 
 /**
- * "Pin + translate" yatay kaydırma: section dikey olarak uzun bir konteyner
- * olur, içindeki sıra sticky pozisyonda kalır ve sayfa scroll'una bağlı
- * olarak X ekseninde kayar. Kullanıcı sayfayı aşağı kaydırınca kartlar
- * yana kendi kendine kayıyor gibi hissedilir.
+ * "Pin + translate" yatay kaydırma.
  *
- * Section yüksekliği DİNAMİK: içeriğin gerçek overflow miktarına göre
- * hesaplanır, böylece 1:1 oran (1px dikey scroll = 1px yatay kayma).
- * Daha önce sabit 300vh idi — az içerik varken bile 2 ekran boyu dead-zone
- * oluyordu; şimdi içerik kadar kaydırma alanı kalır.
+ * Perf not: translate değerini React state'te tutmuyoruz — her scroll
+ * frame'de re-render ağır kaçıyordu. Bunun yerine ref üzerinden doğrudan
+ * `element.style.transform` yazıyoruz. rAF ile throttled.
  */
 export default function HorizontalScroll({ children, className = '' }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
-  const [scrollX, setScrollX] = useState(0);
   const [sectionHeight, setSectionHeight] = useState<number | null>(null);
 
-  // Overflow miktarını ölç (mount + resize) → section height'i buna göre ayarla.
+  // Overflow ölç ve section yüksekliğini ayarla
   useLayoutEffect(() => {
     function measure() {
       const scroll = scrollRef.current;
       if (!scroll) return;
       const overflow = Math.max(0, scroll.scrollWidth - window.innerWidth);
-      // Hızı biraz yavaşlatmak için overflow * 1.1 + viewport ekliyoruz —
-      // tam 1:1 biraz sert hissettiriyordu.
-      setSectionHeight(window.innerHeight + overflow * 1.1);
+      setSectionHeight(window.innerHeight + overflow);
     }
     measure();
     window.addEventListener('resize', measure);
-    return () => window.removeEventListener('resize', measure);
+    // Resimler yüklendikçe genişlik değişebilir — ResizeObserver bunu yakalar
+    let ro: ResizeObserver | null = null;
+    if ('ResizeObserver' in window && scrollRef.current) {
+      ro = new ResizeObserver(measure);
+      ro.observe(scrollRef.current);
+    }
+    return () => {
+      window.removeEventListener('resize', measure);
+      ro?.disconnect();
+    };
   }, []);
 
   useEffect(() => {
@@ -45,31 +47,31 @@ export default function HorizontalScroll({ children, className = '' }: Props) {
     if (!container || !scroll || !sectionHeight) return;
 
     let rafId = 0;
+    function update() {
+      rafId = 0;
+      const rect = container!.getBoundingClientRect();
+      const overflow = Math.max(0, scroll!.scrollWidth - window.innerWidth);
+      const scrollRange = sectionHeight! - window.innerHeight;
+
+      let tx = 0;
+      if (rect.top >= 0) {
+        tx = 0;
+      } else if (rect.bottom <= window.innerHeight) {
+        tx = overflow;
+      } else {
+        const progress = Math.min(1, Math.max(0, -rect.top / scrollRange));
+        tx = progress * overflow;
+      }
+      // Direkt DOM'a yaz — React re-render yok
+      scroll!.style.transform = `translate3d(${-tx}px, 0, 0)`;
+    }
     function onScroll() {
       if (rafId) return;
-      rafId = requestAnimationFrame(() => {
-        rafId = 0;
-        const rect = container!.getBoundingClientRect();
-        const overflow = Math.max(0, scroll!.scrollWidth - window.innerWidth);
-        const scrollRange = sectionHeight! - window.innerHeight;
-
-        // Section viewport'ta değilken translate sıfırda kalsın
-        if (rect.top >= 0) {
-          setScrollX(0);
-          return;
-        }
-        if (rect.bottom <= window.innerHeight) {
-          setScrollX(overflow);
-          return;
-        }
-
-        const progress = Math.min(1, Math.max(0, -rect.top / scrollRange));
-        setScrollX(progress * overflow);
-      });
+      rafId = requestAnimationFrame(update);
     }
 
     window.addEventListener('scroll', onScroll, { passive: true });
-    onScroll();
+    update();
     return () => {
       window.removeEventListener('scroll', onScroll);
       if (rafId) cancelAnimationFrame(rafId);
@@ -85,11 +87,7 @@ export default function HorizontalScroll({ children, className = '' }: Props) {
       <div className="sticky top-0 h-screen overflow-hidden flex items-center">
         <div
           ref={scrollRef}
-          className="flex gap-4 md:gap-5 px-6"
-          style={{
-            transform: `translate3d(-${scrollX}px, 0, 0)`,
-            willChange: 'transform',
-          }}
+          className="flex gap-4 md:gap-5 px-6 will-change-transform"
         >
           {children}
         </div>
