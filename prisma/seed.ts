@@ -4,6 +4,16 @@ import bcrypt from 'bcryptjs';
 const prisma = new PrismaClient();
 
 async function main() {
+  // Idempotency guard: sadece boş DB'de çalışsın. Production build'de her
+  // deploy'da bu script koşuyor; eğer kullanıcı varsa bu bir re-deploy
+  // demektir ve deleteMany'ler tüm içeriği siler. O yüzden erken çık.
+  const existingUsers = await prisma.user.count();
+  if (existingUsers > 0) {
+    console.log(`Seed atlandı — DB'de zaten ${existingUsers} kullanıcı var.`);
+    return;
+  }
+  console.log('Boş DB tespit edildi — ilk yükleme seed\'i çalıştırılıyor...');
+
   // Clean existing data (order matters for foreign keys)
   await prisma.listeningPathItem.deleteMany();
   await prisma.listeningPath.deleteMany();
