@@ -23,8 +23,12 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
   // gerek yok. (Eksik kalsa da bir sonraki revalidate'da yakalanır.)
   publishDueArticles().catch(() => {});
 
-  const [genres, featuredArticles, featuredAlbums, artists, paths, settingsRaw, heroVideos] = await Promise.all([
-    prisma.genre.findMany({ where: { parentId: null }, orderBy: { order: 'asc' } }),
+  const [genres, genreTotal, featuredArticles, featuredAlbums, artists, paths, settingsRaw, heroVideos] = await Promise.all([
+    // Anasayfada tür sayısı 8 ile sınırlı — daha fazlası kaydırmayı uzatıyor,
+    // 'Tümünü Gör' kartı zaten sonunda.
+    prisma.genre.findMany({ where: { parentId: null }, orderBy: { order: 'asc' }, take: 8 }),
+    // 'Tümünü Gör' endcard'ında gerçek tür sayısını göstermek için toplam.
+    prisma.genre.count({ where: { parentId: null } }),
     // Hand-curated featured articles first (must be PUBLISHED — we don't want
     // drafts leaking to the homepage). If the editor hasn't curated anything,
     // we fall back to the 6 most-recent published articles below.
@@ -152,7 +156,7 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
                 </div>
                 <div className="text-center">
                   <p className="text-sm font-black font-editorial tracking-[-0.01em]">{tr ? 'Tümünü Gör' : 'View All'}</p>
-                  <p className="text-[10px] uppercase tracking-[0.3em] text-zinc-500 font-bold mt-2">{genres.length}+ {tr ? 'Tür' : 'Genres'}</p>
+                  <p className="text-[10px] uppercase tracking-[0.3em] text-zinc-500 font-bold mt-2">{genreTotal} {tr ? 'Tür' : 'Genres'}</p>
                 </div>
               </div>
             </Link>
@@ -196,8 +200,16 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
             </div>
             <div className="grid lg:grid-cols-12 gap-5">
               <div className="lg:col-span-7 gsap-slide-left">
-                <Link href={`/${locale}/article/${articles[0].slug}`} className="group relative block rounded-2xl overflow-hidden aspect-[16/10] img-reveal card-shine">
-                  {articles[0].featuredImage && <img src={articles[0].featuredImage} alt="" className="absolute inset-0 w-full h-full object-cover" />}
+                <Link href={`/${locale}/article/${articles[0].slug}`} className="group relative block rounded-2xl overflow-hidden aspect-[16/10] img-reveal card-shine bg-gradient-to-br from-zinc-800 via-zinc-900 to-black">
+                  {articles[0].featuredImage ? (
+                    <img src={articles[0].featuredImage} alt="" className="absolute inset-0 w-full h-full object-cover" />
+                  ) : (
+                    <>
+                      <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(255,255,255,0.08),transparent_50%)]" />
+                      <div className="absolute inset-0 opacity-20" style={{ backgroundImage: 'repeating-linear-gradient(45deg, transparent, transparent 40px, rgba(255,255,255,0.03) 40px, rgba(255,255,255,0.03) 80px)' }} />
+                      <span className="absolute top-8 right-8 font-editorial font-black text-white/5" style={{ fontSize: 'clamp(6rem, 14vw, 12rem)', lineHeight: 1 }}>{(tr ? articles[0].titleTr : articles[0].titleEn)?.charAt(0) ?? '♪'}</span>
+                    </>
+                  )}
                   <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/20 to-transparent" />
                   <div className="absolute bottom-0 p-7 z-10">
                     <span className="inline-block px-3 py-1 bg-white/10 backdrop-blur-sm rounded-full text-[10px] font-bold text-white/60 uppercase tracking-widest mb-3">{articles[0].category.replace(/_/g, ' ')}</span>
@@ -206,15 +218,29 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
                 </Link>
               </div>
               <div className="lg:col-span-5 gsap-slide-right gsap-stagger flex flex-col gap-4">
-                {articles.slice(1, 4).map((a) => (
-                  <Link key={a.id} href={`/${locale}/article/${a.slug}`} className="group flex gap-4 rounded-xl bg-white/[0.02] border border-white/[0.04] overflow-hidden hover:bg-white/[0.05] transition-colors">
-                    {a.featuredImage && <div className="w-24 h-20 flex-shrink-0 overflow-hidden"><img src={a.featuredImage} alt="" className="w-full h-full object-cover" /></div>}
-                    <div className="py-2.5 pr-3 flex flex-col justify-center min-w-0">
-                      <span className="text-[9px] font-bold text-zinc-600 uppercase tracking-widest">{a.category.replace(/_/g, ' ')}</span>
-                      <h3 className="text-xs font-semibold mt-1 group-hover:underline leading-snug line-clamp-2 text-zinc-200">{tr ? a.titleTr : a.titleEn}</h3>
-                    </div>
-                  </Link>
-                ))}
+                {articles.slice(1, 4).map((a) => {
+                  const title = tr ? a.titleTr : a.titleEn;
+                  return (
+                    <Link key={a.id} href={`/${locale}/article/${a.slug}`} className="group flex gap-4 rounded-xl bg-white/[0.02] border border-white/[0.04] overflow-hidden hover:bg-white/[0.05] transition-colors">
+                      <div className="w-24 h-20 flex-shrink-0 overflow-hidden relative bg-gradient-to-br from-zinc-800 to-zinc-950">
+                        {a.featuredImage ? (
+                          <img src={a.featuredImage} alt="" className="w-full h-full object-cover" />
+                        ) : (
+                          <>
+                            <div className="absolute inset-0 bg-[radial-gradient(circle_at_40%_30%,rgba(255,255,255,0.1),transparent_60%)]" />
+                            <span className="absolute inset-0 flex items-center justify-center font-editorial font-black text-white/20 text-3xl leading-none">
+                              {title?.charAt(0) ?? '♪'}
+                            </span>
+                          </>
+                        )}
+                      </div>
+                      <div className="py-2.5 pr-3 flex flex-col justify-center min-w-0">
+                        <span className="text-[9px] font-bold text-zinc-600 uppercase tracking-widest">{a.category.replace(/_/g, ' ')}</span>
+                        <h3 className="text-xs font-semibold mt-1 group-hover:underline leading-snug line-clamp-2 text-zinc-200">{title}</h3>
+                      </div>
+                    </Link>
+                  );
+                })}
               </div>
             </div>
           </div>
@@ -291,17 +317,37 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
             <h2 className="text-3xl md:text-4xl font-black font-editorial mt-1 tracking-[-0.03em] gsap-title-reveal">{dict.listeningPaths.title}</h2>
           </div>
           <div className="gsap-stagger flex gap-4 overflow-x-auto pb-4" style={{ scrollbarWidth: 'none' }}>
-            {paths.map((p) => (
-              <div key={p.id} className="flex-shrink-0 w-[240px] group relative rounded-2xl overflow-hidden aspect-[9/16] bg-zinc-900 img-zoom hover-lift card-shine cursor-pointer">
-                {p.image && <img src={p.image} alt="" className="absolute inset-0 w-full h-full object-cover opacity-40 group-hover:opacity-60 transition-opacity duration-500" />}
-                <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent" />
-                <div className="absolute bottom-0 left-0 right-0 p-5 z-10">
-                  <span className="inline-block px-2 py-0.5 bg-emerald-500/20 text-emerald-400 text-[8px] font-bold uppercase tracking-widest rounded-full mb-2">{p.type}</span>
-                  <h3 className="text-sm font-bold leading-tight">{tr ? p.titleTr : p.titleEn}</h3>
-                  <p className="text-white/30 text-[10px] mt-1.5 line-clamp-2">{tr ? p.descriptionTr : p.descriptionEn}</p>
+            {paths.map((p, i) => {
+              const title = tr ? p.titleTr : p.titleEn;
+              // Görsel yoksa her kart farklı renkli bir gradient + büyük harf alsın
+              const palettes = [
+                'from-emerald-900/40 via-teal-950 to-black',
+                'from-rose-900/40 via-zinc-950 to-black',
+                'from-indigo-900/40 via-zinc-950 to-black',
+                'from-amber-900/40 via-zinc-950 to-black',
+              ];
+              return (
+                <div key={p.id} className={`flex-shrink-0 w-[240px] group relative rounded-2xl overflow-hidden aspect-[9/16] bg-gradient-to-br ${palettes[i % palettes.length]} img-zoom hover-lift card-shine cursor-pointer`}>
+                  {p.image ? (
+                    <img src={p.image} alt="" className="absolute inset-0 w-full h-full object-cover opacity-40 group-hover:opacity-60 transition-opacity duration-500" />
+                  ) : (
+                    <>
+                      <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(16,185,129,0.15),transparent_60%)]" />
+                      <div className="absolute inset-0 opacity-30" style={{ backgroundImage: 'repeating-linear-gradient(60deg, transparent, transparent 30px, rgba(255,255,255,0.02) 30px, rgba(255,255,255,0.02) 60px)' }} />
+                      <span className="absolute top-6 right-6 font-editorial font-black text-white/5 leading-none" style={{ fontSize: 'clamp(5rem, 10vw, 9rem)' }}>
+                        {title?.charAt(0) ?? '♪'}
+                      </span>
+                    </>
+                  )}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent" />
+                  <div className="absolute bottom-0 left-0 right-0 p-5 z-10">
+                    <span className="inline-block px-2 py-0.5 bg-emerald-500/20 text-emerald-400 text-[8px] font-bold uppercase tracking-widest rounded-full mb-2">{p.type}</span>
+                    <h3 className="text-sm font-bold leading-tight">{title}</h3>
+                    <p className="text-white/30 text-[10px] mt-1.5 line-clamp-2">{tr ? p.descriptionTr : p.descriptionEn}</p>
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       </section>
