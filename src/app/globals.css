@@ -1,8 +1,8 @@
-/* Site fontları artık [locale]/layout.tsx içinde admin'den seçilen aileyle
-   <link rel="stylesheet"> olarak yükleniyor (300-900 dahil tüm ağırlıklar
-   ile). Burada ayrı bir @import tutmak: a) gereksiz network isteği,
-   b) Space Grotesk'i 700'e kadar çekiyordu → font-black (900) sentetik
-   bold üretiyor, başlıklar inceltik / stilsiz görünüyordu. */
+/* Site fontları `src/app/fonts.ts` içinde build-time'da `next/font/google`
+   ile self-host ediliyor. Google Fonts CDN'ine runtime isteği yok; her
+   aile için metric-matched fallback otomatik üretiliyor → refresh'te
+   FOUT "büyüyüp küçülme" sıfırlandı. Seçilen aile `[locale]/layout.tsx`
+   içinde `--font-body` / `--font-display` CSS değişkenlerine bağlanıyor. */
 @import "tailwindcss";
 
 :root {
@@ -16,10 +16,12 @@
   --text-hero: clamp(3rem, 8vw, 7rem);
   --text-heading: clamp(1.5rem, 3vw, 2.5rem);
   --text-subheading: clamp(1.1rem, 2vw, 1.5rem);
-  /* Site fonts — overridden per-request by the locale layout based on
-     the super-admin's selection in admin settings. */
-  --font-body: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-  --font-display: 'Space Grotesk', 'Inter', sans-serif;
+  /* Emergency fallbacks — the locale layout overrides these with the
+     next/font-managed CSS variables for the super-admin's pick. These
+     system-font values only apply if that cascade fails for some reason
+     (e.g. an unknown family stored in the DB). */
+  --font-body: -apple-system, BlinkMacSystemFont, 'Inter', sans-serif;
+  --font-display: Georgia, 'Outfit', serif;
 }
 
 body {
@@ -38,30 +40,13 @@ html { scroll-behavior: smooth; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: #27272a; border-radius: 2px; }
 
-/* ── EDITORIAL FONT + METRIC-MATCHED FALLBACK ──
-   Google Fonts `font-display: swap` gösterirken, Outfit 900 henüz gelmeden
-   tarayıcı sistem fontunu (Inter / Arial / sans-serif) kullanıyor. Sistem
-   fontunun harf genişliği ve x-height'i Outfit'ten dar → 160px'lik hero
-   başlığı "daha küçük" görünüyor (FOUT "shrink" efekti). Aşağıdaki
-   `size-adjust` override'lı @font-face fallback, sistem fontunu Outfit'in
-   metriklerine yakınlaştırıyor. Outfit yüklenince swap olurken görsel
-   boyut atlamıyor. */
-@font-face {
-  font-family: 'Editorial Fallback';
-  src: local('Arial Black'), local('Helvetica Bold'), local('Arial'), local('Helvetica');
-  font-weight: 400 900;
-  font-style: normal;
-  size-adjust: 108%;
-  ascent-override: 95%;
-  descent-override: 22%;
-  line-gap-override: 0%;
-}
-
+/* ── EDITORIAL DISPLAY FONT ──
+   `--font-display` artık `next/font` üretimi, metric-matched otomatik
+   fallback'e sahip — yani font gelmeden önce render edilen sistem fontu
+   zaten hedef aileyle aynı metriklerde çiziliyor, swap sırasında görsel
+   boyut atlaması olmuyor. Manuel 'Editorial Fallback' @font-face kaldırıldı. */
 .font-editorial {
-  /* `var(--font-display)` zaten kendi fallback zincirini içeriyor, ama
-     'Editorial Fallback'ı öne koyarak FOUT anında bile Outfit boyutunda
-     yer kaplamasını garanti ediyoruz. */
-  font-family: var(--font-display), 'Editorial Fallback', Georgia, serif;
+  font-family: var(--font-display);
   letter-spacing: -0.03em;
 }
 
@@ -248,52 +233,8 @@ html { scroll-behavior: smooth; }
 .article-body strong { color: #fff; font-weight: 700; }
 .article-body em { color: #e4e4e7; }
 
-/* ── VIEW TRANSITION (Chrome 111+) ── */
-@view-transition { navigation: auto; }
-::view-transition-old(root) { animation: fadeOut 0.2s ease; }
-::view-transition-new(root) { animation: fadeIn 0.3s ease; }
-@keyframes fadeOut { to { opacity: 0; } }
-
-/* ── ROUTE LOADER ── */
-.btm-loader {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 1.75rem;
-}
-.btm-loader__wordmark {
-  font-family: var(--font-display, 'Space Grotesk', sans-serif);
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0.55em;
-  text-transform: uppercase;
-  color: #d4d4d8;
-  opacity: 0;
-  animation: btm-loader-fade-in 0.6s ease-out 0.05s forwards;
-}
-.btm-loader__bar {
-  position: relative;
-  width: 200px;
-  height: 1px;
-  background: rgba(255, 255, 255, 0.06);
-  overflow: hidden;
-  border-radius: 1px;
-}
-.btm-loader__bar::after {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: 0;
-  bottom: 0;
-  width: 40%;
-  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.85), transparent);
-  animation: btm-loader-slide 1.4s cubic-bezier(0.65, 0, 0.35, 1) infinite;
-}
-@keyframes btm-loader-fade-in {
-  from { opacity: 0; transform: translateY(4px); }
-  to   { opacity: 1; transform: none; }
-}
-@keyframes btm-loader-slide {
-  0%   { transform: translateX(-100%); }
-  100% { transform: translateX(500%); }
-}
+/* Not: Eski `@view-transition` + `::view-transition-*` fade'leri kaldırıldı —
+   TopLoader (sahte progress) ile üst üste binip ~400-700ms'lik algısal
+   gecikme yaratıyordu. Prefetch + generateStaticParams ile static rotalar
+   zaten anında açılıyor; ekstra fade'e gerek yok. Özel bir efekt istenirse
+   rota bazlı `<Suspense>` fallback'leriyle yapılmalı. */

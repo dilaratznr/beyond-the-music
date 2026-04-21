@@ -2,6 +2,17 @@ export const revalidate = 30;
 
 import type { Metadata } from 'next';
 import prisma from '@/lib/prisma';
+
+/**
+ * Prerender every album at build time so <Link> prefetch carries the full
+ * RSC payload. New albums fall back to on-demand ISR.
+ */
+export async function generateStaticParams(): Promise<Array<{ slug: string }>> {
+  const albums: Array<{ slug: string }> = await prisma.album.findMany({
+    select: { slug: true },
+  });
+  return albums.map(({ slug }) => ({ slug }));
+}
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { getDictionary } from '@/i18n';

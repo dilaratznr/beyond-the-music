@@ -2,6 +2,18 @@ export const revalidate = 30;
 
 import type { Metadata } from 'next';
 import prisma from '@/lib/prisma';
+
+/**
+ * Prerender every known artist at build time so <Link> prefetch can pull
+ * the full RSC payload for instant clicks. New artists added later fall
+ * back to on-demand ISR.
+ */
+export async function generateStaticParams(): Promise<Array<{ slug: string }>> {
+  const artists: Array<{ slug: string }> = await prisma.artist.findMany({
+    select: { slug: true },
+  });
+  return artists.map(({ slug }) => ({ slug }));
+}
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { getDictionary } from '@/i18n';

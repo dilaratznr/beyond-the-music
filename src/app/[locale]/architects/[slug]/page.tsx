@@ -2,6 +2,17 @@ export const revalidate = 30;
 
 import type { Metadata } from 'next';
 import prisma from '@/lib/prisma';
+
+/**
+ * Prerender every architect at build time. New entries fall back to
+ * on-demand ISR.
+ */
+export async function generateStaticParams(): Promise<Array<{ slug: string }>> {
+  const architects: Array<{ slug: string }> = await prisma.architect.findMany({
+    select: { slug: true },
+  });
+  return architects.map(({ slug }) => ({ slug }));
+}
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { getDictionary } from '@/i18n';

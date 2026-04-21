@@ -2,11 +2,10 @@ import { getDictionary } from '@/i18n';
 import Navbar from '@/components/public/Navbar';
 import Footer from '@/components/public/Footer';
 import AiChat from '@/components/public/AiChat';
-import TopLoader from '@/components/public/TopLoader';
 import SmoothScroll from '@/components/public/SmoothScroll';
 import { PUBLIC_SECTIONS, getSectionEnabledMap } from '@/lib/site-sections';
 import { getCustomNavItems, resolveCustomHref, isExternalHref } from '@/lib/site-custom-nav';
-import { getSiteFonts, buildGoogleFontsHref, toCssFontFamily } from '@/lib/site-fonts';
+import { getSiteFonts, resolveFontStyle } from '@/lib/site-fonts';
 
 export async function generateStaticParams() {
   return [{ locale: 'tr' }, { locale: 'en' }];
@@ -50,46 +49,29 @@ export default async function LocaleLayout({ children, params }: { children: Rea
 
   const navSections = [...builtInSections, ...customSections];
 
-  // Load the chosen Google Fonts and override the --font-body / --font-display
-  // CSS vars via an inline style on the wrapping div. Using a style attribute
-  // (instead of a <style> tag) keeps us CSP-friendly — nonce-based CSP blocks
-  // nonce-less <style> elements, but inline style attributes are covered by
-  // 'unsafe-inline' alongside the nonce.
-  const fontsHref = buildGoogleFontsHref([fonts.body, fonts.display]);
-  const fontVars = {
-    '--font-body': toCssFontFamily(fonts.body),
-    // Display zinciri Editorial Fallback'i içeriyor — Outfit yüklenmeden önce
-    // sistem fontunun (Inter/sans-serif) aynı metriklerde çizilmesi için.
-    '--font-display': toCssFontFamily(fonts.display, true),
-    // Apply directly so descendants inherit (body is an ancestor of this div
-    // and won't see the cascaded vars on its own).
-    fontFamily: 'var(--font-body)',
-  } as React.CSSProperties;
+  // Self-hosted fonts via `next/font` — see src/app/fonts.ts. `className`
+  // applies the `.variable` classes that *set* `--font-<family>` on the
+  // wrapping div; `style` aliases `--font-body` / `--font-display` to them
+  // so component CSS (`var(--font-body)`) keeps working regardless of the
+  // super-admin's picks. No network request to fonts.googleapis.com, and
+  // next/font auto-injects a metric-matched fallback so first paint is the
+  // same visual size as the final swap.
+  const { className: fontClassName, style: fontStyle } = resolveFontStyle(
+    fonts.body,
+    fonts.display,
+  );
 
   return (
-    <div className="min-h-screen flex flex-col" style={fontVars}>
-      {/* Preconnect to Google Fonts CDNs so the TLS handshake is already
-          done by the time the stylesheet <link> fires its request. Saves
-          ~150-300ms on cold loads — otherwise Outfit 900 doesn't arrive
-          before the hero paints, and the fallback font (narrower letters)
-          makes "BEYOND THE MUSIC" look visibly smaller on refresh. */}
-      <link rel="preconnect" href="https://fonts.googleapis.com" precedence="default" />
-      <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" precedence="default" />
-      {fontsHref && (
-        <link
-          rel="stylesheet"
-          href={fontsHref}
-          // Next.js 16 hoists <link> with precedence to <head>.
-          precedence="default"
-        />
-      )}
+    <div
+      className={`min-h-screen flex flex-col ${fontClassName}`}
+      style={fontStyle}
+    >
       <a
         href="#main-content"
         className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-[100] focus:px-4 focus:py-2 focus:bg-emerald-500 focus:text-black focus:font-semibold focus:rounded-full"
       >
         {dict.common.skipToContent}
       </a>
-      <TopLoader />
       <SmoothScroll>
         <Navbar locale={locale} sections={navSections} />
         <main id="main-content" tabIndex={-1} className="flex-1">{children}</main>

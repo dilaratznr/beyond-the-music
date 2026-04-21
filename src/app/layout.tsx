@@ -1,16 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://beyondthemusic.app";
 
@@ -95,15 +84,11 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html
-      lang="tr"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
-    >
+    <html lang="tr" className="h-full antialiased">
       <head>
-        {/* Harici kaynaklara önceden TCP + TLS el sıkışması aç; ilk
-            paint'ten önce bağlantılar hazır olsun diye. */}
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        {/* Uzak görsel host'una erken DNS çözümü — unsplash her sayfada
+            hero kartlarında kullanılıyor. Fontlar artık self-hosted
+            (src/app/fonts.ts), Google Fonts preconnect'i gerekmiyor. */}
         <link rel="dns-prefetch" href="https://images.unsplash.com" />
       </head>
       <body className="min-h-full flex flex-col" suppressHydrationWarning>

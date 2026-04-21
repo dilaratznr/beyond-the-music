@@ -21,7 +21,6 @@ function buildCsp(nonce: string): string {
   const styleSrc = [
     "'self'",
     `'nonce-${nonce}'`,
-    'https://fonts.googleapis.com',
     // Fallback for older browsers that don't understand nonces, plus
     // runtime CSS injected by some client libraries. Modern browsers ignore
     // 'unsafe-inline' when a nonce is present, so this does not relax the
@@ -34,7 +33,7 @@ function buildCsp(nonce: string): string {
     `script-src ${scriptSrc}`,
     `style-src ${styleSrc}`,
     "img-src 'self' data: blob: https:",
-    "font-src 'self' data: https://fonts.gstatic.com",
+    "font-src 'self' data:",
     "connect-src 'self' https://generativelanguage.googleapis.com",
     "frame-src 'self' https://www.youtube.com https://youtube.com https://open.spotify.com",
     "media-src 'self' https: blob: data:",

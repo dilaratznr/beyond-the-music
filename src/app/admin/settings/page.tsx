@@ -18,10 +18,10 @@ import {
   FONT_OPTIONS,
   DEFAULT_BODY_FONT,
   DEFAULT_DISPLAY_FONT,
-  buildGoogleFontsHref,
-  toCssFontFamily,
+  getFontFamilyCss,
   type FontCategory,
 } from '@/lib/site-fonts';
+import type { FontFamily } from '@/app/fonts';
 
 type Settings = Record<string, string>;
 type Lang = 'tr' | 'en';
@@ -511,10 +511,12 @@ function LocalizedField({
 /**
  * Typography picker: two selects (body + display) with a live preview.
  *
- * The preview injects a single <link> to Google Fonts for whichever families
- * are currently selected so the admin sees the actual rendering before saving.
- * We keep it scoped to the preview card via inline styles — we don't want the
- * admin chrome to change font as the user scrolls the options.
+ * Every font offered here is already self-hosted at build time via
+ * `next/font/google` (see `src/app/fonts.ts`). `getFontFamilyCss(family)`
+ * returns the exact `font-family` value — including next/font's
+ * metric-matched fallback — so the preview renders with the same fonts the
+ * public site will, with zero network round-trips. We apply it inline so
+ * only the preview card picks up the change, not the admin chrome.
  */
 function TypographyPicker({
   settings,
@@ -523,10 +525,13 @@ function TypographyPicker({
   settings: Settings;
   update: (key: string, value: string) => void;
 }) {
-  const bodyValue = settings.site_font_body || DEFAULT_BODY_FONT;
-  const displayValue = settings.site_font_display || DEFAULT_DISPLAY_FONT;
-
-  const previewFontsHref = buildGoogleFontsHref([bodyValue, displayValue]);
+  // Narrow DB-stored strings to known families; anything unrecognised
+  // (e.g. someone editing the DB by hand) falls back to the default so the
+  // preview can still render without crashing.
+  const narrow = (value: string | undefined, fallback: FontFamily): FontFamily =>
+    (FONT_OPTIONS.find((f) => f.family === value)?.family ?? fallback) as FontFamily;
+  const bodyValue = narrow(settings.site_font_body, DEFAULT_BODY_FONT);
+  const displayValue = narrow(settings.site_font_display, DEFAULT_DISPLAY_FONT);
 
   const grouped: Record<FontCategory, typeof FONT_OPTIONS> = {
     sans: [],
@@ -545,12 +550,6 @@ function TypographyPicker({
 
   return (
     <div className="space-y-5">
-      {previewFontsHref && (
-        // Next.js 16 hoists <link> with precedence to <head>. Loaded once,
-        // covers both select boxes and the preview card below.
-        <link rel="stylesheet" href={previewFontsHref} precedence="admin-font-preview" />
-      )}
-
       <div className="grid sm:grid-cols-2 gap-4">
         <div>
           <FieldLabel htmlFor="font-body">Gövde Fontu</FieldLabel>
@@ -559,7 +558,7 @@ function TypographyPicker({
             value={bodyValue}
             onChange={(e) => update('site_font_body', e.target.value)}
             className="w-full px-3 py-2 text-sm text-zinc-100 bg-zinc-950 border border-zinc-800 rounded-md outline-none transition-colors hover:border-zinc-700 focus:border-zinc-500 focus:ring-2 focus:ring-zinc-500/20"
-            style={{ fontFamily: toCssFontFamily(bodyValue) }}
+            style={{ fontFamily: getFontFamilyCss(bodyValue) }}
           >
             {(Object.keys(grouped) as FontCategory[]).map((cat) => (
               <optgroup key={cat} label={CATEGORY_LABEL[cat]}>
@@ -581,7 +580,7 @@ function TypographyPicker({
             value={displayValue}
             onChange={(e) => update('site_font_display', e.target.value)}
             className="w-full px-3 py-2 text-sm text-zinc-100 bg-zinc-950 border border-zinc-800 rounded-md outline-none transition-colors hover:border-zinc-700 focus:border-zinc-500 focus:ring-2 focus:ring-zinc-500/20"
-            style={{ fontFamily: toCssFontFamily(displayValue) }}
+            style={{ fontFamily: getFontFamilyCss(displayValue) }}
           >
             {(Object.keys(grouped) as FontCategory[]).map((cat) => (
               <optgroup key={cat} label={CATEGORY_LABEL[cat]}>
@@ -610,19 +609,19 @@ function TypographyPicker({
         <div className="bg-[#0a0a0b] text-white p-7 space-y-4">
           <p
             className="text-[11px] uppercase tracking-[0.2em] text-zinc-500"
-            style={{ fontFamily: toCssFontFamily(bodyValue) }}
+            style={{ fontFamily: getFontFamilyCss(bodyValue) }}
           >
             Küratöryel Müzik Platformu
           </p>
           <h3
             className="text-3xl md:text-4xl font-bold leading-none"
-            style={{ fontFamily: toCssFontFamily(displayValue), letterSpacing: '-0.03em' }}
+            style={{ fontFamily: getFontFamilyCss(displayValue), letterSpacing: '-0.03em' }}
           >
             BEYOND THE MUSIC
           </h3>
           <p
             className="text-sm text-zinc-400 max-w-md leading-relaxed"
-            style={{ fontFamily: toCssFontFamily(bodyValue) }}
+            style={{ fontFamily: getFontFamilyCss(bodyValue) }}
           >
             Müziğin ötesindeki kültürü keşfet. Türler, sanatçılar, hikayeler ve müziğin arkasındaki
             mimarlar — tek bir küratöryel akışta.
@@ -630,13 +629,13 @@ function TypographyPicker({
           <div className="flex gap-2 pt-2">
             <span
               className="px-4 py-1.5 bg-white text-black rounded-full text-xs font-semibold"
-              style={{ fontFamily: toCssFontFamily(bodyValue) }}
+              style={{ fontFamily: getFontFamilyCss(bodyValue) }}
             >
               Keşfet
             </span>
             <span
               className="px-4 py-1.5 border border-white/20 text-white rounded-full text-xs font-semibold"
-              style={{ fontFamily: toCssFontFamily(bodyValue) }}
+              style={{ fontFamily: getFontFamilyCss(bodyValue) }}
             >
               Dinleme Rotaları
             </span>

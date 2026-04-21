@@ -2,6 +2,17 @@ export const revalidate = 30;
 
 import type { Metadata } from 'next';
 import prisma from '@/lib/prisma';
+
+/**
+ * Prerender every genre at build time. <Link> prefetch pulls the full RSC
+ * payload so clicks are instant; new genres fall back to on-demand ISR.
+ */
+export async function generateStaticParams(): Promise<Array<{ slug: string }>> {
+  const genres: Array<{ slug: string }> = await prisma.genre.findMany({
+    select: { slug: true },
+  });
+  return genres.map(({ slug }) => ({ slug }));
+}
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { getDictionary } from '@/i18n';

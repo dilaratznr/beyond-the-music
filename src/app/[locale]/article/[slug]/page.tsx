@@ -2,6 +2,19 @@ export const revalidate = 30;
 
 import type { Metadata } from 'next';
 import prisma from '@/lib/prisma';
+
+/**
+ * Prerender every published article at build time. `<Link>` can prefetch
+ * the full RSC payload for these routes, so clicks are instant (no server
+ * roundtrip). New articles published later fall back to on-demand ISR.
+ */
+export async function generateStaticParams(): Promise<Array<{ slug: string }>> {
+  const articles: Array<{ slug: string }> = await prisma.article.findMany({
+    where: { status: 'PUBLISHED' },
+    select: { slug: true },
+  });
+  return articles.map(({ slug }) => ({ slug }));
+}
 import { publishDueArticles } from '@/lib/article-publishing';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
