@@ -179,6 +179,75 @@ html { scroll-behavior: smooth; }
 .prose h2 { font-family: var(--font-display); letter-spacing: -0.02em; }
 .prose p { line-height: 1.85; }
 
+/* ── ARTICLE BODY ──
+   Makale HTML'i tiptap'tan geliyor (h1/h2/h3/p/ul/ol/a/img/blockquote).
+   Tailwind v4 + @tailwindcss/typography plugin'i yok → prose-* modifier
+   class'ları no-op. Bu yüzden makale gövdesi için CSS kurallarını elle
+   yazıyoruz. Dark bg üzerine okuma konforu ön planda. */
+.article-body {
+  color: #d4d4d8; /* zinc-300 — tam beyaz değil, göz yormayan ton */
+  font-size: 1.075rem;
+  line-height: 1.85;
+}
+.article-body > * + * { margin-top: 1.4em; }
+.article-body h1,
+.article-body h2,
+.article-body h3,
+.article-body h4 {
+  font-family: var(--font-display);
+  letter-spacing: -0.02em;
+  color: #fff;
+  font-weight: 800;
+  line-height: 1.2;
+  margin-top: 2.5em;
+  margin-bottom: 0.75em;
+}
+.article-body h1 { font-size: clamp(1.75rem, 3.5vw, 2.5rem); }
+.article-body h2 { font-size: clamp(1.5rem, 3vw, 2rem); }
+.article-body h3 { font-size: clamp(1.25rem, 2.5vw, 1.5rem); }
+.article-body h4 { font-size: 1.125rem; }
+.article-body p { margin: 0; }
+.article-body a {
+  color: #fff;
+  text-decoration: underline;
+  text-decoration-color: rgba(255,255,255,0.3);
+  text-underline-offset: 3px;
+  transition: text-decoration-color 0.2s ease;
+}
+.article-body a:hover { text-decoration-color: #fff; }
+.article-body img,
+.article-body video {
+  width: 100%;
+  border-radius: 1rem;
+  margin: 2em 0;
+}
+.article-body blockquote {
+  border-left: 2px solid #52525b;
+  padding-left: 1.25rem;
+  margin: 2em 0;
+  font-style: italic;
+  color: #a1a1aa;
+}
+.article-body ul,
+.article-body ol { padding-left: 1.5rem; }
+.article-body ul { list-style: disc; }
+.article-body ol { list-style: decimal; }
+.article-body li { margin: 0.5em 0; }
+.article-body li::marker { color: #71717a; }
+.article-body code {
+  background: rgba(255,255,255,0.06);
+  padding: 0.15em 0.4em;
+  border-radius: 0.25rem;
+  font-size: 0.9em;
+}
+.article-body hr {
+  border: 0;
+  border-top: 1px solid rgba(255,255,255,0.1);
+  margin: 3em 0;
+}
+.article-body strong { color: #fff; font-weight: 700; }
+.article-body em { color: #e4e4e7; }
+
 /* ── VIEW TRANSITION (Chrome 111+) ── */
 @view-transition { navigation: auto; }
 ::view-transition-old(root) { animation: fadeOut 0.2s ease; }

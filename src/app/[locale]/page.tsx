@@ -84,7 +84,7 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
           <p className="text-zinc-400 text-[11px] md:text-[13px] tracking-[0.35em] uppercase mb-6 flex items-center gap-3 font-semibold">
             <span className="w-10 h-px bg-zinc-500" />{loc('hero_subtitle')}
           </p>
-          <h1 className="font-editorial font-black leading-[0.9] tracking-[-0.04em] max-w-4xl" style={{ fontSize: 'clamp(2.75rem, 8vw, 6rem)' }}>
+          <h1 className="font-editorial font-black leading-[0.9] tracking-[-0.04em] max-w-4xl" style={{ fontSize: 'clamp(3.25rem, 11vw, 9rem)' }}>
             {loc('hero_title')}
           </h1>
           <p className="mt-8 text-zinc-300 text-lg md:text-xl font-light leading-relaxed max-w-2xl whitespace-pre-line">{loc('hero_desc')}</p>

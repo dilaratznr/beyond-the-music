@@ -87,12 +87,20 @@ export function buildGoogleFontsHref(families: string[]): string | null {
 /**
  * Produce a CSS `font-family` value (primary + fallback) for a chosen family.
  * Wraps families containing spaces in quotes.
+ *
+ * When `includeEditorialFallback` is true, the metric-matched 'Editorial
+ * Fallback' @font-face (defined in globals.css) is inserted right after
+ * the primary family. Without this, the generic `sans-serif` in the tail
+ * resolves first during FOUT and the hero visibly shrinks on refresh —
+ * the Editorial Fallback never gets a chance to render.
  */
-export function toCssFontFamily(family: string): string {
+export function toCssFontFamily(family: string, includeEditorialFallback = false): string {
   const opt = getFontOption(family);
   const fallback = opt?.fallback ?? 'Inter, sans-serif';
   const quoted = family.includes(' ') ? `'${family}'` : family;
-  return `${quoted}, ${fallback}`;
+  return includeEditorialFallback
+    ? `${quoted}, 'Editorial Fallback', ${fallback}`
+    : `${quoted}, ${fallback}`;
 }
 
 /**

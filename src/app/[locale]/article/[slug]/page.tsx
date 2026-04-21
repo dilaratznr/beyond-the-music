@@ -90,51 +90,109 @@ export default async function ArticleDetailPage({ params }: { params: Params }) 
     articleSection: article.category.replace(/_/g, ' '),
   };
 
+  const formattedDate = article.publishedAt
+    ? new Date(article.publishedAt).toLocaleDateString(
+        locale === 'tr' ? 'tr-TR' : 'en-US',
+        { year: 'numeric', month: 'long', day: 'numeric' },
+      )
+    : null;
+
   return (
-    <div className="bg-[#0a0a0b] text-white min-h-screen pt-20">
-    <JsonLd data={jsonLd} />
-    <div className="max-w-4xl mx-auto px-6 py-8">
-      {/* Breadcrumb */}
-      <div className="text-sm text-zinc-500 mb-6">
-        {article.relatedGenre && (
-          <>
-            <Link href={`/${locale}/genre/${article.relatedGenre.slug}`} className="hover:text-white">
-              {locale === 'tr' ? article.relatedGenre.nameTr : article.relatedGenre.nameEn}
-            </Link>
-            <span className="mx-1">/</span>
-          </>
-        )}
-        {article.relatedArtist && (
-          <>
-            <Link href={`/${locale}/artist/${article.relatedArtist.slug}`} className="hover:text-white">
-              {article.relatedArtist.name}
-            </Link>
-            <span className="mx-1">/</span>
-          </>
-        )}
-        <span className="text-zinc-400">{article.category.replace(/_/g, ' ')}</span>
-      </div>
+    <div className="bg-[#0a0a0b] text-white min-h-screen">
+      <JsonLd data={jsonLd} />
 
-      <h1 className="text-2xl md:text-3xl font-bold mb-4">{title}</h1>
+      {/* ▸▸▸ FULL-BLEED EDITORIAL HERO ▸▸▸
+          Home sayfasındaki hero dilinin aynısı: arka plan görseli, çift
+          gradient (üst okunabilirlik + alt fade-to-bg), alttan hizalı
+          eyebrow + büyük font-editorial başlık + meta line. */}
+      <section className="relative w-full min-h-[72vh] md:min-h-[80vh] flex items-end overflow-hidden">
+        <div className="absolute inset-0">
+          {article.featuredImage ? (
+            <img
+              src={article.featuredImage}
+              alt=""
+              className="absolute inset-0 w-full h-full object-cover"
+            />
+          ) : (
+            <>
+              <div className="absolute inset-0 bg-gradient-to-br from-zinc-800 via-zinc-900 to-[#0a0a0b]" />
+              <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(255,255,255,0.08),transparent_55%)]" />
+              <span
+                className="absolute top-10 right-10 font-editorial font-black text-white/5 leading-none select-none"
+                style={{ fontSize: 'clamp(8rem, 18vw, 18rem)' }}
+                aria-hidden="true"
+              >
+                {title?.charAt(0) ?? '♪'}
+              </span>
+            </>
+          )}
+          {/* Üstten okunabilirlik için hafif koyu, alttan sayfa arkaplanına
+              yumuşak geçiş. */}
+          <div className="absolute inset-0 bg-gradient-to-t from-[#0a0a0b] via-black/55 to-black/30" />
+        </div>
 
-      <div className="flex items-center gap-4 text-sm text-zinc-500 mb-8">
-        <span>{article.author.name}</span>
-        {article.publishedAt && (
-          <span>{new Date(article.publishedAt).toLocaleDateString(locale === 'tr' ? 'tr-TR' : 'en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</span>
-        )}
-      </div>
+        <div className="relative z-10 w-full max-w-7xl mx-auto px-6 pb-14 md:pb-20 pt-32">
+          {/* Eyebrow / breadcrumb — home sayfasındaki section eyebrow'ları
+              ile aynı tracking ve renk. */}
+          <div className="text-[11px] md:text-[12px] tracking-[0.3em] uppercase font-bold text-zinc-300 mb-7 flex items-center gap-3 flex-wrap">
+            <span className="w-10 h-px bg-zinc-500" />
+            {article.relatedGenre && (
+              <>
+                <Link
+                  href={`/${locale}/genre/${article.relatedGenre.slug}`}
+                  className="text-zinc-400 hover:text-white underline-grow pb-1"
+                >
+                  {locale === 'tr' ? article.relatedGenre.nameTr : article.relatedGenre.nameEn}
+                </Link>
+                <span className="text-zinc-600">/</span>
+              </>
+            )}
+            {article.relatedArtist && (
+              <>
+                <Link
+                  href={`/${locale}/artist/${article.relatedArtist.slug}`}
+                  className="text-zinc-400 hover:text-white underline-grow pb-1"
+                >
+                  {article.relatedArtist.name}
+                </Link>
+                <span className="text-zinc-600">/</span>
+              </>
+            )}
+            <span className="text-white">{article.category.replace(/_/g, ' ')}</span>
+          </div>
 
-      {article.featuredImage && (
-        <img src={article.featuredImage} alt={title} className="w-full rounded-xl mb-8" />
-      )}
+          <h1
+            className="font-editorial font-black leading-[0.95] tracking-[-0.03em] max-w-5xl"
+            style={{ fontSize: 'clamp(2.25rem, 6vw, 5rem)' }}
+          >
+            {title}
+          </h1>
 
+          <div className="mt-8 flex items-center gap-5 text-[13px] text-zinc-400 font-medium">
+            <span className="text-white">{article.author.name}</span>
+            {formattedDate && (
+              <>
+                <span className="w-8 h-px bg-zinc-600" aria-hidden="true" />
+                <span>{formattedDate}</span>
+              </>
+            )}
+          </div>
+        </div>
+      </section>
+
+      {/* ▸▸▸ BODY ▸▸▸
+          Dar okuma kolonu (max-w-3xl ~ 48rem). .prose + .article-body
+          stil kuralları globals.css'te — tailwind v4'te @tailwindcss/
+          typography plugin'i kurulu değil, prose-* modifier'ları no-op
+          olurdu. */}
       {content && (
-        <article
-          className="prose prose-zinc prose-lg max-w-none"
-          dangerouslySetInnerHTML={{ __html: content }}
-        />
+        <div className="max-w-3xl mx-auto px-6 py-16 md:py-24">
+          <article
+            className="prose article-body max-w-none"
+            dangerouslySetInnerHTML={{ __html: content }}
+          />
+        </div>
       )}
-    </div>
     </div>
   );
 }

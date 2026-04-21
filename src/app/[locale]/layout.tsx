@@ -58,7 +58,9 @@ export default async function LocaleLayout({ children, params }: { children: Rea
   const fontsHref = buildGoogleFontsHref([fonts.body, fonts.display]);
   const fontVars = {
     '--font-body': toCssFontFamily(fonts.body),
-    '--font-display': toCssFontFamily(fonts.display),
+    // Display zinciri Editorial Fallback'i içeriyor — Outfit yüklenmeden önce
+    // sistem fontunun (Inter/sans-serif) aynı metriklerde çizilmesi için.
+    '--font-display': toCssFontFamily(fonts.display, true),
     // Apply directly so descendants inherit (body is an ancestor of this div
     // and won't see the cascaded vars on its own).
     fontFamily: 'var(--font-body)',
