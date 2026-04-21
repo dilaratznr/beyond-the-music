@@ -12,11 +12,13 @@
  * little; perceived performance on refresh jumps.
  *
  * ─── IMPORTANT ──────────────────────────────────────────────────────────
- * Next.js' `next/font` SWC plugin requires every loader call to be
- * assigned DIRECTLY to a top-level `const`. It can't live inside an
- * object literal or be returned from a helper. That's why each family
- * gets its own `const fontFoo = FooFamily({...})` binding below — only
- * after that do we collect them into `FONT_LOADERS`.
+ * Next.js' `next/font` SWC plugin statically analyses each loader call.
+ * Its options object must be a PLAIN OBJECT LITERAL with literal string
+ * values — no helpers, no spread, no property access into other consts.
+ * That's why `variable: '--font-...'` is spelled out inline for every
+ * family, and `FONT_CSS_VARS` below mirrors those exact strings for any
+ * caller that needs to read them back (e.g. to alias `--font-body`).
+ * Keep the two tables in sync.
  */
 import {
   Bricolage_Grotesque,
@@ -41,12 +43,132 @@ import {
   Work_Sans,
 } from 'next/font/google';
 
+// ─── Font loader calls ────────────────────────────────────────────────
+// Each call is assigned to its own module-scope const with an inline,
+// fully-literal options object. Don't refactor these to share a helper
+// or pull `variable` from another const — the SWC plugin will reject it.
+
+// ── Sans ───────────────────────────────────────────────────────────────
+const fontInter = Inter({
+  subsets: ['latin'],
+  display: 'swap',
+  variable: '--font-inter',
+});
+const fontSpaceGrotesk = Space_Grotesk({
+  subsets: ['latin'],
+  display: 'swap',
+  variable: '--font-space-grotesk',
+});
+const fontDmSans = DM_Sans({
+  subsets: ['latin'],
+  display: 'swap',
+  variable: '--font-dm-sans',
+});
+const fontManrope = Manrope({
+  subsets: ['latin'],
+  display: 'swap',
+  variable: '--font-manrope',
+});
+const fontWorkSans = Work_Sans({
+  subsets: ['latin'],
+  display: 'swap',
+  variable: '--font-work-sans',
+});
+const fontOutfit = Outfit({
+  subsets: ['latin'],
+  display: 'swap',
+  variable: '--font-outfit',
+});
+const fontPlusJakartaSans = Plus_Jakarta_Sans({
+  subsets: ['latin'],
+  display: 'swap',
+  variable: '--font-plus-jakarta-sans',
+});
+const fontFigtree = Figtree({
+  subsets: ['latin'],
+  display: 'swap',
+  variable: '--font-figtree',
+});
+
+// ── Serif ──────────────────────────────────────────────────────────────
+const fontPlayfairDisplay = Playfair_Display({
+  subsets: ['latin'],
+  display: 'swap',
+  variable: '--font-playfair-display',
+});
+const fontLora = Lora({
+  subsets: ['latin'],
+  display: 'swap',
+  variable: '--font-lora',
+});
+// Cormorant Garamond is not a variable font — bundle the weights the app
+// actually uses (body 400, UI 600, bold 700). Omitting `weight` would fail
+// the build.
+const fontCormorantGaramond = Cormorant_Garamond({
+  subsets: ['latin'],
+  display: 'swap',
+  variable: '--font-cormorant-garamond',
+  weight: ['400', '600', '700'],
+});
+const fontFraunces = Fraunces({
+  subsets: ['latin'],
+  display: 'swap',
+  variable: '--font-fraunces',
+});
+const fontEbGaramond = EB_Garamond({
+  subsets: ['latin'],
+  display: 'swap',
+  variable: '--font-eb-garamond',
+});
+const fontSourceSerif4 = Source_Serif_4({
+  subsets: ['latin'],
+  display: 'swap',
+  variable: '--font-source-serif-4',
+});
+
+// ── Display ────────────────────────────────────────────────────────────
+const fontBricolageGrotesque = Bricolage_Grotesque({
+  subsets: ['latin'],
+  display: 'swap',
+  variable: '--font-bricolage-grotesque',
+});
+const fontUnbounded = Unbounded({
+  subsets: ['latin'],
+  display: 'swap',
+  variable: '--font-unbounded',
+});
+const fontSyne = Syne({
+  subsets: ['latin'],
+  display: 'swap',
+  variable: '--font-syne',
+});
+// Instrument Serif ships a single 400 weight only. Hero text uses
+// `font-black` → the browser synthesises bold; same trade-off as the old
+// runtime Google Fonts path.
+const fontInstrumentSerif = Instrument_Serif({
+  subsets: ['latin'],
+  display: 'swap',
+  variable: '--font-instrument-serif',
+  weight: '400',
+});
+
+// ── Mono ───────────────────────────────────────────────────────────────
+const fontJetBrainsMono = JetBrains_Mono({
+  subsets: ['latin'],
+  display: 'swap',
+  variable: '--font-jetbrains-mono',
+});
+const fontIbmPlexMono = IBM_Plex_Mono({
+  subsets: ['latin'],
+  display: 'swap',
+  variable: '--font-ibm-plex-mono',
+  weight: ['400', '600', '700'],
+});
+
 /**
- * Single source of truth for the CSS custom-property name used by each
- * family. `next/font` itself generates a random className (e.g.
- * `__variable_abc123`) that *sets* this variable on the element it's
- * applied to; callers that need to *read* it (e.g. to alias `--font-body`)
- * should look the name up here rather than string-munging.
+ * CSS variable names — must mirror the `variable:` values passed to each
+ * loader above. Used by `site-fonts.ts#resolveFontStyle` to alias
+ * `--font-body` / `--font-display` onto the selected family's variable.
  */
 export const FONT_CSS_VARS = {
   Inter: '--font-inter',
@@ -70,132 +192,6 @@ export const FONT_CSS_VARS = {
   'JetBrains Mono': '--font-jetbrains-mono',
   'IBM Plex Mono': '--font-ibm-plex-mono',
 } as const satisfies Record<string, `--font-${string}`>;
-
-// Shared options for every *variable* font — Latin subset keeps the woff2
-// small, `display: 'swap'` lets the auto-generated metric fallback render
-// until the primary font arrives (typically within the same TCP roundtrip
-// because the file ships from our own origin).
-//
-// The SWC plugin statically analyses the call site, so the options object
-// must be a plain literal; we can't spread a shared helper into it. The
-// repetition below is intentional.
-
-// ── Sans ───────────────────────────────────────────────────────────────
-const fontInter = Inter({
-  subsets: ['latin'],
-  display: 'swap',
-  variable: FONT_CSS_VARS['Inter'],
-});
-const fontSpaceGrotesk = Space_Grotesk({
-  subsets: ['latin'],
-  display: 'swap',
-  variable: FONT_CSS_VARS['Space Grotesk'],
-});
-const fontDmSans = DM_Sans({
-  subsets: ['latin'],
-  display: 'swap',
-  variable: FONT_CSS_VARS['DM Sans'],
-});
-const fontManrope = Manrope({
-  subsets: ['latin'],
-  display: 'swap',
-  variable: FONT_CSS_VARS['Manrope'],
-});
-const fontWorkSans = Work_Sans({
-  subsets: ['latin'],
-  display: 'swap',
-  variable: FONT_CSS_VARS['Work Sans'],
-});
-const fontOutfit = Outfit({
-  subsets: ['latin'],
-  display: 'swap',
-  variable: FONT_CSS_VARS['Outfit'],
-});
-const fontPlusJakartaSans = Plus_Jakarta_Sans({
-  subsets: ['latin'],
-  display: 'swap',
-  variable: FONT_CSS_VARS['Plus Jakarta Sans'],
-});
-const fontFigtree = Figtree({
-  subsets: ['latin'],
-  display: 'swap',
-  variable: FONT_CSS_VARS['Figtree'],
-});
-
-// ── Serif ──────────────────────────────────────────────────────────────
-const fontPlayfairDisplay = Playfair_Display({
-  subsets: ['latin'],
-  display: 'swap',
-  variable: FONT_CSS_VARS['Playfair Display'],
-});
-const fontLora = Lora({
-  subsets: ['latin'],
-  display: 'swap',
-  variable: FONT_CSS_VARS['Lora'],
-});
-// Cormorant Garamond is not a variable font — bundle the weights the app
-// actually uses (body 400, UI 600, bold 700). Omitting `weight` would fail
-// the build.
-const fontCormorantGaramond = Cormorant_Garamond({
-  subsets: ['latin'],
-  display: 'swap',
-  variable: FONT_CSS_VARS['Cormorant Garamond'],
-  weight: ['400', '600', '700'],
-});
-const fontFraunces = Fraunces({
-  subsets: ['latin'],
-  display: 'swap',
-  variable: FONT_CSS_VARS['Fraunces'],
-});
-const fontEbGaramond = EB_Garamond({
-  subsets: ['latin'],
-  display: 'swap',
-  variable: FONT_CSS_VARS['EB Garamond'],
-});
-const fontSourceSerif4 = Source_Serif_4({
-  subsets: ['latin'],
-  display: 'swap',
-  variable: FONT_CSS_VARS['Source Serif 4'],
-});
-
-// ── Display ────────────────────────────────────────────────────────────
-const fontBricolageGrotesque = Bricolage_Grotesque({
-  subsets: ['latin'],
-  display: 'swap',
-  variable: FONT_CSS_VARS['Bricolage Grotesque'],
-});
-const fontUnbounded = Unbounded({
-  subsets: ['latin'],
-  display: 'swap',
-  variable: FONT_CSS_VARS['Unbounded'],
-});
-const fontSyne = Syne({
-  subsets: ['latin'],
-  display: 'swap',
-  variable: FONT_CSS_VARS['Syne'],
-});
-// Instrument Serif ships a single 400 weight only. Hero text uses
-// `font-black` → the browser synthesises bold; same trade-off as the old
-// runtime Google Fonts path.
-const fontInstrumentSerif = Instrument_Serif({
-  subsets: ['latin'],
-  display: 'swap',
-  variable: FONT_CSS_VARS['Instrument Serif'],
-  weight: '400',
-});
-
-// ── Mono ───────────────────────────────────────────────────────────────
-const fontJetBrainsMono = JetBrains_Mono({
-  subsets: ['latin'],
-  display: 'swap',
-  variable: FONT_CSS_VARS['JetBrains Mono'],
-});
-const fontIbmPlexMono = IBM_Plex_Mono({
-  subsets: ['latin'],
-  display: 'swap',
-  variable: FONT_CSS_VARS['IBM Plex Mono'],
-  weight: ['400', '600', '700'],
-});
 
 export const FONT_LOADERS = {
   Inter: fontInter,
