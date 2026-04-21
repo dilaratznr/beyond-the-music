@@ -84,7 +84,7 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
           <p className="text-zinc-400 text-[11px] md:text-[13px] tracking-[0.35em] uppercase mb-6 flex items-center gap-3 font-semibold">
             <span className="w-10 h-px bg-zinc-500" />{loc('hero_subtitle')}
           </p>
-          <h1 className="font-editorial font-black leading-[0.9] tracking-[-0.04em] max-w-4xl" style={{ fontSize: 'clamp(3.25rem, 11vw, 9rem)' }}>
+          <h1 className="hero-title font-editorial tracking-[-0.04em] max-w-4xl">
             {loc('hero_title')}
           </h1>
           <p className="mt-8 text-zinc-300 text-lg md:text-xl font-light leading-relaxed max-w-2xl whitespace-pre-line">{loc('hero_desc')}</p>
@@ -105,7 +105,7 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
         <div className="max-w-7xl mx-auto px-6 mb-10 flex items-end justify-between gap-6 gsap-fade-up">
           <div>
             <p className="text-zinc-400 text-[11px] tracking-[0.3em] uppercase font-bold mb-3">{tr ? 'Keşfet' : 'Explore'}</p>
-            <h2 className="font-editorial font-black tracking-[-0.03em] leading-[0.95]" style={{ fontSize: 'clamp(2.5rem, 6.5vw, 5.5rem)' }}>{dict.genre.title}</h2>
+            <h2 className="section-title font-editorial tracking-[-0.03em]">{dict.genre.title}</h2>
             <p className="text-zinc-400 text-sm md:text-base mt-5 max-w-xl leading-relaxed">{tr ? 'Aşağı kaydır — türler yanına akacak.' : 'Scroll down — genres will slide sideways.'}</p>
           </div>
           <Link
