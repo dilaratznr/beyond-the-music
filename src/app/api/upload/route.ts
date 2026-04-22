@@ -1,155 +1,177 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { requireSectionAccess } from '@/lib/auth-guard';
-import { writeFile, mkdir } from 'fs/promises';
-import path from 'path';
-import prisma from '@/lib/prisma';
+import { NextRequest, NextResponse } from "next/server";
+import { revalidateTag } from "next/cache";
+import { requireSectionAccess } from "@/lib/auth-guard";
+import prisma from "@/lib/prisma";
+import { CACHE_TAGS } from "@/lib/db-cache";
+import { processImage } from "@/lib/image-processing";
+import { storeVariants } from "@/lib/image-storage";
 
-// Mime → canonical extension. We derive the extension from the validated
-// mime type rather than trusting the original filename, which prevents
-// callers from sneaking in mismatched extensions.
-const MIME_TO_EXT: Record<string, string> = {
-  'image/jpeg': 'jpg',
-  'image/png': 'png',
-  'image/webp': 'webp',
-  'image/gif': 'gif',
-};
-const ALLOWED_TYPES = Object.keys(MIME_TO_EXT);
-const MAX_SIZE = 5 * 1024 * 1024; // 5MB
-const ALLOWED_CATEGORIES = new Set([
-  'artist',
-  'album',
-  'genre',
-  'article',
-  'architect',
-  'listening-path',
-  'hero',
-  'other',
+// ---------------------------------------------------------------------------
+// Input validation
+// ---------------------------------------------------------------------------
+
+/**
+ * Whitelist of MIME types we will accept from the admin UI. We keep GIF on
+ * the list because animated GIFs are passed through as-is by the pipeline
+ * (see `processImage`); everything else gets re-encoded to WebP + AVIF.
+ */
+const ALLOWED_MIME_TYPES = new Set([
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+  "image/gif",
 ]);
 
+const MAX_SIZE = 10 * 1024 * 1024; // 10MB — we downscale aggressively, so allow bigger sources.
+
+/**
+ * Which "bucket" an uploaded image belongs to. Passed through to `MediaItem`
+ * so the admin Media Library can filter by entity. "other" is the catch-all
+ * for ad-hoc uploads that aren't pinned to a specific entity.
+ */
+const ALLOWED_CATEGORIES = new Set([
+  "artist",
+  "album",
+  "genre",
+  "article",
+  "architect",
+  "listening-path",
+  "hero",
+  "other",
+]);
+
+// ---------------------------------------------------------------------------
+// POST /api/upload
+// ---------------------------------------------------------------------------
+
 export async function POST(request: NextRequest) {
-  const { error } = await requireSectionAccess('MEDIA', 'canCreate');
+  // Only authenticated admins with MEDIA access can upload.
+  const { error } = await requireSectionAccess("MEDIA", "canCreate");
   if (error) return error;
 
   let formData: FormData;
   try {
     formData = await request.formData();
   } catch {
-    return NextResponse.json({ error: 'Invalid form data' }, { status: 400 });
+    return NextResponse.json({ error: "Invalid form data" }, { status: 400 });
   }
 
-  const file = formData.get('file');
+  const file = formData.get("file");
   if (!(file instanceof File)) {
-    return NextResponse.json({ error: 'No file provided' }, { status: 400 });
+    return NextResponse.json({ error: "No file provided" }, { status: 400 });
   }
 
-  if (!ALLOWED_TYPES.includes(file.type)) {
+  if (!ALLOWED_MIME_TYPES.has(file.type)) {
     return NextResponse.json(
-      { error: 'Invalid file type. Allowed: JPG, PNG, WebP, GIF' },
+      { error: "Invalid file type. Allowed: JPG, PNG, WebP, GIF" },
       { status: 400 },
     );
   }
   if (file.size === 0) {
-    return NextResponse.json({ error: 'Empty file' }, { status: 400 });
+    return NextResponse.json({ error: "Empty file" }, { status: 400 });
   }
   if (file.size > MAX_SIZE) {
     return NextResponse.json(
-      { error: 'File too large. Maximum 5MB' },
+      { error: "File too large. Maximum 10MB" },
       { status: 400 },
     );
   }
 
-  const rawCategory = (formData.get('category') as string | null)?.trim() || 'other';
-  const category = ALLOWED_CATEGORIES.has(rawCategory) ? rawCategory : 'other';
+  const rawCategory =
+    (formData.get("category") as string | null)?.trim() || "other";
+  const category = ALLOWED_CATEGORIES.has(rawCategory) ? rawCategory : "other";
 
-  // entityId is optional — pass null/empty for unattached library uploads.
-  const entityIdRaw = (formData.get('entityId') as string | null)?.trim() || '';
-  const entityId = entityIdRaw || 'unattached';
+  // entityId is optional — unattached library uploads pass `""`/null.
+  const entityIdRaw =
+    (formData.get("entityId") as string | null)?.trim() || "";
+  const entityId = entityIdRaw || "unattached";
 
-  const ext = MIME_TO_EXT[file.type];
-  const filename = `${Date.now()}-${Math.random().toString(36).substring(2, 10)}.${ext}`;
+  const sourceBuffer = Buffer.from(await file.arrayBuffer());
 
-  const buffer = Buffer.from(await file.arrayBuffer());
+  // ----- Pipeline -----
+  // processImage is the single entry-point that decides how many variants
+  // (sizes × formats) we produce. It also short-circuits animated GIFs so
+  // we don't lose the animation.
+  let processed;
+  try {
+    processed = await processImage(sourceBuffer, { prefix: "uploads" });
+  } catch (err) {
+    console.error("[upload] processImage failed:", err);
+    return NextResponse.json(
+      { error: "Could not decode image. Is the file corrupted?" },
+      { status: 400 },
+    );
+  }
 
-  let url: string;
-  let storage: 's3' | 'local';
+  // Persist every variant together — storage backend picks S3 or local disk
+  // based on env config. Storing fails as a batch so we never end up with
+  // half-a-set of variants on one backend and half on the other.
+  let stored;
+  try {
+    stored = await storeVariants(processed.variants);
+  } catch (err) {
+    console.error("[upload] storeVariants failed:", err);
+    return NextResponse.json(
+      { error: "Failed to save image to storage" },
+      { status: 500 },
+    );
+  }
 
-  if (
-    process.env.AWS_ACCESS_KEY_ID &&
-    process.env.AWS_SECRET_ACCESS_KEY &&
-    process.env.AWS_S3_BUCKET_NAME
-  ) {
-    try {
-      url = await saveToS3(filename, buffer, file.type);
-      storage = 's3';
-    } catch (s3Error) {
-      console.error('[upload] S3 failed, falling back to local:', s3Error);
-      url = await saveLocally(filename, buffer);
-      storage = 'local';
-    }
-  } else {
-    url = await saveLocally(filename, buffer);
-    storage = 'local';
+  // The URL we persist in the DB is the *primary* variant (medium WebP by
+  // default). Pages that haven't migrated to <Image> yet still benefit
+  // because the on-disk file is already compressed.
+  const primary = stored.stored.find(
+    (v) =>
+      v.key === processed.primary.key && v.storage === stored.backend,
+  );
+  if (!primary) {
+    return NextResponse.json(
+      { error: "Internal error: primary variant not found after storage" },
+      { status: 500 },
+    );
   }
 
   const item = await prisma.mediaItem.create({
     data: {
-      url,
-      type: 'IMAGE',
+      url: primary.url,
+      type: "IMAGE",
       entityType: category,
       entityId,
     },
   });
 
-  return NextResponse.json({ id: item.id, url, category, storage });
-}
+  revalidateTag(CACHE_TAGS.mediaItem, 'max');
 
-async function saveToS3(
-  filename: string,
-  buffer: Buffer,
-  contentType: string,
-): Promise<string> {
-  const { S3Client, PutObjectCommand } = await import('@aws-sdk/client-s3');
-  const s3Client = new S3Client({
-    region: process.env.AWS_REGION || 'auto',
-    credentials: {
-      accessKeyId: process.env.AWS_ACCESS_KEY_ID!,
-      secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY!,
-    },
-    endpoint: process.env.AWS_S3_ENDPOINT_URL || undefined,
+  // We return all variant URLs so the admin UI can preview alternatives
+  // (e.g. the thumb is handy for avatar-style pickers) and so a future
+  // <Image srcSet=...> upgrade doesn't need another DB round-trip.
+  return NextResponse.json({
+    id: item.id,
+    url: primary.url,
+    category,
+    storage: stored.backend,
+    width: primary.width,
+    height: primary.height,
+    variants: stored.stored.map((v) => ({
+      url: v.url,
+      width: v.width,
+      height: v.height,
+      sizeLabel: v.sizeLabel,
+      format: v.format,
+    })),
   });
-
-  const key = `uploads/${filename}`;
-  await s3Client.send(
-    new PutObjectCommand({
-      Bucket: process.env.AWS_S3_BUCKET_NAME!,
-      Key: key,
-      Body: buffer,
-      ContentType: contentType,
-      ACL: 'public-read',
-    }),
-  );
-
-  // AWS_S3_PUBLIC_DOMAIN must be set for R2 / custom CDN domains.
-  // For native AWS S3 we fall back to the regional virtual-hosted URL.
-  const publicDomain =
-    process.env.AWS_S3_PUBLIC_DOMAIN ||
-    `https://${process.env.AWS_S3_BUCKET_NAME}.s3.${process.env.AWS_REGION || 'us-east-1'}.amazonaws.com`;
-  return `${publicDomain.replace(/\/+$/, '')}/${key}`;
 }
 
-async function saveLocally(filename: string, buffer: Buffer): Promise<string> {
-  const uploadDir = path.join(process.cwd(), 'public', 'uploads');
-  await mkdir(uploadDir, { recursive: true });
-  await writeFile(path.join(uploadDir, filename), buffer);
-  return `/uploads/${filename}`;
-}
+// ---------------------------------------------------------------------------
+// GET /api/upload — media library listing
+// ---------------------------------------------------------------------------
 
 export async function GET() {
-  const { error } = await requireSectionAccess('MEDIA', 'canCreate');
+  const { error } = await requireSectionAccess("MEDIA", "canCreate");
   if (error) return error;
 
   const items = await prisma.mediaItem.findMany({
-    orderBy: { createdAt: 'desc' },
+    orderBy: { createdAt: "desc" },
     take: 100,
   });
   return NextResponse.json(items);

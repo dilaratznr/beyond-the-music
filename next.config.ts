@@ -1,4 +1,9 @@
 import type { NextConfig } from "next";
+import bundleAnalyzer from "@next/bundle-analyzer";
+
+const withBundleAnalyzer = bundleAnalyzer({
+  enabled: process.env.ANALYZE === "true",
+});
 
 const nextConfig: NextConfig = {
   devIndicators: false,
@@ -32,8 +37,22 @@ const nextConfig: NextConfig = {
           },
         ],
       },
+      {
+        // Content-addressed uploads (hash-in-filename, produced by
+        // src/lib/image-processing.ts). The filename CHANGES when the
+        // image content changes, so the URL itself acts as the cache
+        // buster — we can safely tell the browser + any intermediate
+        // CDN to cache forever.
+        source: '/uploads/:path*',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=31536000, immutable',
+          },
+        ],
+      },
     ];
   },
 };
 
-export default nextConfig;
+export default withBundleAnalyzer(nextConfig);
