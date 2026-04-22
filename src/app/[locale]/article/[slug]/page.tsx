@@ -124,6 +124,8 @@ export default async function ArticleDetailPage({ params }: { params: Params }) 
             <img
               src={article.featuredImage}
               alt=""
+              loading="lazy"
+              decoding="async"
               className="absolute inset-0 w-full h-full object-cover"
             />
           ) : (

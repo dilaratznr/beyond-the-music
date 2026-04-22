@@ -157,7 +157,7 @@ export default async function GenreDetailPage({ params }: { params: Params }) {
         {/* Sidebar */}
         <aside className="space-y-8">
           {genre.image && (
-            <img src={genre.image} alt={name} className="w-full rounded-xl" />
+            <img src={genre.image} alt={name} loading="lazy" decoding="async" className="w-full rounded-xl" />
           )}
 
           {genre.children.length > 0 && (

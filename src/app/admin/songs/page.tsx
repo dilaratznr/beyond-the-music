@@ -270,6 +270,8 @@ export default function SongsPage() {
                         <img
                           src={s.album.coverImage}
                           alt={s.album.title}
+                          loading="lazy"
+                          decoding="async"
                           className="w-full h-full object-cover"
                         />
                       ) : (

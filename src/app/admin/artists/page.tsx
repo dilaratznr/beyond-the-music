@@ -117,6 +117,8 @@ export default function ArtistsPage() {
                     <img
                       src={a.image}
                       alt={a.name}
+                      loading="lazy"
+                      decoding="async"
                       className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"
                     />
                   ) : (

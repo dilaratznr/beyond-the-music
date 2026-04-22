@@ -134,7 +134,7 @@ export default async function ArtistDetailPage({ params }: { params: Params }) {
                 {artist.albums.map((album) => (
                   <Link key={album.id} href={`/${locale}/album/${album.slug}`} className="bg-zinc-900 rounded-xl overflow-hidden hover:bg-zinc-800 transition-colors">
                     {album.coverImage ? (
-                      <img src={album.coverImage} alt={album.title} className="w-full h-40 object-cover" />
+                      <img src={album.coverImage} alt={album.title} loading="lazy" decoding="async" className="w-full h-40 object-cover" />
                     ) : (
                       <div className="w-full h-40 bg-zinc-800 flex items-center justify-center text-3xl" aria-hidden="true">◉</div>
                     )}
@@ -186,7 +186,7 @@ export default async function ArtistDetailPage({ params }: { params: Params }) {
         {/* Sidebar */}
         <aside>
           {artist.image ? (
-            <img src={artist.image} alt={artist.name} className="w-full rounded-xl mb-6" />
+            <img src={artist.image} alt={artist.name} loading="lazy" decoding="async" className="w-full rounded-xl mb-6" />
           ) : (
             <div className="w-full h-64 bg-zinc-800 rounded-xl flex items-center justify-center text-6xl text-zinc-400 mb-6" aria-hidden="true">♪</div>
           )}

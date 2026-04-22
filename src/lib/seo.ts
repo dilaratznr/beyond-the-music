@@ -52,6 +52,11 @@ export function buildPageMetadata({
       languages: {
         [locale]: url,
         [otherLocale]: altUrl,
+        // `x-default` tells search engines which URL to show when the
+        // user's language preference doesn't match either locale.
+        // We point it at the TR version because our root (`/`) redirects
+        // to `/tr`, and TR is our primary audience.
+        'x-default': `${SITE_URL}/tr${path}`,
       },
     },
     openGraph: {

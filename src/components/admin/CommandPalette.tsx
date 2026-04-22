@@ -204,6 +204,8 @@ export default function CommandPalette() {
               <img
                 src={h.image}
                 alt=""
+                loading="lazy"
+                decoding="async"
                 className="w-7 h-7 rounded-md object-cover flex-shrink-0 ring-1 ring-zinc-800"
               />
             ) : (

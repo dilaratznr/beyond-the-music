@@ -158,7 +158,7 @@ export default function ImageUploader({
           className={`relative ${aspectClass} w-full max-w-[220px] rounded-md overflow-hidden border border-zinc-800 bg-zinc-900 group`}
         >
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={value} alt="" className="w-full h-full object-cover" />
+          <img src={value} alt="" loading="lazy" decoding="async" className="w-full h-full object-cover" />
           <button
             type="button"
             onClick={() => inputRef.current?.click()}

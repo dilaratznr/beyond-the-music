@@ -175,7 +175,7 @@ export default function SearchBar({ locale }: { locale: string }) {
                   className="flex items-center gap-3 px-4 py-2.5 hover:bg-white/5 transition-colors"
                 >
                   {r.image ? (
-                    <img src={r.image} alt="" aria-hidden="true" className="w-10 h-10 rounded-lg object-cover flex-shrink-0" />
+                    <img src={r.image} alt="" aria-hidden="true" loading="lazy" decoding="async" className="w-10 h-10 rounded-lg object-cover flex-shrink-0" />
                   ) : (
                     <div className="w-10 h-10 rounded-lg bg-zinc-800 flex items-center justify-center text-zinc-600 text-sm flex-shrink-0" aria-hidden="true">
                       {r.type === 'genre' ? '♫' : r.type === 'artist' ? '♪' : r.type === 'article' ? '✎' : '◉'}

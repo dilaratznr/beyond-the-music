@@ -79,6 +79,20 @@ export async function proxy(request: NextRequest) {
     return NextResponse.next();
   }
 
+  // Next.js file-convention metadata routes live at the root and are
+  // served without a file extension (e.g. `/opengraph-image?<hash>`), so
+  // the dot-in-pathname check above doesn't exempt them. Without this
+  // bypass the locale redirect turns `/opengraph-image` into `/tr/opengraph-image`,
+  // which 404s because the generator actually lives at the app root.
+  const isRootMetadataRoute =
+    pathname === '/opengraph-image' ||
+    pathname === '/twitter-image' ||
+    pathname === '/icon' ||
+    pathname === '/apple-icon';
+  if (isRootMetadataRoute) {
+    return NextResponse.next();
+  }
+
   // Locale routing for public pages.
   const pathnameHasLocale = PUBLIC_LOCALES.some(
     (locale) => pathname.startsWith(`/${locale}/`) || pathname === `/${locale}`,

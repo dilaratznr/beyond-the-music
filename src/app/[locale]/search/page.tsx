@@ -72,7 +72,7 @@ function SearchResults() {
                 href={r.type === 'album' ? `/${locale}/artist/${r.slug}` : `/${locale}/${TYPE_LINKS[r.type]}/${r.slug}`}
                 className="group flex items-center gap-4 bg-zinc-900 rounded-xl p-4  hover-lift transition-all">
                 {r.image ? (
-                  <img src={r.image} alt="" className="w-16 h-16 rounded-lg object-cover flex-shrink-0" />
+                  <img src={r.image} alt="" loading="lazy" decoding="async" className="w-16 h-16 rounded-lg object-cover flex-shrink-0" />
                 ) : (
                   <div className="w-16 h-16 rounded-lg bg-zinc-800 flex items-center justify-center text-zinc-400 text-xl flex-shrink-0">♪</div>
                 )}

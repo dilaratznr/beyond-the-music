@@ -128,6 +128,8 @@ export default async function ListeningPathDetailPage({
             <img
               src={path.image}
               alt=""
+              loading="lazy"
+              decoding="async"
               className="w-full h-full object-cover opacity-30"
             />
             <div className="absolute inset-0 bg-gradient-to-b from-transparent via-[#0a0a0b]/60 to-[#0a0a0b]" />
@@ -206,6 +208,8 @@ export default async function ListeningPathDetailPage({
                     <img
                       src={cover}
                       alt=""
+                      loading="lazy"
+                      decoding="async"
                       className="w-16 h-16 rounded-lg object-cover flex-shrink-0"
                     />
                   ) : (

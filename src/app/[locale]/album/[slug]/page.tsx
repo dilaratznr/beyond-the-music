@@ -125,6 +125,8 @@ export default async function AlbumDetailPage({ params }: { params: Params }) {
               <img
                 src={album.coverImage}
                 alt={album.title}
+                loading="lazy"
+                decoding="async"
                 className="w-full rounded-xl shadow-lg"
               />
             ) : (

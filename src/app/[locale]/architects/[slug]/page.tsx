@@ -124,7 +124,7 @@ export default async function ArchitectDetailPage({ params }: { params: Params }
           )}
         </div>
         <aside>
-          {architect.image && <img src={architect.image} alt={architect.name} className="w-full rounded-xl" />}
+          {architect.image && <img src={architect.image} alt={architect.name} loading="lazy" decoding="async" className="w-full rounded-xl" />}
         </aside>
       </div>
     </div>
