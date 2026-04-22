@@ -1,7 +1,7 @@
 export const revalidate = 30;
 
 import { getDictionary } from '@/i18n';
-import prisma from '@/lib/prisma';
+import { listAllArchitectsWithCounts } from '@/lib/db-cache';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { isSectionEnabled } from '@/lib/site-sections';
@@ -11,10 +11,7 @@ export default async function ArchitectsPage({ params }: { params: Promise<{ loc
   if (!(await isSectionEnabled('architects'))) notFound();
   const dict = getDictionary(locale);
 
-  const architects = await prisma.architect.findMany({
-    include: { _count: { select: { artists: true } } },
-    orderBy: { name: 'asc' },
-  });
+  const architects = await listAllArchitectsWithCounts();
 
   const types = ['PRODUCER', 'STUDIO', 'MANAGER', 'ARRANGER', 'RECORD_LABEL'] as const;
   const labels: Record<string, string> = {
@@ -41,7 +38,7 @@ export default async function ArchitectsPage({ params }: { params: Promise<{ loc
           {architects.map((arch) => (
             <Link key={arch.id} href={`/${locale}/architects/${arch.slug}`}
               className="group bg-zinc-900 rounded-xl overflow-hidden  hover-lift">
-              {arch.image && <div className="overflow-hidden img-zoom"><img src={arch.image} alt={arch.name} className="w-full h-40 object-cover" /></div>}
+              {arch.image && <div className="overflow-hidden img-zoom"><img src={arch.image} alt={arch.name} loading="lazy" decoding="async" className="w-full h-40 object-cover" /></div>}
               <div className="p-5">
                 <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">{labels[arch.type]}</span>
                 <h3 className="text-base font-bold mt-1">{arch.name}</h3>

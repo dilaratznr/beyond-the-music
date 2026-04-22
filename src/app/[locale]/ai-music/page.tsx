@@ -1,7 +1,7 @@
 export const revalidate = 30;
 
 import { getDictionary } from '@/i18n';
-import prisma from '@/lib/prisma';
+import { listPublishedArticlesByCategory } from '@/lib/db-cache';
 import { publishDueArticles } from '@/lib/article-publishing';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
@@ -16,11 +16,7 @@ export default async function AiMusicPage({ params }: { params: Promise<{ locale
   // bir sonraki ISR tick'inde (30s) yakalanır.
   publishDueArticles().catch(() => {});
 
-  const articles = await prisma.article.findMany({
-    where: { category: 'AI_MUSIC', status: 'PUBLISHED' },
-    include: { author: { select: { name: true } } },
-    orderBy: { publishedAt: 'desc' },
-  });
+  const articles = await listPublishedArticlesByCategory('AI_MUSIC');
 
   return (
     <div className="bg-[#0a0a0b] text-white min-h-screen">
@@ -39,7 +35,7 @@ export default async function AiMusicPage({ params }: { params: Promise<{ locale
             {articles.map((a) => (
               <Link key={a.id} href={`/${locale}/article/${a.slug}`}
                 className="group bg-zinc-900 rounded-xl overflow-hidden  hover-lift">
-                {a.featuredImage && <div className="overflow-hidden img-zoom"><img src={a.featuredImage} alt="" className="w-full h-44 object-cover" /></div>}
+                {a.featuredImage && <div className="overflow-hidden img-zoom"><img src={a.featuredImage} alt="" loading="lazy" decoding="async" className="w-full h-44 object-cover" /></div>}
                 <div className="p-5">
                   <h3 className="text-base font-bold group-hover:underline">{locale === 'tr' ? a.titleTr : a.titleEn}</h3>
                   <p className="text-xs text-zinc-500 mt-2">{a.author.name}</p>

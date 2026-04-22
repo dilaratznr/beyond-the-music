@@ -1,6 +1,12 @@
+import { revalidateTag } from 'next/cache';
 import prisma from '@/lib/prisma';
+import { CACHE_TAGS } from '@/lib/db-cache';
 
 /**
+ * Server-only: this module imports `revalidateTag` from `next/cache`, which
+ * MUST NOT land in a client bundle. Pure datetime-local helpers that clients
+ * also use live in `src/lib/datetime-local.ts`.
+ *
  * Scheduled articles live in a pending state: `status = SCHEDULED` with a
  * future `publishedAt`. When the clock catches up, we flip them to PUBLISHED
  * so the public site renders them without any cron infrastructure.
@@ -18,37 +24,13 @@ export async function publishDueArticles(): Promise<number> {
       },
       data: { status: 'PUBLISHED' },
     });
+    if (res.count > 0) {
+      revalidateTag(CACHE_TAGS.article, 'max');
+    }
     return res.count;
   } catch {
     // Never let the tick break the page render — worst case: a scheduled
     // article shows up a request later, when the next caller tries again.
     return 0;
   }
-}
-
-/**
- * Parse a datetime-local input value ("2026-04-20T15:30") into a Date that
- * represents that wall-clock time in the browser's local timezone.
- * Returns null for empty / invalid inputs.
- */
-export function parseScheduledFor(raw: unknown): Date | null {
-  if (typeof raw !== 'string' || !raw.trim()) return null;
-  const d = new Date(raw);
-  if (Number.isNaN(d.getTime())) return null;
-  return d;
-}
-
-/**
- * Format a Date as a `datetime-local` input value (YYYY-MM-DDTHH:MM).
- * Returns '' for null/undefined.
- */
-export function toDatetimeLocalValue(date: Date | string | null | undefined): string {
-  if (!date) return '';
-  const d = typeof date === 'string' ? new Date(date) : date;
-  if (Number.isNaN(d.getTime())) return '';
-  const pad = (n: number) => String(n).padStart(2, '0');
-  return (
-    `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}` +
-    `T${pad(d.getHours())}:${pad(d.getMinutes())}`
-  );
 }

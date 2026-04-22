@@ -5,8 +5,20 @@
 export const revalidate = 30;
 
 import { getDictionary } from '@/i18n';
-import prisma from '@/lib/prisma';
+import {
+  listHomeGenres,
+  countMainGenres,
+  listHomeFeaturedArticles,
+  listHomeFallbackArticles,
+  listHomeFeaturedAlbums,
+  listHomeArtists,
+  listHomeListeningPaths,
+  listAllSiteSettings,
+  listActiveHeroVideos,
+} from '@/lib/db-cache';
 import { publishDueArticles } from '@/lib/article-publishing';
+import { SITE_URL } from '@/lib/seo';
+import { JsonLd } from '@/components/JsonLd';
 import Link from 'next/link';
 import HeroVideoCarousel from '@/components/public/HeroVideoCarousel';
 import TextRevealOnScroll from '@/components/public/TextRevealOnScroll';
@@ -23,52 +35,68 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
   // gerek yok. (Eksik kalsa da bir sonraki revalidate'da yakalanır.)
   publishDueArticles().catch(() => {});
 
+  // Her sorgu unstable_cache ile sarılı (bkz. src/lib/db-cache.ts). Tag'ler
+  // admin yazımlarında revalidateTag ile patlatılıyor; bu sayede hem
+  // concurrent istekler tek bir DB sorgusunu paylaşıyor hem de bir sonraki
+  // ISR tick'ini beklemeye gerek kalmıyor.
   const [genres, genreTotal, featuredArticles, featuredAlbums, artists, paths, settingsRaw, heroVideos] = await Promise.all([
-    // Anasayfada tür sayısı 8 ile sınırlı — daha fazlası kaydırmayı uzatıyor,
-    // 'Tümünü Gör' kartı zaten sonunda.
-    prisma.genre.findMany({ where: { parentId: null }, orderBy: { order: 'asc' }, take: 8 }),
-    // 'Tümünü Gör' endcard'ında gerçek tür sayısını göstermek için toplam.
-    prisma.genre.count({ where: { parentId: null } }),
-    // Hand-curated featured articles first (must be PUBLISHED — we don't want
-    // drafts leaking to the homepage). If the editor hasn't curated anything,
-    // we fall back to the 6 most-recent published articles below.
-    prisma.article.findMany({
-      where: { status: 'PUBLISHED', featuredOrder: { not: null } },
-      take: 6,
-      orderBy: { featuredOrder: 'asc' },
-      include: { author: { select: { name: true } } },
-    }),
-    // Curated featured albums — only rendered if any are set.
-    prisma.album.findMany({
-      where: { featuredOrder: { not: null } },
-      take: 6,
-      orderBy: { featuredOrder: 'asc' },
-      include: { artist: { select: { name: true, slug: true } } },
-    }),
-    prisma.artist.findMany({ take: 10, orderBy: { createdAt: 'desc' }, include: { genres: { include: { genre: true } } } }),
-    prisma.listeningPath.findMany({ take: 4, orderBy: { createdAt: 'desc' } }),
-    prisma.siteSetting.findMany(),
-    prisma.heroVideo.findMany({ where: { isActive: true }, orderBy: { order: 'asc' }, select: { id: true, url: true, duration: true } }),
+    listHomeGenres(),
+    countMainGenres(),
+    listHomeFeaturedArticles(),
+    listHomeFeaturedAlbums(),
+    listHomeArtists(),
+    listHomeListeningPaths(),
+    listAllSiteSettings(),
+    listActiveHeroVideos(),
   ]);
 
   // Graceful fallback: if nothing's been curated, show the 6 most-recent
   // published articles so the "Editor's Pick" section never looks empty.
   const articles =
-    featuredArticles.length > 0
-      ? featuredArticles
-      : await prisma.article.findMany({
-          where: { status: 'PUBLISHED' },
-          take: 6,
-          orderBy: { publishedAt: 'desc' },
-          include: { author: { select: { name: true } } },
-        });
+    featuredArticles.length > 0 ? featuredArticles : await listHomeFallbackArticles();
 
   const s: Record<string, string> = {};
   for (const r of settingsRaw) s[r.key] = r.value;
   const loc = (key: string) => s[`${key}_${locale}`] || s[`${key}_tr`] || '';
 
+  // Paired root-level JSON-LD:
+  //   1. Organization — identifies the publisher to search engines so
+  //      sitelinks + knowledge-panel associations can aggregate.
+  //   2. WebSite with SearchAction — enables Google's sitelinks search
+  //      box to query our /search page directly from SERPs.
+  // Both are emitted as a JSON-LD array so the single <script> block
+  // expresses two @type nodes at once.
+  const siteName = 'Beyond The Music';
+  const rootJsonLd = [
+    {
+      '@context': 'https://schema.org',
+      '@type': 'Organization',
+      name: siteName,
+      url: SITE_URL,
+      logo: `${SITE_URL}/favicon.ico`,
+      inLanguage: locale === 'tr' ? 'tr-TR' : 'en-US',
+    },
+    {
+      '@context': 'https://schema.org',
+      '@type': 'WebSite',
+      name: siteName,
+      url: `${SITE_URL}/${locale}`,
+      inLanguage: locale === 'tr' ? 'tr-TR' : 'en-US',
+      potentialAction: {
+        '@type': 'SearchAction',
+        target: {
+          '@type': 'EntryPoint',
+          urlTemplate: `${SITE_URL}/${locale}/search?q={search_term_string}`,
+        },
+        // Google requires this literal token for SearchAction.
+        'query-input': 'required name=search_term_string',
+      },
+    },
+  ];
+
   return (
     <div className="bg-[#0a0a0b] text-white">
+      <JsonLd data={rootJsonLd} />
       {/* SplashIntro kaldırıldı — açılışta siyah perde + küçük başlık
           kullanıcıya "sayfa boş" hissi veriyordu. Hero artık direkt
           yükleniyor, ilk paint'te içerik görünür. */}

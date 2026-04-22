@@ -1,20 +1,13 @@
 export const revalidate = 30;
 
 import { getDictionary } from '@/i18n';
-import prisma from '@/lib/prisma';
+import { listAllArtistsWithRelations } from '@/lib/db-cache';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import ScrollReveal from '@/components/public/ScrollReveal';
 import { isSectionEnabled } from '@/lib/site-sections';
 
-type ArtistWithRelations = Awaited<ReturnType<typeof loadArtists>>[number];
-
-async function loadArtists() {
-  return prisma.artist.findMany({
-    include: { genres: { include: { genre: true } }, _count: { select: { albums: true } } },
-    orderBy: { name: 'asc' },
-  });
-}
+type ArtistWithRelations = Awaited<ReturnType<typeof listAllArtistsWithRelations>>[number];
 
 function ArtistGrid({ list, locale }: { list: ArtistWithRelations[]; locale: string }) {
   if (list.length === 0) {
@@ -37,6 +30,8 @@ function ArtistGrid({ list, locale }: { list: ArtistWithRelations[]; locale: str
               <img
                 src={a.image}
                 alt={a.name}
+                loading="lazy"
+                decoding="async"
                 className="absolute inset-0 w-full h-full object-cover"
               />
             ) : (
@@ -63,7 +58,7 @@ export default async function ArtistPage({ params }: { params: Promise<{ locale:
   if (!(await isSectionEnabled('artist'))) notFound();
   const dict = getDictionary(locale);
 
-  const artists = await loadArtists();
+  const artists = await listAllArtistsWithRelations();
 
   const soloArtists = artists.filter((a) => a.type === 'SOLO');
   const groups = artists.filter((a) => a.type === 'GROUP');

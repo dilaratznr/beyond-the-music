@@ -1,7 +1,7 @@
 export const revalidate = 30;
 
 import { getDictionary } from '@/i18n';
-import prisma from '@/lib/prisma';
+import { listPublishedArticlesByCategory } from '@/lib/db-cache';
 import { publishDueArticles } from '@/lib/article-publishing';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
@@ -16,11 +16,7 @@ export default async function TheoryPage({ params }: { params: Promise<{ locale:
   // bir sonraki ISR tick'inde (30s) yakalanır.
   publishDueArticles().catch(() => {});
 
-  const articles = await prisma.article.findMany({
-    where: { category: 'THEORY', status: 'PUBLISHED' },
-    include: { author: { select: { name: true } } },
-    orderBy: { publishedAt: 'desc' },
-  });
+  const articles = await listPublishedArticlesByCategory('THEORY');
 
   const topics = [dict.theory.soundStructure, dict.theory.rhythm, dict.theory.harmony, dict.theory.texture, dict.theory.production, dict.theory.structural];
 
@@ -53,7 +49,7 @@ export default async function TheoryPage({ params }: { params: Promise<{ locale:
                 className="group relative block rounded-xl overflow-hidden bg-white/[0.02] border border-white/5 hover:bg-white/[0.05] transition-colors">
                 {a.featuredImage && (
                   <div className="overflow-hidden">
-                    <img src={a.featuredImage} alt="" className="w-full h-40 object-cover opacity-60 group-hover:opacity-80 transition-opacity duration-500" />
+                    <img src={a.featuredImage} alt="" loading="lazy" decoding="async" className="w-full h-40 object-cover opacity-60 group-hover:opacity-80 transition-opacity duration-500" />
                   </div>
                 )}
                 <div className="p-5">

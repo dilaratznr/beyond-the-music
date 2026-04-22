@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { revalidateTag } from 'next/cache';
 import prisma from '@/lib/prisma';
 import { requireSectionAccess } from '@/lib/auth-guard';
+import { CACHE_TAGS } from '@/lib/db-cache';
 
 /**
  * Listening path items — the songs / albums / artists that make up a path.
@@ -54,6 +56,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     },
   });
 
+  revalidateTag(CACHE_TAGS.listeningPath, 'max');
   return NextResponse.json(item, { status: 201 });
 }
 
@@ -79,5 +82,6 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     ),
   );
 
+  revalidateTag(CACHE_TAGS.listeningPath, 'max');
   return NextResponse.json({ success: true });
 }

@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { revalidateTag } from 'next/cache';
 import prisma from '@/lib/prisma';
 import { requireSectionAccess } from '@/lib/auth-guard';
+import { CACHE_TAGS } from '@/lib/db-cache';
 
 /**
  * POST /api/songs/bulk-delete
@@ -21,5 +23,7 @@ export async function POST(request: NextRequest) {
   }
 
   const result = await prisma.song.deleteMany({ where: { id: { in: ids } } });
+  revalidateTag(CACHE_TAGS.song, 'max');
+  revalidateTag(CACHE_TAGS.album, 'max');
   return NextResponse.json({ success: true, deleted: result.count });
 }

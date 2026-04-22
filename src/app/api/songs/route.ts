@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { revalidateTag } from 'next/cache';
 import prisma from '@/lib/prisma';
 import { requireSectionAccess } from '@/lib/auth-guard';
+import { CACHE_TAGS } from '@/lib/db-cache';
 
 /**
  * Songs are subordinate to Albums — they inherit the ALBUM permission
@@ -69,5 +71,7 @@ export async function POST(request: NextRequest) {
     },
   });
 
+  revalidateTag(CACHE_TAGS.song, 'max');
+  revalidateTag(CACHE_TAGS.album, 'max');
   return NextResponse.json(song, { status: 201 });
 }

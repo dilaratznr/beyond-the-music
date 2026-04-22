@@ -1,7 +1,7 @@
 export const revalidate = 30;
 
 import { getDictionary } from '@/i18n';
-import prisma from '@/lib/prisma';
+import { listMainGenresWithChildren } from '@/lib/db-cache';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { isSectionEnabled } from '@/lib/site-sections';
@@ -11,11 +11,7 @@ export default async function GenrePage({ params }: { params: Promise<{ locale: 
   if (!(await isSectionEnabled('genre'))) notFound();
   const dict = getDictionary(locale);
 
-  const genres = await prisma.genre.findMany({
-    where: { parentId: null },
-    include: { children: { orderBy: { nameTr: 'asc' } }, _count: { select: { artists: true } } },
-    orderBy: { order: 'asc' },
-  });
+  const genres = await listMainGenresWithChildren();
 
   const allSubgenres = genres.flatMap((g) => g.children);
 
@@ -36,7 +32,7 @@ export default async function GenrePage({ params }: { params: Promise<{ locale: 
             <Link key={g.id} href={`/${locale}/genre/${g.slug}`}
               className="group relative block rounded-xl overflow-hidden aspect-[3/4] bg-zinc-800 img-zoom hover-lift">
               {g.image ? (
-                <img src={g.image} alt="" className="absolute inset-0 w-full h-full object-cover opacity-50 group-hover:opacity-80 transition-opacity duration-500" />
+                <img src={g.image} alt="" loading="lazy" decoding="async" className="absolute inset-0 w-full h-full object-cover opacity-50 group-hover:opacity-80 transition-opacity duration-500" />
               ) : (
                 <div className="absolute inset-0 bg-gradient-to-br from-zinc-700 to-zinc-900 flex items-center justify-center text-4xl text-white/10">♫</div>
               )}

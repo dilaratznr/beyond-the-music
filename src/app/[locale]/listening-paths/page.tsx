@@ -3,7 +3,7 @@ export const revalidate = 30;
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { getDictionary } from '@/i18n';
-import prisma from '@/lib/prisma';
+import { listAllListeningPathsWithCounts } from '@/lib/db-cache';
 import { isSectionEnabled } from '@/lib/site-sections';
 
 export default async function ListeningPathsPage({ params }: { params: Promise<{ locale: string }> }) {
@@ -11,10 +11,7 @@ export default async function ListeningPathsPage({ params }: { params: Promise<{
   if (!(await isSectionEnabled('listeningPaths'))) notFound();
   const dict = getDictionary(locale);
 
-  const paths = await prisma.listeningPath.findMany({
-    include: { _count: { select: { items: true } } },
-    orderBy: { createdAt: 'desc' },
-  });
+  const paths = await listAllListeningPathsWithCounts();
 
   const typeLabels: Record<string, string> = {
     EMOTION: dict.listeningPaths.emotion, ERA: dict.listeningPaths.era,
@@ -49,7 +46,7 @@ export default async function ListeningPathsPage({ params }: { params: Promise<{
                 href={`/${locale}/listening-paths/${p.slug}`}
                 className="group relative rounded-xl overflow-hidden aspect-[4/5] bg-zinc-800 img-zoom hover-lift block"
               >
-                {p.image && <img src={p.image} alt="" className="absolute inset-0 w-full h-full object-cover opacity-50 group-hover:opacity-70 transition-opacity duration-500" />}
+                {p.image && <img src={p.image} alt="" loading="lazy" decoding="async" className="absolute inset-0 w-full h-full object-cover opacity-50 group-hover:opacity-70 transition-opacity duration-500" />}
                 <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent" />
                 <div className="absolute bottom-0 left-0 right-0 p-6">
                   <span className="inline-block px-2.5 py-0.5 bg-emerald-500/15 text-emerald-400 text-[10px] font-bold uppercase tracking-widest rounded-full mb-2">

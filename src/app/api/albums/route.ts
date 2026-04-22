@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { revalidateTag } from 'next/cache';
 import prisma from '@/lib/prisma';
 import { requireSectionAccess } from '@/lib/auth-guard';
+import { CACHE_TAGS } from '@/lib/db-cache';
 import { slugify } from '@/lib/utils';
 
 export async function GET(request: NextRequest) {
@@ -28,5 +30,6 @@ export async function POST(request: NextRequest) {
   if (!title || !artistId) return NextResponse.json({ error: 'Title and artist are required' }, { status: 400 });
   const slug = slugify(title);
   const album = await prisma.album.create({ data: { slug, title, artistId, releaseDate: releaseDate ? new Date(releaseDate) : null, coverImage: coverImage || null, descriptionTr: descriptionTr || null, descriptionEn: descriptionEn || null } });
+  revalidateTag(CACHE_TAGS.album, 'max');
   return NextResponse.json(album, { status: 201 });
 }
