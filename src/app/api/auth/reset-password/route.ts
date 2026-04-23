@@ -55,20 +55,39 @@ export async function POST(request: NextRequest) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const db = prisma as any;
 
+  // Timing-safe akış: token yok / süresi geçmiş / kullanılmış / user
+  // pasif gibi vakalarda da aynı iş yükünü koşturuyoruz ve aynı
+  // generic hata mesajını dönüyoruz. Böylece cevap süresinden
+  // "token geçersiz" ile "password geçersiz" arasındaki farkı
+  // dışarıdan çıkarsamak mümkün olmasın.
+  //
+  // Eskisi short-circuit'ti: önce `findUnique`, bulunamazsa hemen
+  // döner — bu durumda bcrypt hiç çalışmıyor ve yanıt saliseler
+  // mertebesinde geliyordu; geçerli token + yanlış şifre vakası
+  // (bcrypt 12 round ~200ms) ile karşılaştırılınca enumerable
+  // oluyordu. Şimdi her iki dalda da bcrypt koşturuluyor.
+
   const record = await db.passwordResetToken.findUnique({
     where: { tokenHash },
   });
 
-  if (!record || record.usedAt || record.expiresAt.getTime() < Date.now()) {
-    return NextResponse.json({ error: 'Invalid or expired token' }, { status: 400 });
-  }
+  const tokenValid =
+    !!record &&
+    !record.usedAt &&
+    record.expiresAt.getTime() >= Date.now();
 
-  const user = await prisma.user.findUnique({ where: { id: record.userId } });
-  if (!user || !user.isActive) {
-    return NextResponse.json({ error: 'Invalid or expired token' }, { status: 400 });
-  }
+  const user = tokenValid
+    ? await prisma.user.findUnique({ where: { id: record.userId } })
+    : null;
 
+  // Her ihtimalde bcrypt çalışsın — bu, başarılı yol ile başarısız
+  // yolun timing profilini eşitler. Sonucu sadece geçerli dalda
+  // kullanıyoruz.
   const hash = await bcrypt.hash(password, 12);
+
+  if (!tokenValid || !record || !user || !user.isActive) {
+    return NextResponse.json({ error: 'Invalid or expired token' }, { status: 400 });
+  }
 
   // Use a transaction so we update the password and consume the token atomically.
   // If anything fails, we don't leave a token marked used with no password change,

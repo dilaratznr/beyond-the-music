@@ -22,16 +22,39 @@ export async function register() {
   // Prisma client.
   const { default: prisma } = await import('@/lib/prisma');
 
-  const statements: [string, string][] = [
-    ['Article.featured_order', 'ALTER TABLE "Article" ADD COLUMN IF NOT EXISTS "featured_order" INTEGER'],
-    ['Article.featured_order idx', 'CREATE INDEX IF NOT EXISTS "Article_featured_order_idx" ON "Article"("featured_order")'],
-    ['Album.featured_order', 'ALTER TABLE "Album" ADD COLUMN IF NOT EXISTS "featured_order" INTEGER'],
-    ['Album.featured_order idx', 'CREATE INDEX IF NOT EXISTS "Album_featured_order_idx" ON "Album"("featured_order")'],
+  // DDL statements are written inline as tagged template literals so
+  // `$executeRaw` enforces the safety contract: no string concatenation,
+  // no `$executeRawUnsafe`, no user input. If this bootstrap ever needs
+  // a value (not identifier) from outside, Prisma will interpolate it
+  // as a parameter — preventing SQL injection by construction. Each
+  // block is wrapped in its own try so a failure on one doesn't skip
+  // the rest.
+  const runs: Array<{ label: string; fn: () => Promise<unknown> }> = [
+    {
+      label: 'Article.featured_order',
+      fn: () =>
+        prisma.$executeRaw`ALTER TABLE "Article" ADD COLUMN IF NOT EXISTS "featured_order" INTEGER`,
+    },
+    {
+      label: 'Article.featured_order idx',
+      fn: () =>
+        prisma.$executeRaw`CREATE INDEX IF NOT EXISTS "Article_featured_order_idx" ON "Article"("featured_order")`,
+    },
+    {
+      label: 'Album.featured_order',
+      fn: () =>
+        prisma.$executeRaw`ALTER TABLE "Album" ADD COLUMN IF NOT EXISTS "featured_order" INTEGER`,
+    },
+    {
+      label: 'Album.featured_order idx',
+      fn: () =>
+        prisma.$executeRaw`CREATE INDEX IF NOT EXISTS "Album_featured_order_idx" ON "Album"("featured_order")`,
+    },
   ];
 
-  for (const [label, sql] of statements) {
+  for (const { label, fn } of runs) {
     try {
-      await prisma.$executeRawUnsafe(sql);
+      await fn();
     } catch (err) {
       // Don't crash the server if the bootstrap fails — log and move on
       // so the rest of the app still starts. The admin error boundary

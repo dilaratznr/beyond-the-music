@@ -20,6 +20,13 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { buildPageMetadata, stripHtml, SITE_URL } from '@/lib/seo';
 import { JsonLd } from '@/components/JsonLd';
+// Makale HTML'i tiptap WYSIWYG'den geliyor, DB'de ham HTML olarak
+// tutuluyor. Ziyaretçiye basmadan önce DOMPurify ile sanitize ediyoruz —
+// admin hesabı ele geçirilse bile yerleştirilen <script>/onerror tarzı
+// payload render edilmesin diye (savunma-derinliği). isomorphic-dompurify
+// hem server hem browser'da çalışır, tiptap'in ürettiği <p>/<h*>/<a>/<img>
+// gibi gerçek markup'ı korurken zararlıyı atar.
+import DOMPurify from 'isomorphic-dompurify';
 
 type Params = Promise<{ locale: string; slug: string }>;
 
@@ -202,7 +209,16 @@ export default async function ArticleDetailPage({ params }: { params: Params }) 
         <div className="max-w-3xl mx-auto px-6 py-16 md:py-24">
           <article
             className="prose article-body max-w-none"
-            dangerouslySetInnerHTML={{ __html: content }}
+            dangerouslySetInnerHTML={{
+              __html: DOMPurify.sanitize(content, {
+                // tiptap'in bastığı etiket seti — img/iframe özellikle
+                // izin veriyor: makale içi embed'ler (YouTube, vs.)
+                // çalışsın diye. JavaScript event'leri ve <script>
+                // varsayılan olarak atılıyor.
+                ADD_TAGS: ['iframe'],
+                ADD_ATTR: ['allow', 'allowfullscreen', 'frameborder', 'target'],
+              }),
+            }}
           />
         </div>
       )}

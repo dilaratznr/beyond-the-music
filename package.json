@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "prisma generate && prisma db push --accept-data-loss --skip-generate && tsx prisma/seed.ts && tsx prisma/fill-content.ts && next build",
+    "build": "prisma generate && next build",
     "start": "next start",
     "lint": "eslint",
     "postinstall": "prisma generate",
@@ -29,6 +29,7 @@
     "@tiptap/starter-kit": "^3.21.0",
     "bcryptjs": "^3.0.3",
     "dompurify": "^3.3.3",
+    "isomorphic-dompurify": "^2.16.0",
     "dotenv": "^17.3.1",
     "gsap": "^3.14.2",
     "next": "16.2.1",

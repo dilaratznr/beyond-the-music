@@ -35,8 +35,22 @@ yarn-error.log*
 .env.local
 .env.production
 
+# secrets / one-off credential files
+.github-token
+*.pem
+*.key
+
 # vercel
 .vercel
+
+# temporary / backup files — never commit
+*.bak
+*.bak.*
+*.patch
+*.removed
+
+# deploy scripts with potential creds
+/scripts/
 
 # typescript
 *.tsbuildinfo
