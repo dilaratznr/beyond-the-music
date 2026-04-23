@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { revalidateTag } from 'next/cache';
 import prisma from '@/lib/prisma';
 import { requireSectionAccess } from '@/lib/auth-guard';
+import { CACHE_TAGS } from '@/lib/db-cache';
 import { slugify } from '@/lib/utils';
-import { parseScheduledFor } from '@/lib/article-publishing';
+import { parseScheduledFor } from '@/lib/datetime-local';
 
 export async function GET(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -88,6 +90,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
   }
 
   const article = await prisma.article.update({ where: { id }, data });
+  revalidateTag(CACHE_TAGS.article, 'max');
   return NextResponse.json(article);
 }
 
@@ -97,5 +100,6 @@ export async function DELETE(_request: NextRequest, { params }: { params: Promis
 
   const { id } = await params;
   await prisma.article.delete({ where: { id } });
+  revalidateTag(CACHE_TAGS.article, 'max');
   return NextResponse.json({ success: true });
 }

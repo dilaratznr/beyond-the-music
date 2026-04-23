@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { revalidateTag } from 'next/cache';
 import prisma from '@/lib/prisma';
 import { requireSectionAccess } from '@/lib/auth-guard';
+import { CACHE_TAGS } from '@/lib/db-cache';
 import { slugify } from '@/lib/utils';
 import { parseCsv, rowsToRecords, parseBool, parseReleaseDate, parseTrackNumber } from '@/lib/csv';
 
@@ -270,6 +272,8 @@ export async function POST(request: NextRequest) {
     await prisma.$transaction(songWrites);
   }
 
+  revalidateTag(CACHE_TAGS.album, 'max');
+  revalidateTag(CACHE_TAGS.song, 'max');
   return NextResponse.json({
     success: true,
     artist: { id: artist.id, name: artist.name },

@@ -31,6 +31,10 @@ export const metadata: Metadata = {
     languages: {
       tr: "/tr",
       en: "/en",
+      // `x-default` is the fallback Google shows when the visitor's
+      // language preference matches neither tr nor en. Points to the
+      // Turkish root because `/` redirects to `/tr`.
+      "x-default": "/tr",
     },
   },
   openGraph: {
@@ -85,12 +89,11 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="tr" className="h-full antialiased">
-      <head>
-        {/* Uzak görsel host'una erken DNS çözümü — unsplash her sayfada
-            hero kartlarında kullanılıyor. Fontlar artık self-hosted
-            (src/app/fonts.ts), Google Fonts preconnect'i gerekmiyor. */}
-        <link rel="dns-prefetch" href="https://images.unsplash.com" />
-      </head>
+      {/* Tüm görseller artık lokal `/uploads/*.webp` dosyalarından servis
+          ediliyor — dns-prefetch'e gerek yok. Fontlar self-hosted
+          (src/app/fonts.ts), Google Fonts preconnect'i de gerekmiyor.
+          Boş <head> burada olmak zorunda değil; Next gerekli meta tag'ları
+          zaten inject ediyor. */}
       <body className="min-h-full flex flex-col" suppressHydrationWarning>
         {children}
       </body>

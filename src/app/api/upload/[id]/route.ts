@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { revalidateTag } from 'next/cache';
 import { requireSectionAccess } from '@/lib/auth-guard';
+import { CACHE_TAGS } from '@/lib/db-cache';
 import prisma from '@/lib/prisma';
 import fs from 'fs/promises';
 import path from 'path';
@@ -19,6 +21,7 @@ export async function DELETE(
   }
 
   await prisma.mediaItem.delete({ where: { id } });
+  revalidateTag(CACHE_TAGS.mediaItem, 'max');
 
   // Best-effort storage cleanup — DB row is already gone either way.
   try {

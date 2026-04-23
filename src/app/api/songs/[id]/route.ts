@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { revalidateTag } from 'next/cache';
 import prisma from '@/lib/prisma';
 import { requireSectionAccess } from '@/lib/auth-guard';
+import { CACHE_TAGS } from '@/lib/db-cache';
 
 export async function GET(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -41,6 +43,8 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
   if (youtubeUrl !== undefined) data.youtubeUrl = youtubeUrl || null;
 
   const song = await prisma.song.update({ where: { id }, data });
+  revalidateTag(CACHE_TAGS.song, 'max');
+  revalidateTag(CACHE_TAGS.album, 'max');
   return NextResponse.json(song);
 }
 
@@ -50,5 +54,7 @@ export async function DELETE(_request: NextRequest, { params }: { params: Promis
 
   const { id } = await params;
   await prisma.song.delete({ where: { id } });
+  revalidateTag(CACHE_TAGS.song, 'max');
+  revalidateTag(CACHE_TAGS.album, 'max');
   return NextResponse.json({ success: true });
 }

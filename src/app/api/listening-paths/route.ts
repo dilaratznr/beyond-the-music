@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { revalidateTag } from 'next/cache';
 import prisma from '@/lib/prisma';
 import { requireSectionAccess } from '@/lib/auth-guard';
+import { CACHE_TAGS } from '@/lib/db-cache';
 import { slugify } from '@/lib/utils';
 
 export async function GET(request: NextRequest) {
@@ -24,5 +26,6 @@ export async function POST(request: NextRequest) {
   if (!titleTr || !titleEn || !type) return NextResponse.json({ error: 'Title (TR/EN) and type are required' }, { status: 400 });
   const slug = slugify(titleEn);
   const path = await prisma.listeningPath.create({ data: { slug, titleTr, titleEn, descriptionTr: descriptionTr || null, descriptionEn: descriptionEn || null, type, image: image || null } });
+  revalidateTag(CACHE_TAGS.listeningPath, 'max');
   return NextResponse.json(path, { status: 201 });
 }
