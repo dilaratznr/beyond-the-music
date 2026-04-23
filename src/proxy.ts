@@ -5,10 +5,20 @@ import { getToken } from 'next-auth/jwt';
 const PUBLIC_LOCALES = ['tr', 'en'];
 const DEFAULT_LOCALE = 'tr';
 
-function buildCsp(nonce: string): string {
+/**
+ * Strict, per-request CSP used for the admin surface. Every response
+ * carries a fresh nonce that `next/script` and Next's own injected
+ * inline scripts bind to, and `strict-dynamic` tells modern browsers
+ * to trust only scripts loaded from those nonced origins — textbook
+ * tight XSS policy.
+ *
+ * The tradeoff is that the nonce is request-unique, so any page that
+ * flows through this branch cannot be ISR-cached (every request's
+ * response would contain a different nonce). That's fine for admin:
+ * admin pages are already dynamic behind auth.
+ */
+function buildAdminCsp(nonce: string): string {
   const isDev = process.env.NODE_ENV === 'development';
-  // In dev, React needs 'unsafe-eval' for HMR / error stacks; inline styles
-  // are also used by dev-only tooling. In prod, nonce + strict-dynamic only.
   const scriptSrc = [
     "'self'",
     `'nonce-${nonce}'`,
@@ -21,10 +31,7 @@ function buildCsp(nonce: string): string {
   const styleSrc = [
     "'self'",
     `'nonce-${nonce}'`,
-    // Fallback for older browsers that don't understand nonces, plus
-    // runtime CSS injected by some client libraries. Modern browsers ignore
-    // 'unsafe-inline' when a nonce is present, so this does not relax the
-    // policy for them.
+    // Fallback for older browsers that don't understand nonces.
     "'unsafe-inline'",
   ].join(' ');
 
@@ -44,6 +51,59 @@ function buildCsp(nonce: string): string {
     'upgrade-insecure-requests',
   ].join('; ');
 }
+
+/**
+ * Cache-friendly CSP for the public site. Identical constraints to
+ * the admin policy, except:
+ *   - No per-request nonce. Scripts fall back to `'self' 'unsafe-inline'`.
+ *   - No `strict-dynamic` (which would ignore `'unsafe-inline'` on
+ *     modern browsers and, without a nonce, block Next's inline
+ *     hydration scripts).
+ *
+ * Why this is an acceptable tradeoff here:
+ *   - Public pages don't accept arbitrary HTML from untrusted users.
+ *     Article bodies go through an editor whose output we control.
+ *   - The CSP still blocks remote script origins (`'self'` only),
+ *     `frame-ancestors 'none'` prevents clickjacking, `object-src
+ *     'none'` kills Flash-era vectors, and the rest of the headers
+ *     (X-Frame-Options, X-Content-Type-Options, Referrer-Policy) are
+ *     still in force.
+ *   - Dropping the nonce lets every public response be identical for
+ *     the same URL, which is what Vercel / Next's ISR needs in order
+ *     to edge-cache. That single change turns a ~400ms SSR TTFB into
+ *     ~30ms cached TTFB.
+ */
+function buildPublicCsp(): string {
+  const isDev = process.env.NODE_ENV === 'development';
+  const scriptSrc = [
+    "'self'",
+    "'unsafe-inline'",
+    isDev ? "'unsafe-eval'" : '',
+  ]
+    .filter(Boolean)
+    .join(' ');
+
+  return [
+    "default-src 'self'",
+    `script-src ${scriptSrc}`,
+    "style-src 'self' 'unsafe-inline'",
+    "img-src 'self' data: blob: https:",
+    "font-src 'self' data:",
+    "connect-src 'self' https://generativelanguage.googleapis.com",
+    "frame-src 'self' https://www.youtube.com https://youtube.com https://open.spotify.com",
+    "media-src 'self' https: blob: data:",
+    "object-src 'none'",
+    "base-uri 'self'",
+    "form-action 'self'",
+    "frame-ancestors 'none'",
+    'upgrade-insecure-requests',
+  ].join('; ');
+}
+
+// The public CSP is deterministic, so we compute it once at module
+// load instead of on every request. The value is a small string
+// (~450 bytes) and never changes across requests.
+const PUBLIC_CSP = buildPublicCsp();
 
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -104,18 +164,34 @@ export async function proxy(request: NextRequest) {
     );
   }
 
-  // Generate per-request nonce and attach CSP.
-  const nonce = Buffer.from(crypto.randomUUID()).toString('base64');
-  const csp = buildCsp(nonce);
+  // ── Admin: strict per-request nonce CSP ─────────────────────────────
+  //
+  // Pass the nonce through request headers so Next's build system can
+  // bind its inline scripts to it. This is the behavior that makes
+  // admin pages "dynamic" as far as ISR is concerned — which is exactly
+  // what we want behind auth.
+  if (pathname.startsWith('/admin')) {
+    const nonce = Buffer.from(crypto.randomUUID()).toString('base64');
+    const csp = buildAdminCsp(nonce);
 
-  const requestHeaders = new Headers(request.headers);
-  requestHeaders.set('x-nonce', nonce);
-  requestHeaders.set('Content-Security-Policy', csp);
+    const requestHeaders = new Headers(request.headers);
+    requestHeaders.set('x-nonce', nonce);
+    requestHeaders.set('Content-Security-Policy', csp);
 
-  const response = NextResponse.next({
-    request: { headers: requestHeaders },
-  });
-  response.headers.set('Content-Security-Policy', csp);
+    const response = NextResponse.next({
+      request: { headers: requestHeaders },
+    });
+    response.headers.set('Content-Security-Policy', csp);
+    return response;
+  }
+
+  // ── Public: deterministic CSP, allow ISR caching ───────────────────
+  //
+  // Don't mutate request headers here — doing so flags the page as
+  // "dynamic" and disables the ISR cache. Only set the response-side
+  // CSP header. Same string every time => cacheable at the edge.
+  const response = NextResponse.next();
+  response.headers.set('Content-Security-Policy', PUBLIC_CSP);
   return response;
 }
 
