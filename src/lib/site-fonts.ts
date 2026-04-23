@@ -57,15 +57,13 @@ export const FONT_OPTIONS: FontOption[] = [
 ];
 
 export const DEFAULT_BODY_FONT: FontFamily = 'Inter';
-// Hero ve büyük başlıklar için modern humanist sans. Plus Jakarta Sans:
-// Calibri'ye yakın sıcak bir sans — ne klasik serif'in "formal dergi"
-// ağırlığı, ne mühendislik-geometrik Inter/Outfit'in soğukluğu.
-// Büyük puntoda karakterli (harflerde yuvarlak terminaller), küçük
-// puntoda nötr okunur. Tüm ağırlıklar (200-800) mevcut, hero'daki
-// font-black (700-800) "fake bold" değil gerçek. Dilara feedback
-// sonrası Fraunces'ten geçildi: "çok resmi duruyor, Calibri falan
-// olsun" — bu listedeki en yakın karşılık.
-export const DEFAULT_DISPLAY_FONT: FontFamily = 'Plus Jakarta Sans';
+// Hero ve büyük başlıklar için yuvarlak humanist sans. Manrope: terminalleri
+// (a, e, s, r gibi harflerin uçları) Plus Jakarta Sans'tan daha yuvarlak/
+// yumuşak — geometrik değil, Calibri'ye en yakın "keskin hatları olmayan"
+// karşılık. Tüm ağırlıklar (200-800) mevcut, hero'daki bold (700) gerçek.
+// Dilara iki iterasyon geri bildirimi sonrası: Fraunces (serif, "resmi
+// duruyor") → Plus Jakarta Sans ("hala keskin") → Manrope.
+export const DEFAULT_DISPLAY_FONT: FontFamily = 'Manrope';
 
 /**
  * Narrow an arbitrary (possibly DB-stored) string to a known family, or
