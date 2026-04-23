@@ -47,15 +47,21 @@ export default function PageHero({
           </>
         ) : (
           <>
+            {/* Sade arka plan — önceden sağ kenarda büyük tek-harf
+                watermark vardı (S, M, T...); Dilara feedback: "aşırı
+                saçma duruyor". Yerine çok hafif radial gradient +
+                editoryel yatay çizgi ızgarası (dergi kapak alt rejimi
+                hissi) — karakterli ama bağırmıyor. */}
             <div className="absolute inset-0 bg-[#0a0a0b]" />
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_30%,rgba(255,255,255,0.04),transparent_55%)]" />
-            <span
-              className="absolute top-1/2 right-10 -translate-y-1/2 font-editorial font-black text-white/[0.025] leading-none select-none pointer-events-none hidden md:block"
-              style={{ fontSize: 'clamp(10rem, 22vw, 22rem)' }}
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_15%_85%,rgba(255,255,255,0.035),transparent_55%)]" />
+            <div
+              className="absolute inset-0 opacity-[0.04] pointer-events-none"
+              style={{
+                backgroundImage:
+                  'repeating-linear-gradient(0deg, transparent, transparent 48px, rgba(255,255,255,0.5) 48px, rgba(255,255,255,0.5) 49px)',
+              }}
               aria-hidden="true"
-            >
-              {title.charAt(0).toUpperCase()}
-            </span>
+            />
           </>
         )}
       </div>
