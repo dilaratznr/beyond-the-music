@@ -190,35 +190,39 @@ export default async function DashboardPage() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between gap-4 flex-wrap">
+      {/* Editorial Header — "yayın evreni özeti" hissi. Eyebrow + Fraunces
+          başlık + italik son-30-gün özeti (dergi künyesi dokunuşu). */}
+      <div className="flex items-end justify-between gap-6 flex-wrap pb-6 border-b border-white/5">
         <div>
-          <h1 className="text-xl font-semibold text-zinc-100 tracking-tight">Dashboard</h1>
-          <p className="text-[13px] text-zinc-500 mt-0.5">
-            İçerik yönetim paneline hoş geldin · son 30 gün:{' '}
-            <span className="text-zinc-300 font-medium">{d.monthCounts.articles}</span> makale,{' '}
-            <span className="text-zinc-300 font-medium">{d.monthCounts.artists}</span> sanatçı,{' '}
-            <span className="text-zinc-300 font-medium">{d.monthCounts.albums}</span> albüm eklendi
+          <p className="text-[10px] uppercase tracking-[0.3em] text-zinc-500 font-semibold mb-2">
+            Yayın Kontrol · {new Date().toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' })}
+          </p>
+          <h1>Dashboard</h1>
+          <p className="text-[13px] text-zinc-500 mt-3 italic max-w-2xl leading-relaxed">
+            Son 30 günde{' '}
+            <span className="text-zinc-200 font-semibold not-italic">{d.monthCounts.articles}</span> makale,{' '}
+            <span className="text-zinc-200 font-semibold not-italic">{d.monthCounts.artists}</span> sanatçı,{' '}
+            <span className="text-zinc-200 font-semibold not-italic">{d.monthCounts.albums}</span> albüm arşive eklendi.
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
           <Link
             href="/admin/articles/new"
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white text-zinc-950 text-xs font-semibold rounded-md hover:bg-zinc-200 transition-colors"
+            className="inline-flex items-center gap-1.5 px-4 py-2 bg-white text-zinc-950 text-[12px] font-semibold rounded-md hover:bg-zinc-200 transition-colors"
           >
             <IconPlus size={12} />
             Yeni Makale
           </Link>
           <Link
             href="/admin/artists/new"
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-zinc-900 border border-zinc-800 text-zinc-300 text-xs font-medium rounded-md hover:bg-zinc-800 hover:text-white transition-colors"
+            className="inline-flex items-center gap-1.5 px-4 py-2 bg-white/[0.03] border border-white/10 text-zinc-200 text-[12px] font-medium rounded-md hover:bg-white/[0.06] hover:border-white/20 hover:text-white transition-colors"
           >
             <IconPlus size={12} />
             Yeni Sanatçı
           </Link>
           <Link
             href="/admin/albums/new"
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-zinc-900 border border-zinc-800 text-zinc-300 text-xs font-medium rounded-md hover:bg-zinc-800 hover:text-white transition-colors"
+            className="inline-flex items-center gap-1.5 px-4 py-2 bg-white/[0.03] border border-white/10 text-zinc-200 text-[12px] font-medium rounded-md hover:bg-white/[0.06] hover:border-white/20 hover:text-white transition-colors"
           >
             <IconPlus size={12} />
             Yeni Albüm

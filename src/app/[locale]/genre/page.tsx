@@ -5,11 +5,13 @@ import prisma from '@/lib/prisma';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { isSectionEnabled } from '@/lib/site-sections';
+import PageHero from '@/components/public/PageHero';
 
 export default async function GenrePage({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params;
   if (!(await isSectionEnabled('genre'))) notFound();
   const dict = getDictionary(locale);
+  const tr = locale === 'tr';
 
   const genres = await prisma.genre.findMany({
     where: { parentId: null },
@@ -21,13 +23,22 @@ export default async function GenrePage({ params }: { params: Promise<{ locale: 
 
   return (
     <div className="bg-[#0a0a0b] text-white">
-      {/* Header - same style as artist page */}
-      <section className="bg-[#0a0a0b] pt-24 pb-10 border-b border-white/5">
-        <div className="max-w-[1480px] mx-auto px-6 lg:px-10 xl:px-14">
-          <h1 className="text-3xl md:text-4xl font-bold font-editorial">{dict.genre.title}</h1>
-          <p className="text-zinc-500 text-sm mt-2">{genres.length} {locale === 'tr' ? 'ana tür' : 'main genres'} · {allSubgenres.length} {locale === 'tr' ? 'alt tür' : 'subgenres'}</p>
-        </div>
-      </section>
+      <PageHero
+        eyebrow={tr ? 'Keşfet' : 'Explore'}
+        title={dict.genre.title}
+        subtitle={tr ? 'Ritimden kültüre, sesten hikayeye.' : 'From rhythm to culture, sound to story.'}
+        meta={
+          <>
+            <span>{genres.length} {tr ? 'ana tür' : 'main genres'}</span>
+            {allSubgenres.length > 0 && (
+              <>
+                <span className="w-8 h-px bg-zinc-600" aria-hidden="true" />
+                <span>{allSubgenres.length} {tr ? 'alt tür' : 'subgenres'}</span>
+              </>
+            )}
+          </>
+        }
+      />
 
       {/* Genre Grid */}
       <div className="max-w-[1480px] mx-auto px-6 lg:px-10 xl:px-14 py-12">

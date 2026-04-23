@@ -117,8 +117,8 @@ export default function SearchBar({ locale }: { locale: string }) {
               onChange={(e) => setQuery(e.target.value)}
               aria-autocomplete="list"
               aria-controls="site-search-results"
-              placeholder={locale === 'tr' ? 'Sanatçı, tür, makale ara...' : 'Search artists, genres, articles...'}
-              className="w-52 md:w-72 pl-8 pr-3 py-1.5 bg-white/10 border border-white/10 rounded-lg text-white text-xs placeholder-zinc-500 focus:outline-none focus:border-white/25 transition-colors"
+              placeholder={locale === 'tr' ? 'Sanatçı, tür, makale…' : 'Search the archive…'}
+              className="w-52 md:w-80 pl-8 pr-8 py-2 bg-white/[0.04] border border-white/10 rounded-full text-white text-[13px] placeholder-zinc-500 placeholder:italic focus:outline-none focus:border-white/30 focus:bg-white/[0.08] transition-all"
             />
             {query && (
               <button
@@ -150,19 +150,19 @@ export default function SearchBar({ locale }: { locale: string }) {
           id="site-search-results"
           role="listbox"
           aria-label={locale === 'tr' ? 'Arama sonuçları' : 'Search results'}
-          className="absolute top-full right-0 mt-2 w-80 md:w-96 bg-zinc-900 border border-zinc-800 rounded-xl shadow-2xl overflow-hidden z-50"
+          className="absolute top-full right-0 mt-3 w-80 md:w-96 bg-zinc-950/95 backdrop-blur-xl border border-white/10 rounded-xl shadow-2xl overflow-hidden z-50"
         >
           {loading ? (
-            <div className="p-4 text-center text-zinc-500 text-xs" role="status" aria-live="polite">
-              {locale === 'tr' ? 'Aranıyor...' : 'Searching...'}
+            <div className="p-6 text-center text-zinc-500 text-xs italic" role="status" aria-live="polite">
+              {locale === 'tr' ? 'Aranıyor…' : 'Searching…'}
             </div>
           ) : results.length === 0 ? (
-            <div className="p-4 text-center text-zinc-500 text-xs" role="status">
-              {locale === 'tr' ? `"${query}" için sonuç bulunamadı` : `No results for "${query}"`}
+            <div className="p-6 text-center text-zinc-500 text-xs italic" role="status">
+              {locale === 'tr' ? (<>Arşivde <span className="text-zinc-300 not-italic">&ldquo;{query}&rdquo;</span> için kayıt yok.</>) : (<>No entry in the archive for <span className="text-zinc-300 not-italic">&ldquo;{query}&rdquo;</span>.</>)}
             </div>
           ) : (
             <div className="max-h-[400px] overflow-y-auto" style={{ scrollbarWidth: 'none' }}>
-              <p className="px-4 pt-3 pb-1 text-[9px] text-zinc-600 uppercase tracking-widest font-bold">
+              <p className="px-4 pt-4 pb-2 text-[10px] text-zinc-500 uppercase tracking-[0.3em] font-bold border-b border-white/5">
                 {results.length} {locale === 'tr' ? 'sonuç' : 'results'}
               </p>
               {results.map((r, i) => (
@@ -172,27 +172,29 @@ export default function SearchBar({ locale }: { locale: string }) {
                   role="option"
                   aria-selected="false"
                   onClick={() => { setOpen(false); setQuery(''); setResults([]); }}
-                  className="flex items-center gap-3 px-4 py-2.5 hover:bg-white/5 transition-colors"
+                  className="flex items-center gap-3 px-4 py-3 border-b border-white/5 last:border-b-0 hover:bg-white/[0.04] transition-colors"
                 >
                   {r.image ? (
-                    <img src={r.image} alt="" aria-hidden="true" className="w-10 h-10 rounded-lg object-cover flex-shrink-0" />
+                    <img src={r.image} alt="" aria-hidden="true" className="w-11 h-11 rounded-lg object-cover flex-shrink-0" />
                   ) : (
-                    <div className="w-10 h-10 rounded-lg bg-zinc-800 flex items-center justify-center text-zinc-600 text-sm flex-shrink-0" aria-hidden="true">
-                      {r.type === 'genre' ? '♫' : r.type === 'artist' ? '♪' : r.type === 'article' ? '✎' : '◉'}
+                    <div className="w-11 h-11 rounded-lg bg-gradient-to-br from-zinc-800 to-zinc-950 flex items-center justify-center font-editorial font-black text-white/20 text-base flex-shrink-0" aria-hidden="true">
+                      {r.title.charAt(0).toUpperCase()}
                     </div>
                   )}
                   <div className="min-w-0 flex-1">
-                    <p className="text-sm font-medium text-white truncate">{r.title}</p>
-                    <p className="text-[10px] text-zinc-500">{typeLabels[r.type] || r.type} · {r.sub}</p>
+                    <p className="text-[13px] font-semibold text-white truncate">{r.title}</p>
+                    <p className="text-[10px] text-zinc-500 uppercase tracking-wider mt-0.5 font-semibold">
+                      {typeLabels[r.type] || r.type} · <span className="normal-case tracking-normal font-normal">{r.sub}</span>
+                    </p>
                   </div>
                 </Link>
               ))}
               <Link
                 href={`/${locale}/search?q=${encodeURIComponent(query)}`}
                 onClick={() => { setOpen(false); }}
-                className="block px-4 py-3 text-center text-xs font-medium text-zinc-400 hover:text-white border-t border-zinc-800 transition-colors"
+                className="block px-4 py-3.5 text-center text-[11px] font-semibold uppercase tracking-widest text-zinc-400 hover:text-white hover:bg-white/[0.04] border-t border-white/10 transition-colors"
               >
-                {locale === 'tr' ? `"${query}" için tüm sonuçları gör →` : `See all results for "${query}" →`}
+                {locale === 'tr' ? `Tüm sonuçlar →` : `All results →`}
               </Link>
             </div>
           )}

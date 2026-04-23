@@ -109,29 +109,59 @@ export default function Navbar({ locale, sections }: NavbarProps) {
         </div>
       </nav>
       {mobileOpen && (
-        <div id="mobile-nav" className="md:hidden bg-zinc-900/98 backdrop-blur-md border-t border-zinc-800 px-6 py-3 space-y-2">
-          {links.map((link) => {
-            const cls = 'block text-sm font-medium text-zinc-300 hover:text-white py-2';
-            if (link.external) {
-              return (
-                <a
-                  key={link.href}
-                  href={link.href}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  onClick={() => setMobileOpen(false)}
-                  className={cls}
-                >
-                  {link.label}
-                </a>
+        <div
+          id="mobile-nav"
+          className="md:hidden bg-zinc-950/98 backdrop-blur-xl border-t border-white/10 px-6 pt-6 pb-10"
+        >
+          {/* Editorial mobile drawer — eyebrow + link'ler Fraunces'te,
+              her biri büyük satırlar, üstlerinde ince çizgi. Dergi
+              içindekiler sayfası hissi. */}
+          <p className="text-[10px] uppercase tracking-[0.35em] text-zinc-500 font-bold mb-6">
+            {locale === 'tr' ? 'Menü' : 'Menu'}
+          </p>
+          <nav aria-label="Mobile navigation" className="border-t border-white/10">
+            {links.map((link) => {
+              const active = link.exact ? pathname === link.href : pathname.startsWith(link.href);
+              const cls = cn(
+                'group flex items-baseline justify-between py-4 border-b border-white/10 transition-colors',
+                active ? 'text-white' : 'text-zinc-400 hover:text-white'
               );
-            }
-            return (
-              <Link key={link.href} href={link.href} onClick={() => setMobileOpen(false)} className={cls}>
-                {link.label}
-              </Link>
-            );
-          })}
+              const content = (
+                <>
+                  <span className="font-editorial text-2xl tracking-[-0.01em] font-semibold">
+                    {link.label}
+                  </span>
+                  <span className="text-sm text-zinc-600 group-hover:text-white transition-colors">
+                    →
+                  </span>
+                </>
+              );
+              if (link.external) {
+                return (
+                  <a
+                    key={link.href}
+                    href={link.href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={() => setMobileOpen(false)}
+                    className={cls}
+                  >
+                    {content}
+                  </a>
+                );
+              }
+              return (
+                <Link key={link.href} href={link.href} onClick={() => setMobileOpen(false)} className={cls}>
+                  {content}
+                </Link>
+              );
+            })}
+          </nav>
+          {/* Alt imza — dil geçişi hatırlatması, footer'daki gibi küçük
+              uppercase metin. */}
+          <p className="mt-8 text-[10px] uppercase tracking-[0.3em] text-zinc-600 font-semibold">
+            Beyond the Music · {new Date().getFullYear()}
+          </p>
         </div>
       )}
     </header>
