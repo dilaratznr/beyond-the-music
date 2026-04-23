@@ -6,6 +6,26 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { isSectionEnabled } from '@/lib/site-sections';
 import PageHero from '@/components/public/PageHero';
+import CardImage from '@/components/public/CardImage';
+
+// Her türe farklı bir gradient paleti — görsel yüklenemezse kartların
+// birbirinden ayırt edilebilmesi için. Tur slug'ının bir hash'iyle
+// index'leniyor, seed-stable (aynı tür hep aynı gradient).
+const GRADIENTS = [
+  'from-zinc-800 to-zinc-950',
+  'from-emerald-900/60 to-zinc-950',
+  'from-rose-900/50 to-zinc-950',
+  'from-indigo-900/55 to-zinc-950',
+  'from-amber-900/50 to-zinc-950',
+  'from-cyan-900/55 to-zinc-950',
+  'from-purple-900/55 to-zinc-950',
+  'from-orange-900/50 to-zinc-950',
+];
+function pickGradient(seed: string): string {
+  let h = 0;
+  for (let i = 0; i < seed.length; i++) h = (h * 31 + seed.charCodeAt(i)) >>> 0;
+  return GRADIENTS[h % GRADIENTS.length];
+}
 
 export default async function GenrePage({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params;
@@ -43,21 +63,20 @@ export default async function GenrePage({ params }: { params: Promise<{ locale: 
       {/* Genre Grid */}
       <div className="max-w-[1480px] mx-auto px-6 lg:px-10 xl:px-14 py-12">
         <div className="gsap-stagger grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-3">
-          {genres.map((g) => (
-            <Link key={g.id} href={`/${locale}/genre/${g.slug}`}
-              className="group relative block rounded-xl overflow-hidden aspect-[3/4] bg-zinc-800 img-zoom hover-lift">
-              {g.image ? (
-                <img src={g.image} alt="" className="absolute inset-0 w-full h-full object-cover opacity-50 group-hover:opacity-80 transition-opacity duration-500" />
-              ) : (
-                <div className="absolute inset-0 bg-gradient-to-br from-zinc-700 to-zinc-900 flex items-center justify-center text-4xl text-white/10">♫</div>
-              )}
-              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/5 to-transparent" />
-              <div className="absolute bottom-0 left-0 right-0 p-3">
-                <h3 className="text-white font-bold text-xs">{locale === 'tr' ? g.nameTr : g.nameEn}</h3>
-                <p className="text-white/40 text-[9px] mt-0.5">{g._count.artists} {locale === 'tr' ? 'sanatçı' : 'artists'} · {g.children.length} {locale === 'tr' ? 'alt tür' : 'sub'}</p>
-              </div>
-            </Link>
-          ))}
+          {genres.map((g) => {
+            const name = tr ? g.nameTr : g.nameEn;
+            return (
+              <Link key={g.id} href={`/${locale}/genre/${g.slug}`}
+                className="group relative block rounded-xl overflow-hidden aspect-[3/4] bg-zinc-900 hover-lift">
+                <CardImage src={g.image} letter={name.charAt(0)} gradientClass={pickGradient(g.slug)} />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/10 to-transparent" />
+                <div className="absolute bottom-0 left-0 right-0 p-3 z-10">
+                  <h3 className="text-white font-bold text-xs">{name}</h3>
+                  <p className="text-white/40 text-[9px] mt-0.5">{g._count.artists} {tr ? 'sanatçı' : 'artists'} · {g.children.length} {tr ? 'alt tür' : 'sub'}</p>
+                </div>
+              </Link>
+            );
+          })}
         </div>
 
         {/* Subgenres */}
