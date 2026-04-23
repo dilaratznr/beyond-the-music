@@ -34,7 +34,11 @@ export default function Footer({ locale, dict }: FooterProps) {
           <div>
             <h4 className="text-white font-semibold text-sm uppercase tracking-wider mb-4">{locale === 'tr' ? 'Platform' : 'Platform'}</h4>
             <ul className="space-y-2 text-sm">
-              <li><span className="hover:text-white transition-colors cursor-pointer">{dict.footer.about}</span></li>
+              {/* "Hakkında" span'den Link'e çevrildi — tıklanabilir
+                  görünüyordu ama bağlı olduğu bir yere gitmiyordu.
+                  /contact sayfası "about" içeriğini de kapsar (iletişim
+                  + platform hakkında blok), ayrı /about route'u yok. */}
+              <li><Link href={`/${locale}/contact`} className="hover:text-white transition-colors">{dict.footer.about}</Link></li>
               <li><Link href={`/${locale}/contact`} className="hover:text-white transition-colors">{dict.footer.contact}</Link></li>
               <li><span className="text-zinc-600">themusicbeyondtr@gmail.com</span></li>
             </ul>
