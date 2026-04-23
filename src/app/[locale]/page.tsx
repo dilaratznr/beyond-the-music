@@ -11,6 +11,24 @@ import HeroVideoCarousel from '@/components/public/HeroVideoCarousel';
 import TextRevealOnScroll from '@/components/public/TextRevealOnScroll';
 import MagneticButton from '@/components/public/MagneticButton';
 import HorizontalScroll from '@/components/public/HorizontalScroll';
+import CardImage from '@/components/public/CardImage';
+
+// Kart arka plan paleti (görsel yoksa). Slug hash'iyle stabil dağıtım.
+const CARD_PALETTES = [
+  'from-zinc-800 to-zinc-950',
+  'from-rose-900/55 to-zinc-950',
+  'from-emerald-900/55 to-zinc-950',
+  'from-indigo-900/60 to-zinc-950',
+  'from-amber-900/50 to-zinc-950',
+  'from-cyan-900/55 to-zinc-950',
+  'from-purple-900/55 to-zinc-950',
+  'from-orange-900/55 to-zinc-950',
+];
+function cardGradient(seed: string): string {
+  let h = 0;
+  for (let i = 0; i < seed.length; i++) h = (h * 31 + seed.charCodeAt(i)) >>> 0;
+  return CARD_PALETTES[h % CARD_PALETTES.length];
+}
 
 export default async function HomePage({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params;
@@ -125,32 +143,30 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
         </div>
 
         <HorizontalScroll>
-          {genres.map((g) => (
-            <Link
-              key={g.id}
-              href={`/${locale}/genre/${g.slug}`}
-              className="flex-shrink-0 w-[240px] md:w-[280px] group"
-            >
-              <div className="relative rounded-2xl overflow-hidden aspect-[3/4] bg-zinc-900 card-shine hover-lift">
-                {g.image ? (
-                  <img
+          {genres.map((g) => {
+            const genreName = tr ? g.nameTr : g.nameEn;
+            return (
+              <Link
+                key={g.id}
+                href={`/${locale}/genre/${g.slug}`}
+                className="flex-shrink-0 w-[240px] md:w-[280px] group"
+              >
+                <div className="relative rounded-2xl overflow-hidden aspect-[3/4] bg-zinc-900 card-shine hover-lift">
+                  <CardImage
                     src={g.image}
-                    alt=""
-                    loading="lazy"
-                    decoding="async"
-                    className="absolute inset-0 w-full h-full object-cover opacity-65 group-hover:opacity-95 group-hover:scale-105 transition-all duration-700"
+                    letter={genreName.charAt(0)}
+                    gradientClass={cardGradient(g.slug)}
+                    imgClassName="opacity-65 group-hover:opacity-95 transition-all duration-700"
                   />
-                ) : (
-                  <div className="absolute inset-0 bg-gradient-to-br from-zinc-800 to-zinc-950" />
-                )}
-                <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/10 to-transparent" />
-                <div className="absolute bottom-0 left-0 right-0 p-5">
-                  <h3 className="text-xl md:text-2xl font-black font-editorial tracking-[-0.02em]">{tr ? g.nameTr : g.nameEn}</h3>
-                  <div className="mt-2 w-0 group-hover:w-10 h-[2px] bg-white transition-all duration-500" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/10 to-transparent" />
+                  <div className="absolute bottom-0 left-0 right-0 p-5 z-10">
+                    <h3 className="text-xl md:text-2xl font-black font-editorial tracking-[-0.02em]">{genreName}</h3>
+                    <div className="mt-2 w-0 group-hover:w-10 h-[2px] bg-white transition-all duration-500" />
+                  </div>
                 </div>
-              </div>
-            </Link>
-          ))}
+              </Link>
+            );
+          })}
           {/* Büyük "Tümünü Gör" kartı — en sonda, aynı boyut */}
           <Link
             href={`/${locale}/genre`}
@@ -181,11 +197,10 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
           </div>
           <div className="gsap-stagger grid grid-cols-2 md:grid-cols-5 gap-3">
             {artists.slice(0, 10).map((a) => (
-              <Link key={a.id} href={`/${locale}/artist/${a.slug}`} className="group relative rounded-xl overflow-hidden aspect-[3/4] bg-zinc-800 img-zoom hover-lift card-shine">
-                {a.image ? <img src={a.image} alt={a.name} loading="lazy" decoding="async" className="absolute inset-0 w-full h-full object-cover" />
-                  : <div className="absolute inset-0 bg-gradient-to-br from-zinc-400 to-zinc-700 flex items-center justify-center text-4xl text-white/20">♪</div>}
+              <Link key={a.id} href={`/${locale}/artist/${a.slug}`} className="group relative rounded-xl overflow-hidden aspect-[3/4] bg-zinc-900 hover-lift card-shine">
+                <CardImage src={a.image} letter={a.name.charAt(0)} gradientClass={cardGradient(a.slug)} alt={a.name} />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/5 to-transparent" />
-                <div className="absolute bottom-0 left-0 right-0 p-3">
+                <div className="absolute bottom-0 left-0 right-0 p-3 z-10">
                   <h3 className="text-white font-bold text-xs">{a.name}</h3>
                   <p className="text-white/40 text-[9px] mt-0.5">{a.genres.map((g) => tr ? g.genre.nameTr : g.genre.nameEn).join(' · ')}</p>
                 </div>
@@ -269,15 +284,11 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
                 <Link
                   key={alb.id}
                   href={`/${locale}/artist/${alb.artist.slug}#${alb.slug}`}
-                  className="group relative block rounded-xl overflow-hidden aspect-square bg-zinc-900 img-zoom hover-lift card-shine"
+                  className="group relative block rounded-xl overflow-hidden aspect-square bg-zinc-900 hover-lift card-shine"
                 >
-                  {alb.coverImage ? (
-                    <img src={alb.coverImage} alt={alb.title} loading="lazy" decoding="async" className="absolute inset-0 w-full h-full object-cover" />
-                  ) : (
-                    <div className="absolute inset-0 bg-gradient-to-br from-zinc-800 to-zinc-950 flex items-center justify-center text-4xl text-white/20">♪</div>
-                  )}
+                  <CardImage src={alb.coverImage} letter={alb.title.charAt(0)} gradientClass={cardGradient(alb.slug)} alt={alb.title} />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/10 to-transparent" />
-                  <div className="absolute bottom-0 left-0 right-0 p-3">
+                  <div className="absolute bottom-0 left-0 right-0 p-3 z-10">
                     <h3 className="text-white font-bold text-xs truncate">{alb.title}</h3>
                     <p className="text-white/50 text-[10px] mt-0.5 truncate">{alb.artist.name}</p>
                   </div>
