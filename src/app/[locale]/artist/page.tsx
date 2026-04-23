@@ -7,7 +7,27 @@ import { notFound } from 'next/navigation';
 import ScrollReveal from '@/components/public/ScrollReveal';
 import EmptyState from '@/components/public/EmptyState';
 import PageHero from '@/components/public/PageHero';
+import CardImage from '@/components/public/CardImage';
 import { isSectionEnabled } from '@/lib/site-sections';
+
+// Görsel yoksa sanatçı kartının arka plan paleti — slug hash'ine göre
+// stabil atama (aynı sanatçı hep aynı renkle görünür). CardImage'in
+// gradientClass prop'una verilir.
+const ARTIST_GRADIENTS = [
+  'from-zinc-800 to-zinc-950',
+  'from-rose-900/55 to-zinc-950',
+  'from-emerald-900/55 to-zinc-950',
+  'from-indigo-900/60 to-zinc-950',
+  'from-amber-900/50 to-zinc-950',
+  'from-cyan-900/55 to-zinc-950',
+  'from-purple-900/55 to-zinc-950',
+  'from-orange-900/55 to-zinc-950',
+];
+function artistGradient(seed: string): string {
+  let h = 0;
+  for (let i = 0; i < seed.length; i++) h = (h * 31 + seed.charCodeAt(i)) >>> 0;
+  return ARTIST_GRADIENTS[h % ARTIST_GRADIENTS.length];
+}
 
 type ArtistWithRelations = Awaited<ReturnType<typeof loadArtists>>[number];
 
@@ -35,22 +55,17 @@ function ArtistGrid({ list, locale }: { list: ArtistWithRelations[]; locale: str
         <ScrollReveal key={a.id} delay={i * 40} direction="up">
           <Link
             href={`/${locale}/artist/${a.slug}`}
-            className="group relative block rounded-xl overflow-hidden aspect-[3/4] bg-zinc-800 img-zoom hover-lift"
+            className="group relative block rounded-xl overflow-hidden aspect-[3/4] bg-zinc-900 hover-lift"
           >
-            {a.image ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={a.image}
-                alt={a.name}
-                className="absolute inset-0 w-full h-full object-cover"
-              />
-            ) : (
-              <div className="absolute inset-0 bg-gradient-to-br from-zinc-700 to-zinc-900 flex items-center justify-center text-4xl text-white/10">
-                ♪
-              </div>
-            )}
+            <CardImage
+              src={a.image}
+              letter={a.name.charAt(0)}
+              gradientClass={artistGradient(a.slug)}
+              alt={a.name}
+              imgClassName="opacity-80 group-hover:opacity-100 transition-opacity duration-500"
+            />
             <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/5 to-transparent" />
-            <div className="absolute bottom-0 left-0 right-0 p-3">
+            <div className="absolute bottom-0 left-0 right-0 p-3 z-10">
               <h3 className="text-white font-bold text-xs">{a.name}</h3>
               <p className="text-white/40 text-[9px] mt-0.5">
                 {a.genres.map((g) => (locale === 'tr' ? g.genre.nameTr : g.genre.nameEn)).join(' · ')}
