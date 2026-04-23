@@ -261,7 +261,8 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
                 <p className="text-[10px] uppercase tracking-[0.3em] text-zinc-600 font-bold">{tr ? 'Öne Çıkan' : 'Featured'}</p>
                 <h2 className="text-3xl md:text-4xl font-black font-editorial mt-1 tracking-[-0.03em] gsap-title-reveal">{tr ? 'Seçili Albümler' : 'Curated Albums'}</h2>
               </div>
-              <Link href={`/${locale}/albums`} className="text-[10px] font-bold text-zinc-500 hover:text-white uppercase tracking-wider underline-grow">{tr ? 'Tümü' : 'All'} →</Link>
+              {/* "Tümü" linki kaldırıldı — /albums route'u yok, 404'e
+                  gidiyordu. Albümler sanatçı sayfaları üstünden gezilir. */}
             </div>
             <div className="gsap-stagger grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
               {featuredAlbums.map((alb) => (

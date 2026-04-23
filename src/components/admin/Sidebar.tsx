@@ -46,8 +46,15 @@ const contentItems: { href: string; label: string; icon: IconComp; section: stri
   { href: '/admin/listening-paths', label: 'Dinleme Rotaları', icon: IconPath, section: 'LISTENING_PATH' },
 ];
 
-const managementItems: { href: string; label: string; icon: IconComp }[] = [
+// EDITOR + ADMIN + SUPER_ADMIN görmeli — /admin/featured'ın API'si
+// EDITOR+ icin açık, ama eskiden sadece SUPER_ADMIN managementItems
+// bloğunda gözüküyordu → editörler link'i göremiyordu. Ayrı bir
+// "kürasyon" bloğuna alındı.
+const curationItems: { href: string; label: string; icon: IconComp }[] = [
   { href: '/admin/featured', label: 'Öne Çıkarılanlar', icon: IconStar },
+];
+
+const managementItems: { href: string; label: string; icon: IconComp }[] = [
   { href: '/admin/import', label: 'İçe Aktar', icon: IconUpload },
   { href: '/admin/users', label: 'Kullanıcılar', icon: IconUsers },
   { href: '/admin/hero-videos', label: 'Hero Videoları', icon: IconVideo },
@@ -233,6 +240,26 @@ export default function Sidebar() {
         )}
         <div className="space-y-0.5">
           {visible.map((item) => (
+            <NavLink
+              key={item.href}
+              href={item.href}
+              label={item.label}
+              Icon={item.icon}
+              active={pathname.startsWith(item.href)}
+              collapsed={collapsed}
+            />
+          ))}
+        </div>
+
+        {/* Kürasyon — her rol (EDITOR+) görür. Featured gibi içerik
+            ediyoryal seçimleri buraya girer. */}
+        {!collapsed && (
+          <p className="px-2.5 pt-4 pb-1 text-[10px] text-zinc-600 uppercase tracking-[0.12em] font-semibold">
+            Kürasyon
+          </p>
+        )}
+        <div className="space-y-0.5">
+          {curationItems.map((item) => (
             <NavLink
               key={item.href}
               href={item.href}
