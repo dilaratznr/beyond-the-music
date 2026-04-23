@@ -106,7 +106,12 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
           <div>
             <p className="text-zinc-400 text-[11px] tracking-[0.3em] uppercase font-bold mb-3">{tr ? 'Keşfet' : 'Explore'}</p>
             <h2 className="section-title font-editorial tracking-[-0.03em]">{dict.genre.title}</h2>
-            <p className="text-zinc-400 text-sm md:text-base mt-5 max-w-xl leading-relaxed">{tr ? 'Aşağı kaydır — türler yanına akacak.' : 'Scroll down — genres will slide sideways.'}</p>
+            {/* Önceki "Aşağı kaydır — türler yanına akacak" metni kaldırıldı
+                (Dilara: "ne saçma duruyor, tasarım kusursuz olmalı"). O cümle
+                developer için yazılmış bir davranış ipucuydu; okuyucu için
+                anlamı yok. Yerine editoryel bir alt-başlık: türlerin
+                kültürel/sessel yelpazesini çağrıştıran iki kısa cümle. */}
+            <p className="text-zinc-500 text-base md:text-lg mt-6 max-w-lg leading-relaxed font-light italic">{tr ? 'Ritimden kültüre, sesten hikayeye.' : 'From rhythm to culture, sound to story.'}</p>
           </div>
           <Link
             href={`/${locale}/genre`}

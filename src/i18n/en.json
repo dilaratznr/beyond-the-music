@@ -19,7 +19,7 @@
     "explore": "Explore"
   },
   "genre": {
-    "title": "GENRE",
+    "title": "Genres",
     "subgenre": "Subgenre",
     "subgenres": "Subgenres",
     "artists": "Artists",
@@ -29,7 +29,7 @@
     "curatedMovements": "Curated Movements"
   },
   "artist": {
-    "title": "ARTIST",
+    "title": "Artists",
     "solo": "Solo",
     "group": "Group/Band",
     "composer": "Composer",
@@ -41,7 +41,7 @@
     "connectedArchitects": "Connected Architects"
   },
   "architects": {
-    "title": "THE ARCHITECTS",
+    "title": "The Architects",
     "producer": "Producer",
     "studio": "Studio",
     "manager": "Manager",
@@ -50,7 +50,7 @@
     "associatedArtists": "Associated Artists"
   },
   "theory": {
-    "title": "THE THEORY",
+    "title": "The Theory",
     "soundStructure": "Sound structure and form",
     "rhythm": "Rhythm and temporal identity",
     "harmony": "Harmonic language",
@@ -59,7 +59,7 @@
     "structural": "Structural analysis across genres"
   },
   "listeningPaths": {
-    "title": "LISTENING PATHS",
+    "title": "Listening Paths",
     "description": "Curated listening journeys designed around experience rather than chronology",
     "emotion": "Emotion-driven sequences",
     "era": "Era-based explorations",

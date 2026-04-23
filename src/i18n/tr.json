@@ -19,7 +19,7 @@
     "explore": "Keşfet"
   },
   "genre": {
-    "title": "TÜR",
+    "title": "Türler",
     "subgenre": "Alt Tür",
     "subgenres": "Alt Türler",
     "artists": "Sanatçılar",
@@ -29,7 +29,7 @@
     "curatedMovements": "Küratöryel Hareketler"
   },
   "artist": {
-    "title": "SANATÇI",
+    "title": "Sanatçılar",
     "solo": "Solo",
     "group": "Grup/Band",
     "composer": "Besteci",
@@ -41,7 +41,7 @@
     "connectedArchitects": "Bağlı Mimarlar"
   },
   "architects": {
-    "title": "MİMARLAR",
+    "title": "Mimarlar",
     "producer": "Prodüktör",
     "studio": "Stüdyo",
     "manager": "Menajer",
@@ -50,7 +50,7 @@
     "associatedArtists": "Çalıştığı Sanatçılar"
   },
   "theory": {
-    "title": "TEORİ",
+    "title": "Teori",
     "soundStructure": "Ses yapısı ve form",
     "rhythm": "Ritim ve zamansal kimlik",
     "harmony": "Harmonik dil",
@@ -59,7 +59,7 @@
     "structural": "Türler arası yapısal analiz"
   },
   "listeningPaths": {
-    "title": "DİNLEME ROTALARI",
+    "title": "Dinleme Rotaları",
     "description": "Kronoloji yerine deneyim odaklı küratöryel dinleme yolculukları",
     "emotion": "Duygu odaklı diziler",
     "era": "Dönem keşifleri",
