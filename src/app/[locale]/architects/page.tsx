@@ -5,6 +5,7 @@ import prisma from '@/lib/prisma';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { isSectionEnabled } from '@/lib/site-sections';
+import EmptyState from '@/components/public/EmptyState';
 
 export default async function ArchitectsPage({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params;
@@ -37,19 +38,26 @@ export default async function ArchitectsPage({ params }: { params: Promise<{ loc
       </section>
 
       <div className="max-w-[1480px] mx-auto px-6 lg:px-10 xl:px-14 py-12">
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
-          {architects.map((arch) => (
-            <Link key={arch.id} href={`/${locale}/architects/${arch.slug}`}
-              className="group bg-zinc-900 rounded-xl overflow-hidden  hover-lift">
-              {arch.image && <div className="overflow-hidden img-zoom"><img src={arch.image} alt={arch.name} className="w-full h-40 object-cover" /></div>}
-              <div className="p-5">
-                <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">{labels[arch.type]}</span>
-                <h3 className="text-base font-bold mt-1">{arch.name}</h3>
-                <p className="text-xs text-zinc-500 mt-1">{arch._count.artists} artists</p>
-              </div>
-            </Link>
-          ))}
-        </div>
+        {architects.length > 0 ? (
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
+            {architects.map((arch) => (
+              <Link key={arch.id} href={`/${locale}/architects/${arch.slug}`}
+                className="group bg-zinc-900 rounded-xl overflow-hidden  hover-lift">
+                {arch.image && <div className="overflow-hidden img-zoom"><img src={arch.image} alt={arch.name} className="w-full h-40 object-cover" /></div>}
+                <div className="p-5">
+                  <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">{labels[arch.type]}</span>
+                  <h3 className="text-base font-bold mt-1">{arch.name}</h3>
+                  <p className="text-xs text-zinc-500 mt-1">{arch._count.artists} {locale === 'tr' ? 'sanatçı' : 'artists'}</p>
+                </div>
+              </Link>
+            ))}
+          </div>
+        ) : (
+          <EmptyState
+            title={locale === 'tr' ? 'Henüz bir mimar kaydı yok.' : 'No architects recorded yet.'}
+            hint={locale === 'tr' ? 'Prodüktörler, stüdyolar, etiketler — yakında' : 'Producers, studios, labels — soon'}
+          />
+        )}
       </div>
     </div>
   );

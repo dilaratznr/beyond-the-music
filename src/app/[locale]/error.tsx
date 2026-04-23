@@ -17,16 +17,18 @@ export default function LocaleError({
   const copy =
     locale === 'tr'
       ? {
+          eyebrow: 'Teknik arıza',
           title: 'Bir şeyler ters gitti',
-          desc: 'Sayfayı tekrar denemek ister misin?',
+          desc: 'Beklenmedik bir hata oluştu. Tekrar denemek bazen işe yarar.',
           retry: 'Tekrar dene',
           home: 'Ana sayfaya dön',
         }
       : {
+          eyebrow: 'Technical fault',
           title: 'Something went wrong',
-          desc: 'Give the page another try.',
+          desc: 'An unexpected error occurred. Sometimes a retry is all it takes.',
           retry: 'Try again',
-          home: 'Go home',
+          home: 'Return home',
         };
 
   useEffect(() => {
@@ -35,27 +37,49 @@ export default function LocaleError({
 
   return (
     <div className="bg-[#0a0a0b] text-white min-h-screen flex items-center justify-center px-6">
-      <div className="max-w-md text-center">
-        <p className="text-xs uppercase tracking-widest text-emerald-500/60 mb-3">
-          Error
+      {/* 404'le aynı dekoratif dil — gradient + oversized watermark. */}
+      <div
+        className="absolute inset-0 bg-[radial-gradient(circle_at_70%_30%,rgba(255,255,255,0.05),transparent_55%)] pointer-events-none"
+        aria-hidden="true"
+      />
+      <span
+        className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 font-editorial font-black text-white/[0.03] select-none pointer-events-none leading-none"
+        style={{ fontSize: 'clamp(10rem, 25vw, 22rem)' }}
+        aria-hidden="true"
+      >
+        500
+      </span>
+
+      <div className="relative max-w-xl text-center">
+        <p className="text-[11px] uppercase tracking-[0.35em] text-zinc-500 font-bold mb-6 flex items-center justify-center gap-3">
+          <span className="w-10 h-px bg-zinc-600" />
+          {copy.eyebrow}
+          <span className="w-10 h-px bg-zinc-600" />
         </p>
-        <h1 className="text-3xl md:text-4xl font-bold mb-4">{copy.title}</h1>
-        <p className="text-zinc-400 mb-8 leading-relaxed">{copy.desc}</p>
+        <h1
+          className="font-editorial tracking-[-0.02em] leading-[1] mb-6"
+          style={{ fontSize: 'clamp(2.25rem, 4.5vw, 3.75rem)', fontWeight: 700 }}
+        >
+          {copy.title}
+        </h1>
+        <p className="text-zinc-400 text-base md:text-lg leading-relaxed mb-8 max-w-md mx-auto font-light italic">
+          {copy.desc}
+        </p>
         {error?.digest && (
-          <p className="text-xs text-zinc-600 font-mono mb-6 break-all">
-            {error.digest}
+          <p className="text-[10px] tracking-widest text-zinc-600 font-mono mb-8 break-all">
+            ref: {error.digest}
           </p>
         )}
-        <div className="flex gap-3 justify-center">
+        <div className="flex flex-col sm:flex-row gap-3 justify-center">
           <button
             onClick={() => unstable_retry()}
-            className="px-5 py-2.5 bg-emerald-500 text-black font-semibold rounded-full hover:bg-emerald-400 transition-colors"
+            className="px-8 py-3.5 bg-white text-black font-bold rounded-full text-sm hover:bg-zinc-200 transition-colors"
           >
             {copy.retry}
           </button>
           <Link
             href={`/${locale}`}
-            className="px-5 py-2.5 border border-white/10 text-white font-semibold rounded-full hover:bg-white/5 transition-colors"
+            className="px-8 py-3.5 border border-white/15 text-white font-medium rounded-full text-sm hover:bg-white/5 hover:border-white/30 transition-colors"
           >
             {copy.home}
           </Link>

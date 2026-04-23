@@ -88,7 +88,7 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
             {loc('hero_title')}
           </h1>
           <p className="mt-8 text-zinc-300 text-lg md:text-xl font-light leading-relaxed max-w-2xl whitespace-pre-line">{loc('hero_desc')}</p>
-          <div className="mt-10 flex gap-3">
+          <div className="mt-10 flex flex-wrap gap-3">
             <MagneticButton href={`/${locale}/genre`} className="px-8 py-4 bg-white text-black text-sm font-bold rounded-full inline-block">{loc('hero_cta_text')} →</MagneticButton>
             <MagneticButton href={`/${locale}/listening-paths`} className="px-8 py-4 border border-white/20 text-white text-sm rounded-full inline-block">{loc('hero_cta2_text')}</MagneticButton>
           </div>

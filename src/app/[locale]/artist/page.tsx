@@ -5,6 +5,7 @@ import prisma from '@/lib/prisma';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import ScrollReveal from '@/components/public/ScrollReveal';
+import EmptyState from '@/components/public/EmptyState';
 import { isSectionEnabled } from '@/lib/site-sections';
 
 type ArtistWithRelations = Awaited<ReturnType<typeof loadArtists>>[number];
@@ -19,9 +20,12 @@ async function loadArtists() {
 function ArtistGrid({ list, locale }: { list: ArtistWithRelations[]; locale: string }) {
   if (list.length === 0) {
     return (
-      <p className="text-zinc-600 text-sm col-span-full py-8 text-center">
-        {locale === 'tr' ? 'Henüz içerik yok' : 'No content yet'}
-      </p>
+      <div className="col-span-full">
+        <EmptyState
+          title={locale === 'tr' ? 'Bu listede henüz sanatçı yok.' : 'No artists here yet.'}
+          hint={locale === 'tr' ? 'Yakında — kürasyon sürüyor' : 'Coming soon — curation in progress'}
+        />
+      </div>
     );
   }
   return (

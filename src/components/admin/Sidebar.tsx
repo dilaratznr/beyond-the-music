@@ -136,14 +136,19 @@ export default function Sidebar() {
         collapsed ? 'w-14' : 'w-60'
       )}
     >
-      {/* Brand */}
-      <div className="h-14 px-3 border-b border-zinc-900 flex items-center gap-2">
+      {/* Brand — küçük Fraunces "B" markası + editoryel "Beyond" kelimesi.
+          Public site'daki hero mantığıyla konuşsun: admin bir yönetim
+          paneli ama aynı yayının back-office'i. */}
+      <div className="h-14 px-4 border-b border-zinc-900 flex items-center gap-2.5">
         <Link href="/admin/dashboard" className="flex items-center gap-2.5 min-w-0 text-white">
-          <span className="flex-shrink-0 w-7 h-7 rounded-md bg-gradient-to-br from-white/10 to-white/5 ring-1 ring-white/10 flex items-center justify-center">
-            <IconHeadphones size={15} />
+          <span className="flex-shrink-0 w-7 h-7 rounded-md bg-gradient-to-br from-white/10 to-white/5 ring-1 ring-white/10 flex items-center justify-center font-editorial font-bold text-[13px] leading-none">
+            B
           </span>
           {!collapsed && (
-            <span className="font-semibold text-[13px] tracking-tight truncate">BTM Admin</span>
+            <span className="flex flex-col leading-none">
+              <span className="font-editorial text-[14px] text-white tracking-tight">Beyond</span>
+              <span className="text-[9px] uppercase tracking-[0.3em] text-zinc-500 mt-0.5">Editor</span>
+            </span>
           )}
         </Link>
       </div>

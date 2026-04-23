@@ -187,70 +187,169 @@ html { scroll-behavior: smooth; }
    Makale HTML'i tiptap'tan geliyor (h1/h2/h3/p/ul/ol/a/img/blockquote).
    Tailwind v4 + @tailwindcss/typography plugin'i yok → prose-* modifier
    class'ları no-op. Bu yüzden makale gövdesi için CSS kurallarını elle
-   yazıyoruz. Dark bg üzerine okuma konforu ön planda. */
+   yazıyoruz.
+
+   Dergi estetiği: uzun-form okumada göz yormayan fluid boyut, serif'e
+   uygun satır arası, büyük hava alan heading hiyerarşisi, klasik
+   italik blockquote, editoryel drop-cap tadı ilk paragrafta. */
 .article-body {
-  color: #d4d4d8; /* zinc-300 — tam beyaz değil, göz yormayan ton */
-  font-size: 1.075rem;
-  line-height: 1.85;
+  color: #e4e4e7; /* zinc-200 — dark bg'de düşük kontrast yormuyor */
+  font-size: clamp(1.0625rem, 1vw + 0.875rem, 1.1875rem); /* 17→19px fluid */
+  line-height: 1.8;
+  font-weight: 400;
 }
-.article-body > * + * { margin-top: 1.4em; }
+.article-body > * + * { margin-top: 1.5em; }
+
+/* Headings: Fraunces display font, sakin ağırlık, geniş boşluklar —
+   reading rhythm'i kırmadan bölüm ayrımı. */
 .article-body h1,
 .article-body h2,
 .article-body h3,
 .article-body h4 {
   font-family: var(--font-display);
-  letter-spacing: -0.02em;
+  letter-spacing: -0.025em;
   color: #fff;
-  font-weight: 800;
-  line-height: 1.2;
-  margin-top: 2.5em;
-  margin-bottom: 0.75em;
+  font-weight: 700;
+  line-height: 1.15;
+  margin-top: 2.25em;
+  margin-bottom: 0.6em;
 }
-.article-body h1 { font-size: clamp(1.75rem, 3.5vw, 2.5rem); }
-.article-body h2 { font-size: clamp(1.5rem, 3vw, 2rem); }
-.article-body h3 { font-size: clamp(1.25rem, 2.5vw, 1.5rem); }
-.article-body h4 { font-size: 1.125rem; }
+.article-body h1 { font-size: clamp(2rem, 3.5vw, 2.75rem); }
+.article-body h2 { font-size: clamp(1.625rem, 2.75vw, 2.125rem); }
+.article-body h3 { font-size: clamp(1.25rem, 2vw, 1.5rem); font-weight: 600; }
+.article-body h4 {
+  font-size: 1.0625rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-family: var(--font-body);
+  color: #a1a1aa;
+}
+
+/* İlk paragraf: dergi sayfa açılışındaki "intro" hissi — biraz daha
+   büyük, ferah, ama drop-cap değil (drop-cap Türkçe uzun kelimelerde
+   ürpertici kırılmalara neden olabilir). */
+.article-body > p:first-child {
+  font-size: 1.15em;
+  line-height: 1.75;
+  color: #fafafa;
+}
+
 .article-body p { margin: 0; }
+
+/* Linkler: metin içinde ince alt-çizgi, hover'da beyaza oturuyor. */
 .article-body a {
   color: #fff;
   text-decoration: underline;
-  text-decoration-color: rgba(255,255,255,0.3);
-  text-underline-offset: 3px;
+  text-decoration-color: rgba(255,255,255,0.35);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 4px;
   transition: text-decoration-color 0.2s ease;
 }
 .article-body a:hover { text-decoration-color: #fff; }
+
+/* Görsel: full-width, yumuşak köşe, üst+alt hava. figure caption
+   desteği de ekli — tiptap image extension caption üretmiyor ama
+   elle <figcaption> gelirse düzgün görünsün. */
 .article-body img,
 .article-body video {
   width: 100%;
-  border-radius: 1rem;
-  margin: 2em 0;
+  border-radius: 0.75rem;
+  margin: 2.5em 0 0.5em;
 }
-.article-body blockquote {
-  border-left: 2px solid #52525b;
-  padding-left: 1.25rem;
-  margin: 2em 0;
+.article-body figure {
+  margin: 2.5em 0;
+}
+.article-body figure img,
+.article-body figure video {
+  margin: 0;
+}
+.article-body figcaption {
+  font-size: 0.8125rem;
+  color: #71717a;
+  text-align: center;
+  margin-top: 0.75em;
+  line-height: 1.5;
   font-style: italic;
-  color: #a1a1aa;
 }
+
+/* Pull quote: editoryel, serif italik, daha büyük, yumuşak soldan
+   kenar çizgisi. Tüm blockquote'lar bu muameleyi alır. */
+.article-body blockquote {
+  border-left: 2px solid #ffffff;
+  padding: 0.5em 0 0.5em 1.75rem;
+  margin: 2.5em 0;
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: 1.3em;
+  line-height: 1.5;
+  color: #fafafa;
+  font-weight: 400;
+}
+.article-body blockquote p:first-child::before { content: '“'; margin-right: 0.1em; color: #71717a; }
+.article-body blockquote p:last-child::after { content: '”'; margin-left: 0.1em; color: #71717a; }
+
+/* Listeler */
 .article-body ul,
 .article-body ol { padding-left: 1.5rem; }
 .article-body ul { list-style: disc; }
 .article-body ol { list-style: decimal; }
-.article-body li { margin: 0.5em 0; }
+.article-body li { margin: 0.5em 0; padding-left: 0.25em; }
 .article-body li::marker { color: #71717a; }
+.article-body li > ul,
+.article-body li > ol { margin-top: 0.5em; }
+
 .article-body code {
   background: rgba(255,255,255,0.06);
   padding: 0.15em 0.4em;
   border-radius: 0.25rem;
   font-size: 0.9em;
+  font-family: ui-monospace, 'JetBrains Mono', 'Menlo', monospace;
 }
+
+/* Section break: editoryel üç-yıldızlı ayrım. <hr> yerine dekoratif
+   noktalar — klasik dergi taktiği. */
 .article-body hr {
   border: 0;
-  border-top: 1px solid rgba(255,255,255,0.1);
   margin: 3em 0;
+  text-align: center;
 }
-.article-body strong { color: #fff; font-weight: 700; }
-.article-body em { color: #e4e4e7; }
+.article-body hr::before {
+  content: '• • •';
+  color: #52525b;
+  letter-spacing: 0.5em;
+  font-size: 0.75em;
+}
+
+.article-body strong { color: #fff; font-weight: 600; }
+.article-body em { color: #fafafa; font-style: italic; }
+
+/* ── ADMIN SCOPE ──
+   Admin paneli bir back-office aracı — ama site editoryel bir yayın
+   olduğu için chrome'un da karakterli bir dokunuşa ihtiyacı var.
+   Burada yaptıklarımız:
+     1. Sayfa başlığı h1 boyutu text-xl'den editoryel mertebeye (clamp
+        28→38px) çıktı ve Fraunces aldı. Yazı arşiv, sanatçı veritabanı,
+        makale prodüksiyonu gibi şeyler yönetiyor — bir terminal gibi
+        kuru durmasın.
+     2. İkinci derece başlıklar (h2) hafif italik bir Fraunces ile. */
+.admin-scope h1 {
+  font-family: var(--font-display);
+  font-size: clamp(1.75rem, 2.5vw, 2.375rem);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+}
+.admin-scope h2 {
+  font-family: var(--font-display);
+  letter-spacing: -0.015em;
+}
+/* Admin tablo başlıkları ve küçük label'lar sans kalsın — okunurluk. */
+.admin-scope thead,
+.admin-scope label,
+.admin-scope [class*="uppercase"] {
+  font-family: var(--font-body);
+}
 
 /* Not: Eski `@view-transition` + `::view-transition-*` fade'leri kaldırıldı —
    TopLoader (sahte progress) ile üst üste binip ~400-700ms'lik algısal

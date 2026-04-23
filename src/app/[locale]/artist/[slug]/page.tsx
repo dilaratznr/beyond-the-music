@@ -50,20 +50,21 @@ export default async function ArtistDetailPage({ params }: { params: Params }) {
   const { locale, slug } = await params;
   if (!(await isSectionEnabled('artist'))) notFound();
   const dict = getDictionary(locale);
+  const tr = locale === 'tr';
 
   const artist = await prisma.artist.findUnique({
     where: { slug },
     include: {
       genres: { include: { genre: true } },
       albums: { include: { songs: true }, orderBy: { releaseDate: 'desc' } },
-      articles: { where: { status: 'PUBLISHED' }, include: { author: { select: { name: true } } } },
+      articles: { where: { status: 'PUBLISHED' }, include: { author: { select: { name: true } } }, orderBy: { publishedAt: 'desc' } },
       architects: { include: { architect: true } },
     },
   });
 
   if (!artist) notFound();
 
-  const bio = locale === 'tr' ? artist.bioTr : artist.bioEn;
+  const bio = tr ? artist.bioTr : artist.bioEn;
   const deepCuts = artist.albums.flatMap((a) => a.songs.filter((s) => s.isDeepCut));
   const typeLabel =
     artist.type === 'SOLO'
@@ -71,6 +72,16 @@ export default async function ArtistDetailPage({ params }: { params: Params }) {
       : artist.type === 'GROUP'
         ? dict.artist.group
         : dict.artist.composer;
+
+  const lifeRange = [
+    artist.birthDate ? new Date(artist.birthDate).getFullYear() : null,
+    artist.deathDate ? new Date(artist.deathDate).getFullYear() : null,
+  ];
+  const lifeLabel = lifeRange[0]
+    ? lifeRange[1]
+      ? `${lifeRange[0]}–${lifeRange[1]}`
+      : `${lifeRange[0]}–`
+    : null;
 
   const schemaType = artist.type === 'GROUP' ? 'MusicGroup' : 'Person';
   const jsonLd = {
@@ -80,9 +91,7 @@ export default async function ArtistDetailPage({ params }: { params: Params }) {
     description: stripHtml(bio),
     image: artist.image || undefined,
     url: `${SITE_URL}/${locale}/artist/${slug}`,
-    genre: artist.genres.map(({ genre }) =>
-      locale === 'tr' ? genre.nameTr : genre.nameEn,
-    ),
+    genre: artist.genres.map(({ genre }) => (tr ? genre.nameTr : genre.nameEn)),
     ...(artist.birthDate && schemaType === 'Person'
       ? { birthDate: new Date(artist.birthDate).toISOString().slice(0, 10) }
       : {}),
@@ -102,104 +111,239 @@ export default async function ArtistDetailPage({ params }: { params: Params }) {
   };
 
   return (
-    <div className="bg-[#0a0a0b] text-white min-h-screen pt-20">
-    <JsonLd data={jsonLd} />
-    <div className="max-w-[1480px] mx-auto px-6 lg:px-10 xl:px-14 py-8">
-      <nav aria-label="Breadcrumb" className="text-sm text-zinc-500 mb-4">
-        <Link href={`/${locale}/artist`} className="hover:text-white">{dict.nav.artist}</Link>
-        <span className="mx-1">/</span>
-        <span className="text-white font-medium" aria-current="page">{artist.name}</span>
-      </nav>
+    <div className="bg-[#0a0a0b] text-white">
+      <JsonLd data={jsonLd} />
 
-      <div className="grid md:grid-cols-3 gap-12">
-        <div className="md:col-span-2">
-          <h1 className="text-3xl md:text-4xl font-bold mb-2">{artist.name}</h1>
-          <div className="flex gap-2 mb-6 flex-wrap">
-            <span className="px-3 py-1 bg-zinc-800 rounded-full text-sm">{typeLabel}</span>
-            {artist.genres.map(({ genre }) => (
-              <Link key={genre.id} href={`/${locale}/genre/${genre.slug}`}
-                className="px-3 py-1 bg-[#0a0a0b] text-white rounded-full text-sm hover:bg-zinc-800">
-                {locale === 'tr' ? genre.nameTr : genre.nameEn}
-              </Link>
-            ))}
+      {/* ▸▸▸ HERO — portre görseli sağ tarafta, isim + meta solda.
+          Hero'nun sol yarısı bioa hazırlık: ad, eyebrow, türler, yıllar.
+          Sağ yarısı büyük dikey portre. Dergi kapak portresi hissi. */}
+      <section className="relative w-full min-h-[65vh] md:min-h-[80vh] flex items-end overflow-hidden">
+        <div className="absolute inset-0">
+          {artist.image ? (
+            <>
+              <img src={artist.image} alt="" className="absolute inset-0 w-full h-full object-cover opacity-55" />
+              <div className="absolute inset-0 bg-gradient-to-r from-[#0a0a0b] via-black/60 to-transparent" />
+            </>
+          ) : (
+            <>
+              <div className="absolute inset-0 bg-gradient-to-br from-zinc-800 via-zinc-900 to-[#0a0a0b]" />
+              <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_30%,rgba(255,255,255,0.08),transparent_55%)]" />
+              <span
+                className="absolute top-10 right-10 font-editorial font-black text-white/5 leading-none select-none"
+                style={{ fontSize: 'clamp(8rem, 20vw, 20rem)' }}
+                aria-hidden="true"
+              >
+                {artist.name.charAt(0)}
+              </span>
+            </>
+          )}
+          <div className="absolute inset-0 bg-gradient-to-t from-[#0a0a0b] via-black/40 to-black/10" />
+        </div>
+
+        <div className="relative z-10 w-full max-w-[1480px] mx-auto px-6 lg:px-10 xl:px-14 pb-14 md:pb-20 pt-32">
+          <nav aria-label="Breadcrumb" className="text-[11px] md:text-[12px] tracking-[0.3em] uppercase font-bold text-zinc-300 mb-7 flex items-center gap-3 flex-wrap">
+            <span className="w-10 h-px bg-zinc-500" />
+            <Link href={`/${locale}/artist`} className="text-zinc-400 hover:text-white underline-grow pb-1">{dict.nav.artist}</Link>
+            <span className="text-zinc-600">/</span>
+            <span className="text-white" aria-current="page">{artist.name}</span>
+          </nav>
+
+          <h1
+            className="font-editorial leading-[0.95] tracking-[-0.025em] max-w-5xl"
+            style={{ fontSize: 'clamp(2.5rem, 6vw, 5.5rem)', fontWeight: 700 }}
+          >
+            {artist.name}
+          </h1>
+
+          <div className="mt-8 flex items-center gap-5 flex-wrap text-[13px] text-zinc-400 font-medium">
+            <span className="px-3 py-1 bg-white/[0.06] border border-white/10 rounded-full text-[11px] font-bold uppercase tracking-widest text-white">
+              {typeLabel}
+            </span>
+            {lifeLabel && (
+              <>
+                <span className="w-8 h-px bg-zinc-600" aria-hidden="true" />
+                <span>{lifeLabel}</span>
+              </>
+            )}
+            {artist.genres.length > 0 && (
+              <>
+                <span className="w-8 h-px bg-zinc-600" aria-hidden="true" />
+                <span className="flex items-center gap-2 flex-wrap">
+                  {artist.genres.map(({ genre }, i) => (
+                    <span key={genre.id} className="flex items-center gap-2">
+                      <Link
+                        href={`/${locale}/genre/${genre.slug}`}
+                        className="text-zinc-300 hover:text-white underline-grow pb-0.5"
+                      >
+                        {tr ? genre.nameTr : genre.nameEn}
+                      </Link>
+                      {i < artist.genres.length - 1 && <span className="text-zinc-600">·</span>}
+                    </span>
+                  ))}
+                </span>
+              </>
+            )}
           </div>
+        </div>
+      </section>
 
-          {bio && <div className="prose prose-zinc max-w-none mb-12"><p className="text-zinc-300 leading-relaxed whitespace-pre-line">{bio}</p></div>}
+      {/* ▸▸▸ BODY — iki kolon: solda uzun-form bio + diskografi +
+          makaleler; sağda mimarlar listesi. */}
+      <div className="max-w-[1480px] mx-auto px-6 lg:px-10 xl:px-14 py-16 md:py-24 grid lg:grid-cols-12 gap-12 lg:gap-16">
+        <div className="lg:col-span-8 space-y-16">
+          {bio && (
+            <section>
+              <p className="text-zinc-500 text-[11px] tracking-[0.3em] uppercase font-bold mb-4">
+                {tr ? 'Biyografi' : 'Biography'}
+              </p>
+              <div className="article-body max-w-none whitespace-pre-line">
+                {bio}
+              </div>
+            </section>
+          )}
 
-          {/* Albums */}
           {artist.albums.length > 0 && (
-            <section className="mb-12">
-              <h2 className="text-2xl font-bold mb-4">{dict.artist.albums}</h2>
+            <section>
+              <p className="text-zinc-500 text-[11px] tracking-[0.3em] uppercase font-bold mb-6">
+                {dict.artist.albums}
+              </p>
               <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                 {artist.albums.map((album) => (
-                  <Link key={album.id} href={`/${locale}/album/${album.slug}`} className="bg-zinc-900 rounded-xl overflow-hidden hover:bg-zinc-800 transition-colors">
-                    {album.coverImage ? (
-                      <img src={album.coverImage} alt={album.title} className="w-full h-40 object-cover" />
-                    ) : (
-                      <div className="w-full h-40 bg-zinc-800 flex items-center justify-center text-3xl" aria-hidden="true">◉</div>
-                    )}
-                    <div className="p-3">
-                      <h3 className="font-semibold text-sm">{album.title}</h3>
-                      <p className="text-xs text-zinc-500">
-                        {album.releaseDate ? new Date(album.releaseDate).getFullYear() : ''}
-                        {album.releaseDate ? ' · ' : ''}
-                        {album.songs.length} {dict.artist.songs.toLowerCase()}
-                      </p>
+                  <Link
+                    key={album.id}
+                    href={`/${locale}/album/${album.slug}`}
+                    className="group"
+                  >
+                    <div className="relative aspect-square rounded-lg overflow-hidden bg-zinc-900 mb-3 card-shine">
+                      {album.coverImage ? (
+                        <img
+                          src={album.coverImage}
+                          alt={album.title}
+                          className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+                        />
+                      ) : (
+                        <div className="absolute inset-0 bg-gradient-to-br from-zinc-800 to-zinc-950 flex items-center justify-center">
+                          <span className="font-editorial font-black text-white/15 text-5xl">
+                            {album.title.charAt(0)}
+                          </span>
+                        </div>
+                      )}
                     </div>
+                    <h3 className="font-editorial font-semibold text-sm md:text-base leading-tight group-hover:underline decoration-1 underline-offset-4">
+                      {album.title}
+                    </h3>
+                    <p className="text-[11px] text-zinc-500 mt-1 uppercase tracking-widest">
+                      {album.releaseDate ? new Date(album.releaseDate).getFullYear() : ''}
+                      {album.releaseDate && album.songs.length > 0 ? ' · ' : ''}
+                      {album.songs.length > 0 && `${album.songs.length} ${dict.artist.songs.toLowerCase()}`}
+                    </p>
                   </Link>
                 ))}
               </div>
             </section>
           )}
 
-          {/* Deep Cuts */}
           {deepCuts.length > 0 && (
-            <section className="mb-12">
-              <h2 className="text-2xl font-bold mb-4">{dict.artist.deepCuts}</h2>
-              <ul className="space-y-2">
-                {deepCuts.map((song) => (
-                  <li key={song.id} className="flex items-center gap-3 p-3 bg-zinc-900 rounded-lg">
-                    <span className="text-zinc-400" aria-hidden="true">♫</span>
-                    <span className="font-medium text-sm">{song.title}</span>
-                    {song.duration && <span className="text-xs text-zinc-500 ml-auto">{song.duration}</span>}
+            <section>
+              <p className="text-zinc-500 text-[11px] tracking-[0.3em] uppercase font-bold mb-6">
+                {dict.artist.deepCuts}
+              </p>
+              <ol className="space-y-0 border-t border-white/10">
+                {deepCuts.map((song, i) => (
+                  <li
+                    key={song.id}
+                    className="flex items-center gap-5 py-4 border-b border-white/10 hover:bg-white/[0.02] transition-colors"
+                  >
+                    <span className="text-[11px] text-zinc-600 font-mono w-6 flex-shrink-0">
+                      {String(i + 1).padStart(2, '0')}
+                    </span>
+                    <span className="flex-1 min-w-0 text-sm text-zinc-200 truncate">{song.title}</span>
+                    {song.duration && (
+                      <span className="text-xs text-zinc-500 font-mono flex-shrink-0">{song.duration}</span>
+                    )}
                   </li>
                 ))}
-              </ul>
+              </ol>
             </section>
           )}
 
-          {/* Articles */}
           {artist.articles.length > 0 && (
             <section>
-              <h2 className="text-2xl font-bold mb-4">{dict.artist.articles}</h2>
-              {artist.articles.map((article) => (
-                <Link key={article.id} href={`/${locale}/article/${article.slug}`}
-                  className="block p-4 bg-zinc-900 rounded-xl mb-3 hover:shadow-md transition-shadow">
-                  <h3 className="font-bold">{locale === 'tr' ? article.titleTr : article.titleEn}</h3>
-                  <p className="text-sm text-zinc-500">{article.author.name}</p>
-                </Link>
-              ))}
+              <p className="text-zinc-500 text-[11px] tracking-[0.3em] uppercase font-bold mb-6">
+                {dict.artist.articles}
+              </p>
+              <div className="border-t border-white/10">
+                {artist.articles.map((article) => {
+                  const title = tr ? article.titleTr : article.titleEn;
+                  const date = article.publishedAt
+                    ? new Date(article.publishedAt).toLocaleDateString(tr ? 'tr-TR' : 'en-US', {
+                        year: 'numeric',
+                        month: 'short',
+                        day: 'numeric',
+                      })
+                    : null;
+                  return (
+                    <Link
+                      key={article.id}
+                      href={`/${locale}/article/${article.slug}`}
+                      className="group flex gap-6 py-6 border-b border-white/10 hover:bg-white/[0.02] transition-colors -mx-4 px-4 rounded-sm"
+                    >
+                      <div className="w-20 h-20 md:w-24 md:h-24 flex-shrink-0 relative overflow-hidden rounded-lg bg-zinc-900">
+                        {article.featuredImage ? (
+                          <img src={article.featuredImage} alt="" className="absolute inset-0 w-full h-full object-cover" />
+                        ) : (
+                          <>
+                            <div className="absolute inset-0 bg-gradient-to-br from-zinc-800 to-zinc-950" />
+                            <span className="absolute inset-0 flex items-center justify-center font-editorial font-black text-white/15 text-3xl leading-none">
+                              {title?.charAt(0) ?? '♪'}
+                            </span>
+                          </>
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0 flex flex-col justify-center">
+                        <p className="text-[10px] uppercase tracking-[0.25em] text-zinc-500 font-bold mb-2">
+                          {article.category.replace(/_/g, ' ')}
+                        </p>
+                        <h3 className="font-editorial text-base md:text-xl font-bold leading-tight tracking-[-0.01em] group-hover:underline decoration-1 underline-offset-4">
+                          {title}
+                        </h3>
+                        <p className="text-xs text-zinc-500 mt-2 flex items-center gap-3">
+                          <span>{article.author.name}</span>
+                          {date && (
+                            <>
+                              <span className="w-5 h-px bg-zinc-700" aria-hidden="true" />
+                              <span>{date}</span>
+                            </>
+                          )}
+                        </p>
+                      </div>
+                    </Link>
+                  );
+                })}
+              </div>
             </section>
           )}
         </div>
 
-        {/* Sidebar */}
-        <aside>
-          {artist.image ? (
-            <img src={artist.image} alt={artist.name} className="w-full rounded-xl mb-6" />
-          ) : (
-            <div className="w-full h-64 bg-zinc-800 rounded-xl flex items-center justify-center text-6xl text-zinc-400 mb-6" aria-hidden="true">♪</div>
-          )}
-
+        <aside className="lg:col-span-4 space-y-12 lg:sticky lg:top-24 lg:self-start">
           {artist.architects.length > 0 && (
             <div>
-              <h2 className="font-bold text-lg mb-3">{dict.artist.connectedArchitects}</h2>
-              <ul className="space-y-2">
+              <p className="text-zinc-500 text-[11px] tracking-[0.3em] uppercase font-bold mb-4">
+                {dict.artist.connectedArchitects}
+              </p>
+              <ul className="space-y-3">
                 {artist.architects.map(({ architect }) => (
                   <li key={architect.id}>
-                    <Link href={`/${locale}/architects/${architect.slug}`}
-                      className="text-sm text-zinc-400 hover:text-white">
-                      {architect.name} <span className="text-zinc-400">({architect.type.replace('_', ' ')})</span>
+                    <Link
+                      href={`/${locale}/architects/${architect.slug}`}
+                      className="group block py-2 border-b border-white/5"
+                    >
+                      <span className="text-sm text-zinc-200 group-hover:text-white font-medium">
+                        {architect.name}
+                      </span>
+                      <span className="block text-[10px] uppercase tracking-[0.25em] text-zinc-500 mt-1">
+                        {architect.type.replace('_', ' ')}
+                      </span>
                     </Link>
                   </li>
                 ))}
@@ -208,7 +352,6 @@ export default async function ArtistDetailPage({ params }: { params: Params }) {
           )}
         </aside>
       </div>
-    </div>
     </div>
   );
 }
