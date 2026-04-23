@@ -16,7 +16,6 @@ import {
   listAllSiteSettings,
   listActiveHeroVideos,
 } from '@/lib/db-cache';
-import { publishDueArticles } from '@/lib/article-publishing';
 import { SITE_URL } from '@/lib/seo';
 import { JsonLd } from '@/components/JsonLd';
 import Link from 'next/link';
@@ -30,11 +29,16 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
   const dict = getDictionary(locale);
   const tr = locale === 'tr';
 
-  // Zamanlanmış makaleleri yayına çevir, ama bunu render'ı bloklamadan yap —
-  // cache yenilenirken 30s'de bir çalışması yeter, kullanıcıyı bekletmeye
-  // gerek yok. (Eksik kalsa da bir sonraki revalidate'da yakalanır.)
-  publishDueArticles().catch(() => {});
-
+  // Zamanlanmış makalelerin yayına geçirilmesi burada YAPILMIYOR: bu fonksiyon
+  // DB'ye yazan bir server-side tetikleyici ve Next'in static-rendering bail
+  // heuristic'ini tetikliyor, tüm [locale]/* tree'sini dynamic yapıyordu.
+  // Scheduled → Published geçişi artık şurdan:
+  //   1. Admin dashboard sayfası (her admin ziyaretinde await ile tetikler)
+  //   2. /sitemap.xml her oluşturulduğunda (arama motorları taradıkça)
+  //   3. Yeni bir makale POST/PUT/DELETE olduğunda
+  // Worst case: bir makale "publish time"ında görünür olması için 30s'ye kadar
+  // sürer — kabul edilebilir, ISR cache hit TTFB ~30ms ile ticariyle değiş.
+  //
   // Her sorgu unstable_cache ile sarılı (bkz. src/lib/db-cache.ts). Tag'ler
   // admin yazımlarında revalidateTag ile patlatılıyor; bu sayede hem
   // concurrent istekler tek bir DB sorgusunu paylaşıyor hem de bir sonraki

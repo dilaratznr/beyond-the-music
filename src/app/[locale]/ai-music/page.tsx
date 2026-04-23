@@ -2,7 +2,6 @@ export const revalidate = 30;
 
 import { getDictionary } from '@/i18n';
 import { listPublishedArticlesByCategory } from '@/lib/db-cache';
-import { publishDueArticles } from '@/lib/article-publishing';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { isSectionEnabled } from '@/lib/site-sections';
@@ -12,10 +11,8 @@ export default async function AiMusicPage({ params }: { params: Promise<{ locale
   if (!(await isSectionEnabled('aiMusic'))) notFound();
   const dict = getDictionary(locale);
 
-  // Zamanlanmış makaleleri yayına çevir — render'ı bloklamıyoruz,
-  // bir sonraki ISR tick'inde (30s) yakalanır.
-  publishDueArticles().catch(() => {});
-
+  // publishDueArticles() intentionally NOT called here — see the comment
+  // in [locale]/page.tsx for the full rationale.
   const articles = await listPublishedArticlesByCategory('AI_MUSIC');
 
   return (
