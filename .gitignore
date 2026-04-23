@@ -50,7 +50,13 @@ yarn-error.log*
 *.removed
 
 # deploy scripts with potential creds
-/scripts/
+# Ignore the creds-carrying deploy shell scripts, but keep checked-in
+# project tooling (e.g. scripts/convert-images-to-webp.ts) visible.
+/scripts/*.sh
+/scripts/deploy-*
+
+# claude code worktrees / metadata
+.claude/
 
 # typescript
 *.tsbuildinfo

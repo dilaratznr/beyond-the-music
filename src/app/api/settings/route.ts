@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { revalidateTag } from 'next/cache';
 import prisma from '@/lib/prisma';
 import { requireAuth } from '@/lib/auth-guard';
+import { CACHE_TAGS } from '@/lib/db-cache';
 
 export async function GET() {
   const settings = await prisma.siteSetting.findMany();
@@ -24,5 +26,6 @@ export async function PUT(request: NextRequest) {
     });
   }
 
+  revalidateTag(CACHE_TAGS.settings, 'max');
   return NextResponse.json({ success: true });
 }

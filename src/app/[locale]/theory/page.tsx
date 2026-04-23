@@ -2,7 +2,6 @@ export const revalidate = 30;
 
 import { getDictionary } from '@/i18n';
 import prisma from '@/lib/prisma';
-import { publishDueArticles } from '@/lib/article-publishing';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { isSectionEnabled } from '@/lib/site-sections';
@@ -12,10 +11,9 @@ export default async function TheoryPage({ params }: { params: Promise<{ locale:
   if (!(await isSectionEnabled('theory'))) notFound();
   const dict = getDictionary(locale);
 
-  // Zamanlanmış makaleleri yayına çevir — render'ı bloklamıyoruz,
-  // bir sonraki ISR tick'inde (30s) yakalanır.
-  publishDueArticles().catch(() => {});
-
+  // publishDueArticles() intentionally NOT called here — see comment in
+  // [locale]/ai-music/page.tsx. Short version: DB writes during render
+  // force Next out of ISR.
   const articles = await prisma.article.findMany({
     where: { category: 'THEORY', status: 'PUBLISHED' },
     include: { author: { select: { name: true } } },

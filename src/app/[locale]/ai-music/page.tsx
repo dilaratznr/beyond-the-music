@@ -2,7 +2,6 @@ export const revalidate = 30;
 
 import { getDictionary } from '@/i18n';
 import prisma from '@/lib/prisma';
-import { publishDueArticles } from '@/lib/article-publishing';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { isSectionEnabled } from '@/lib/site-sections';
@@ -12,10 +11,10 @@ export default async function AiMusicPage({ params }: { params: Promise<{ locale
   if (!(await isSectionEnabled('aiMusic'))) notFound();
   const dict = getDictionary(locale);
 
-  // Zamanlanmış makaleleri yayına çevir — render'ı bloklamıyoruz,
-  // bir sonraki ISR tick'inde (30s) yakalanır.
-  publishDueArticles().catch(() => {});
-
+  // publishDueArticles() intentionally NOT called here — triggering a
+  // DB write on every public render forces Next out of static rendering
+  // and kills ISR (Cache-Control: no-store on every request).
+  // Scheduled articles still flip via admin dashboard / sitemap / API.
   const articles = await prisma.article.findMany({
     where: { category: 'AI_MUSIC', status: 'PUBLISHED' },
     include: { author: { select: { name: true } } },

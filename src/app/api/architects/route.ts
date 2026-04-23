@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { revalidateTag } from 'next/cache';
 import prisma from '@/lib/prisma';
 import { requireSectionAccess } from '@/lib/auth-guard';
+import { CACHE_TAGS } from '@/lib/db-cache';
 import { slugify } from '@/lib/utils';
 
 export async function GET(request: NextRequest) {
@@ -28,5 +30,6 @@ export async function POST(request: NextRequest) {
   if (!name || !type) return NextResponse.json({ error: 'Name and type are required' }, { status: 400 });
   const slug = slugify(name);
   const architect = await prisma.architect.create({ data: { slug, name, type, bioTr: bioTr || null, bioEn: bioEn || null, image: image || null } });
+  revalidateTag(CACHE_TAGS.architect, 'max');
   return NextResponse.json(architect, { status: 201 });
 }

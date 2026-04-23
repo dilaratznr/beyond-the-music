@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { revalidateTag } from 'next/cache';
 import prisma from '@/lib/prisma';
 import { requireSectionAccess } from '@/lib/auth-guard';
+import { CACHE_TAGS } from '@/lib/db-cache';
 import { slugify } from '@/lib/utils';
 
 export async function GET(request: NextRequest) {
@@ -47,5 +49,6 @@ export async function POST(request: NextRequest) {
     data: { slug, nameTr, nameEn, descriptionTr: descriptionTr || null, descriptionEn: descriptionEn || null, image: image || null, parentId: parentId || null, order: order || 0 },
   });
 
+  revalidateTag(CACHE_TAGS.genre, 'max');
   return NextResponse.json(genre, { status: 201 });
 }

@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { revalidateTag } from 'next/cache';
 import prisma from '@/lib/prisma';
 import { requireSectionAccess } from '@/lib/auth-guard';
+import { CACHE_TAGS } from '@/lib/db-cache';
 
 /**
  * Per-item operations on a listening path — update notes, delete one entry.
@@ -32,6 +34,7 @@ export async function PUT(
     return NextResponse.json({ error: 'Item not found' }, { status: 404 });
   }
 
+  revalidateTag(CACHE_TAGS.listeningPath, 'max');
   return NextResponse.json({ success: true });
 }
 
@@ -51,5 +54,6 @@ export async function DELETE(
     return NextResponse.json({ error: 'Item not found' }, { status: 404 });
   }
 
+  revalidateTag(CACHE_TAGS.listeningPath, 'max');
   return NextResponse.json({ success: true });
 }

@@ -15,7 +15,6 @@ export async function generateStaticParams(): Promise<Array<{ slug: string }>> {
   });
   return articles.map(({ slug }) => ({ slug }));
 }
-import { publishDueArticles } from '@/lib/article-publishing';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { buildPageMetadata, stripHtml, SITE_URL } from '@/lib/seo';
@@ -71,10 +70,14 @@ export async function generateMetadata({
 export default async function ArticleDetailPage({ params }: { params: Params }) {
   const { locale, slug } = await params;
 
-  // Flip due-scheduled articles first so a visitor who hits the URL exactly
-  // at publish time sees the article instead of a 404.
-  await publishDueArticles();
-
+  // We used to call `await publishDueArticles()` here so a visitor
+  // hitting the URL exactly at publish time would see the article
+  // instead of a 404. That DB write-on-read pattern forced Next to
+  // bail out of static rendering for the whole detail page. With the
+  // ISR `revalidate` of 30s and admin/sitemap triggers flipping
+  // scheduled articles, worst-case a visitor sees 404 for up to ~30s
+  // after the scheduled publish time — acceptable for a ~10x TTFB
+  // win on the common case.
   const article = await prisma.article.findUnique({
     where: { slug },
     include: {

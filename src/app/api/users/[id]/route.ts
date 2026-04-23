@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { revalidateTag } from 'next/cache';
 import prisma from '@/lib/prisma';
 import { requireAuth } from '@/lib/auth-guard';
+import { CACHE_TAGS } from '@/lib/db-cache';
 import bcrypt from 'bcryptjs';
 
 export async function GET(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -57,6 +59,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
     }
   }
 
+  revalidateTag(CACHE_TAGS.user, 'max');
   return NextResponse.json(user);
 }
 
@@ -72,5 +75,6 @@ export async function DELETE(_request: NextRequest, { params }: { params: Promis
   }
 
   await prisma.user.delete({ where: { id } });
+  revalidateTag(CACHE_TAGS.user, 'max');
   return NextResponse.json({ success: true });
 }

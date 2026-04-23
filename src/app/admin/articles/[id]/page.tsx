@@ -9,7 +9,7 @@ import DeleteButton from '@/components/admin/DeleteButton';
 import ImageUploader from '@/components/admin/ImageUploader';
 import { ARTICLE_CATEGORIES } from '@/lib/article-categories';
 import { FormSkeleton } from '@/components/admin/Loading';
-import { toDatetimeLocalValue } from '@/lib/article-publishing';
+import { toDatetimeLocalValue } from '@/lib/datetime-local';
 
 const RichEditor = dynamic(() => import('@/components/admin/RichEditor'), { ssr: false });
 

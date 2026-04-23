@@ -1,5 +1,7 @@
 import { cache } from 'react';
+import { unstable_cache } from 'next/cache';
 import prisma from '@/lib/prisma';
+import { CACHE_TAGS } from '@/lib/db-cache';
 
 /**
  * Super-admin-defined extra navbar links, stored as a single JSON blob in
@@ -56,15 +58,28 @@ export function parseCustomNavJson(value: string | null | undefined): CustomNavI
 }
 
 /**
- * Load custom nav items for the public site. Deduped per-request via
- * React `cache` so calling from both the layout and any page is free.
+ * DB read persisted across requests via `unstable_cache` (tag: `settings`).
+ * Admin nav writes call `revalidateTag('settings')` so new items surface
+ * on the next public request. Without this, the layout's call to
+ * getCustomNavItems() fell to DB on every request and forced every public
+ * page out of ISR.
  */
-export const getCustomNavItems = cache(async (): Promise<CustomNavItem[]> => {
-  const row = await prisma.siteSetting.findUnique({
-    where: { key: CUSTOM_NAV_SETTING_KEY },
-  });
-  return parseCustomNavJson(row?.value);
-});
+const loadCustomNavItems = unstable_cache(
+  async (): Promise<CustomNavItem[]> => {
+    const row = await prisma.siteSetting.findUnique({
+      where: { key: CUSTOM_NAV_SETTING_KEY },
+    });
+    return parseCustomNavJson(row?.value);
+  },
+  ['custom-nav-items'],
+  { tags: [CACHE_TAGS.settings], revalidate: 300 },
+);
+
+/**
+ * Load custom nav items for the public site. React `cache` on top of
+ * `unstable_cache` dedupes within a single render pass (layout + page).
+ */
+export const getCustomNavItems = cache(loadCustomNavItems);
 
 /** Treat `http://` and `https://` as external — those should not be locale-prefixed. */
 export function isExternalHref(href: string): boolean {

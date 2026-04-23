@@ -1,5 +1,7 @@
 import { cache } from 'react';
+import { unstable_cache } from 'next/cache';
 import prisma from '@/lib/prisma';
+import { CACHE_TAGS } from '@/lib/db-cache';
 
 /**
  * Public nav sections that the super admin can enable/disable.
@@ -24,14 +26,12 @@ export type PublicSection = (typeof PUBLIC_SECTIONS)[number];
 export type PublicSectionKey = PublicSection['key'];
 
 /**
- * Load the enabled/disabled state for every togglable section.
- * Missing rows default to enabled — fresh installs show every section
- * until the admin explicitly disables one.
- *
- * `cache` dedupes this within a single request so the layout + a page
- * calling `isSectionEnabled` don't hit the DB twice.
+ * DB read wrapped in `unstable_cache`:
+ *   - Persists across requests (tagged with `settings`).
+ *   - Admin settings writes should call `revalidateTag('settings')` so
+ *     nav visibility updates on the very next request.
  */
-export const getSectionEnabledMap = cache(
+const loadSectionEnabledMap = unstable_cache(
   async (): Promise<Record<string, boolean>> => {
     const rows = await prisma.siteSetting.findMany({
       where: {
@@ -47,7 +47,20 @@ export const getSectionEnabledMap = cache(
     }
     return map;
   },
+  ['site-sections', 'enabled-map'],
+  { tags: [CACHE_TAGS.settings], revalidate: 300 },
 );
+
+/**
+ * Load the enabled/disabled state for every togglable section.
+ * Missing rows default to enabled — fresh installs show every section
+ * until the admin explicitly disables one.
+ *
+ * Wrapped in React's `cache` to dedupe within a single request (layout +
+ * page would otherwise both materialize the map), on top of the
+ * cross-request `unstable_cache` below.
+ */
+export const getSectionEnabledMap = cache(loadSectionEnabledMap);
 
 /**
  * Throw notFound() from a public page if its section has been disabled

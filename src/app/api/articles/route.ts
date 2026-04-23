@@ -1,8 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { revalidateTag } from 'next/cache';
 import prisma from '@/lib/prisma';
 import { requireSectionAccess } from '@/lib/auth-guard';
+import { CACHE_TAGS } from '@/lib/db-cache';
 import { slugify } from '@/lib/utils';
-import { parseScheduledFor, publishDueArticles } from '@/lib/article-publishing';
+import { publishDueArticles } from '@/lib/article-publishing';
+import { parseScheduledFor } from '@/lib/datetime-local';
 
 export async function GET(request: NextRequest) {
   // Promote any scheduled articles whose time has come before reading the list —
@@ -107,5 +110,6 @@ export async function POST(request: NextRequest) {
     },
   });
 
+  revalidateTag(CACHE_TAGS.article, 'max');
   return NextResponse.json(article, { status: 201 });
 }

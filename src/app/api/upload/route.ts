@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { revalidateTag } from 'next/cache';
 import { requireSectionAccess } from '@/lib/auth-guard';
+import { CACHE_TAGS } from '@/lib/db-cache';
 import { writeFile, mkdir } from 'fs/promises';
 import path from 'path';
 import prisma from '@/lib/prisma';
@@ -100,6 +102,7 @@ export async function POST(request: NextRequest) {
     },
   });
 
+  revalidateTag(CACHE_TAGS.mediaItem, 'max');
   return NextResponse.json({ id: item.id, url, category, storage });
 }
 

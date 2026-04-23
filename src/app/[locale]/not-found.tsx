@@ -1,33 +1,30 @@
 import Link from 'next/link';
-import { headers } from 'next/headers';
 
-export default async function LocaleNotFound() {
-  // not-found.tsx does not receive params, so we infer the locale from the request path.
-  const h = await headers();
-  const pathname =
-    h.get('x-next-pathname') ||
-    h.get('x-pathname') ||
-    h.get('x-invoke-path') ||
-    h.get('referer') ||
-    '';
-  const locale = /\/(tr)(\/|$)/.test(pathname) ? 'tr' : 'en';
-
-  const copy =
-    locale === 'tr'
-      ? {
-          eyebrow: 'Hata — 404',
-          title: 'Sayfa bulunamadı',
-          desc: 'Aradığın sayfa taşınmış, silinmiş ya da hiç var olmamış olabilir. Bu da bir süre kayıp kalıp yeniden keşfedilmeyi bekleyen bir parça gibi.',
-          home: 'Ana sayfaya dön',
-          explore: 'Türleri keşfet',
-        }
-      : {
-          eyebrow: 'Error — 404',
-          title: 'Page not found',
-          desc: "The page you're looking for may have been moved, deleted, or never existed. Not unlike a track lost to time, waiting to be rediscovered.",
-          home: 'Return home',
-          explore: 'Explore genres',
-        };
+/**
+ * 404 page under `[locale]/*`.
+ *
+ * Why no locale detection via `headers()` anymore:
+ *   Next's file conventions (layout, not-found, error, …) are hoisted
+ *   into the static analyzer for every sibling / descendant route.
+ *   A single `headers()` call here — even one that only runs when a
+ *   404 actually fires — flags the entire `[locale]/*` subtree as
+ *   dynamic. The public site drops out of ISR, Cache-Control becomes
+ *   `no-store`, TTFB balloons from ~30ms (edge HIT) to ~400ms (full
+ *   SSR every request).
+ *
+ *   Since `not-found.tsx` doesn't receive `params` (Next limitation),
+ *   we can't know the originating locale cheaply. Default to TR (our
+ *   primary audience) and expose an EN "home" link alongside so
+ *   English visitors have a single click back.
+ */
+export default function LocaleNotFound() {
+  const copy = {
+    eyebrow: 'Hata — 404',
+    title: 'Sayfa bulunamadı',
+    desc: 'Aradığın sayfa taşınmış, silinmiş ya da hiç var olmamış olabilir. Bu da bir süre kayıp kalıp yeniden keşfedilmeyi bekleyen bir parça gibi.',
+    home: 'Ana sayfaya dön',
+    explore: 'Türleri keşfet',
+  };
 
   return (
     <div className="bg-[#0a0a0b] text-white min-h-screen flex items-center justify-center px-6">
@@ -59,16 +56,24 @@ export default async function LocaleNotFound() {
         </p>
         <div className="flex flex-col sm:flex-row gap-3 justify-center">
           <Link
-            href={`/${locale}`}
+            href="/tr"
             className="px-8 py-3.5 bg-white text-black font-bold rounded-full text-sm hover:bg-zinc-200 transition-colors"
           >
             {copy.home}
           </Link>
           <Link
-            href={`/${locale}/genre`}
+            href="/tr/genre"
             className="px-8 py-3.5 border border-white/15 text-white font-medium rounded-full text-sm hover:bg-white/5 hover:border-white/30 transition-colors"
           >
             {copy.explore} →
+          </Link>
+          {/* English visitors get a one-click route back without us
+              needing a request-time locale probe. */}
+          <Link
+            href="/en"
+            className="px-8 py-3.5 border border-white/10 text-zinc-400 font-medium rounded-full text-sm hover:bg-white/5 hover:border-white/20 hover:text-white transition-colors"
+          >
+            English home
           </Link>
         </div>
       </div>

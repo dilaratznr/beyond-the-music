@@ -6,7 +6,6 @@ export const revalidate = 30;
 
 import { getDictionary } from '@/i18n';
 import prisma from '@/lib/prisma';
-import { publishDueArticles } from '@/lib/article-publishing';
 import Link from 'next/link';
 import HeroVideoCarousel from '@/components/public/HeroVideoCarousel';
 import TextRevealOnScroll from '@/components/public/TextRevealOnScroll';
@@ -18,10 +17,14 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
   const dict = getDictionary(locale);
   const tr = locale === 'tr';
 
-  // Zamanlanmış makaleleri yayına çevir, ama bunu render'ı bloklamadan yap —
-  // cache yenilenirken 30s'de bir çalışması yeter, kullanıcıyı bekletmeye
-  // gerek yok. (Eksik kalsa da bir sonraki revalidate'da yakalanır.)
-  publishDueArticles().catch(() => {});
+  // publishDueArticles() intentionally NOT called here. It issues a
+  // prisma.updateMany() which Next treats as dynamic data access —
+  // that single call forces the whole [locale]/* subtree out of
+  // static rendering (Cache-Control: no-store, full SSR every hit).
+  // Scheduled → Published transitions happen via admin dashboard
+  // visits, sitemap builds, and admin API mutations; worst case a
+  // scheduled article appears ~30s after its publish time (the
+  // page's `revalidate` window).
 
   const [genres, genreTotal, featuredArticles, featuredAlbums, artists, paths, settingsRaw, heroVideos] = await Promise.all([
     // Anasayfada tür sayısı 8 ile sınırlı — daha fazlası kaydırmayı uzatıyor,

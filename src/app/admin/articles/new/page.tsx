@@ -7,7 +7,7 @@ import dynamic from 'next/dynamic';
 import { useToast } from '@/components/admin/Toast';
 import ImageUploader from '@/components/admin/ImageUploader';
 import { ARTICLE_CATEGORIES } from '@/lib/article-categories';
-import { toDatetimeLocalValue } from '@/lib/article-publishing';
+import { toDatetimeLocalValue } from '@/lib/datetime-local';
 
 const RichEditor = dynamic(() => import('@/components/admin/RichEditor'), { ssr: false });
 
