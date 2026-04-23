@@ -59,14 +59,19 @@ html { scroll-behavior: smooth; }
    paint edilmiyor, geldiğinde hero her zaman kocaman çiziliyor.
    `clamp(min, fluid, max)`: dar ekranda 52px taban, geniş ekranda 144px tavan. */
 .hero-title {
-  font-size: clamp(2.5rem, 6.5vw, 5.5rem) !important;
-  line-height: 1;
-  font-weight: 800;
+  /* Dilara: "hala çok büyük + boşluklar var" → daha da daraltıldı.
+     max 72px (önceden 88px), tipografik ağırlık 800 → 700. Daha
+     modern, daha az "duvar gibi". */
+  font-size: clamp(2.25rem, 5vw, 4.5rem) !important;
+  line-height: 1.02;
+  font-weight: 700;
+  letter-spacing: -0.02em;
 }
 .section-title {
-  font-size: clamp(2rem, 4.5vw, 3.75rem) !important;
-  line-height: 1.05;
-  font-weight: 800;
+  font-size: clamp(1.875rem, 3.75vw, 3.25rem) !important;
+  line-height: 1.08;
+  font-weight: 700;
+  letter-spacing: -0.02em;
 }
 
 /* ── KEYFRAMES ── */

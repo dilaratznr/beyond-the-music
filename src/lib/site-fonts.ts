@@ -57,12 +57,15 @@ export const FONT_OPTIONS: FontOption[] = [
 ];
 
 export const DEFAULT_BODY_FONT: FontFamily = 'Inter';
-// Hero ve büyük başlıklar için editoryel serif. Fraunces: modern dergi
-// serif'i, köşeleri yumuşak, tüm ağırlıkları (100-900) destekliyor — büyük
-// puntoda Didone-esque yüksek kontrast yerine daha dingin, karakterli bir
-// "küratöryel" ton veriyor. Müzik/kültür platformunun redaksiyonel
-// kimliğine Outfit (geometrik sans)'ten çok daha yakın.
-export const DEFAULT_DISPLAY_FONT: FontFamily = 'Fraunces';
+// Hero ve büyük başlıklar için modern humanist sans. Plus Jakarta Sans:
+// Calibri'ye yakın sıcak bir sans — ne klasik serif'in "formal dergi"
+// ağırlığı, ne mühendislik-geometrik Inter/Outfit'in soğukluğu.
+// Büyük puntoda karakterli (harflerde yuvarlak terminaller), küçük
+// puntoda nötr okunur. Tüm ağırlıklar (200-800) mevcut, hero'daki
+// font-black (700-800) "fake bold" değil gerçek. Dilara feedback
+// sonrası Fraunces'ten geçildi: "çok resmi duruyor, Calibri falan
+// olsun" — bu listedeki en yakın karşılık.
+export const DEFAULT_DISPLAY_FONT: FontFamily = 'Plus Jakarta Sans';
 
 /**
  * Narrow an arbitrary (possibly DB-stored) string to a known family, or

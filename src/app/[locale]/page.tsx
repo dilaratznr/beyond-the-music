@@ -73,25 +73,54 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
           kullanıcıya "sayfa boş" hissi veriyordu. Hero artık direkt
           yükleniyor, ilk paint'te içerik görünür. */}
 
-      {/* ▸▸▸ SCENE 1: HERO - Full viewport ▸▸▸ */}
-      <section className="relative h-screen flex items-center overflow-hidden">
+      {/* ▸▸▸ SCENE 1: HERO ▸▸▸
+          Dilara feedback: "hero çok boşluk bırakıyor, font iddialı,
+          tasarım çok iyi olmalı". h-screen → min-h-[82vh] (hero artık
+          tam ekran değil, biraz daha küçük/sıkı). Başlık daha ölçülü,
+          yanda küçük editoryel meta (tarih + edisyon numarası dergi
+          kapağı imzası gibi), altta zarif scroll ipucu. */}
+      <section className="relative min-h-[82vh] flex items-end pb-20 md:pb-24 overflow-hidden">
         <div className="absolute inset-0">
           <HeroVideoCarousel videos={heroVideos} fallbackImage={s.hero_poster_url || 'https://images.unsplash.com/photo-1459749411175-04bf5292ceea?w=1920&q=80'} />
           <div className="absolute inset-0 bg-gradient-to-r from-black/90 via-black/50 to-transparent" />
           <div className="absolute inset-0 bg-gradient-to-t from-[#0a0a0b] via-transparent to-black/10" />
         </div>
+
+        {/* Sağ üstte editoryel meta — dergi kapağındaki sayı/tarih
+            bloğu hissi. Yayın evreni kurgusu: statik bir "edisyon"
+            etiketi + Türkçe tarih. Büyük siyah boşluğu dolduran bir
+            dekoratif detay. */}
+        <div className="absolute top-24 right-6 lg:right-10 xl:right-14 z-10 text-right hidden md:block">
+          <p className="text-[10px] uppercase tracking-[0.35em] text-zinc-500 font-semibold">
+            {tr ? 'Edisyon' : 'Edition'} № 001
+          </p>
+          <p className="text-[10px] uppercase tracking-[0.25em] text-zinc-600 mt-1.5">
+            {new Date().toLocaleDateString(tr ? 'tr-TR' : 'en-US', { year: 'numeric', month: 'long' })}
+          </p>
+        </div>
+
         <div className="relative z-10 max-w-[1480px] mx-auto px-6 lg:px-10 xl:px-14 w-full">
-          <p className="text-zinc-400 text-[11px] md:text-[13px] tracking-[0.35em] uppercase mb-6 flex items-center gap-3 font-semibold">
+          <p className="text-zinc-400 text-[11px] md:text-[12px] tracking-[0.35em] uppercase mb-5 flex items-center gap-3 font-semibold">
             <span className="w-10 h-px bg-zinc-500" />{loc('hero_subtitle')}
           </p>
-          <h1 className="hero-title font-editorial tracking-[-0.04em] max-w-4xl">
+          <h1 className="hero-title font-editorial max-w-4xl">
             {loc('hero_title')}
           </h1>
-          <p className="mt-8 text-zinc-300 text-lg md:text-xl font-light leading-relaxed max-w-2xl whitespace-pre-line">{loc('hero_desc')}</p>
-          <div className="mt-10 flex flex-wrap gap-3">
-            <MagneticButton href={`/${locale}/genre`} className="px-8 py-4 bg-white text-black text-sm font-bold rounded-full inline-block">{loc('hero_cta_text')} →</MagneticButton>
-            <MagneticButton href={`/${locale}/listening-paths`} className="px-8 py-4 border border-white/20 text-white text-sm rounded-full inline-block">{loc('hero_cta2_text')}</MagneticButton>
+          <p className="mt-6 text-zinc-300 text-base md:text-lg font-light leading-relaxed max-w-xl whitespace-pre-line">{loc('hero_desc')}</p>
+          <div className="mt-8 flex flex-wrap gap-3">
+            <MagneticButton href={`/${locale}/genre`} className="px-7 py-3.5 bg-white text-black text-sm font-bold rounded-full inline-block">{loc('hero_cta_text')} →</MagneticButton>
+            <MagneticButton href={`/${locale}/listening-paths`} className="px-7 py-3.5 border border-white/20 text-white text-sm rounded-full inline-block">{loc('hero_cta2_text')}</MagneticButton>
           </div>
+        </div>
+
+        {/* Scroll ipucu — hero'nun altında zarif bir "aşağı doğru"
+            dekoratif çizgi + küçük metin. Hem boşluğu dolduruyor, hem
+            kullanıcıya "aşağı bak, içerik var" diyor. */}
+        <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-10 flex flex-col items-center gap-2 opacity-60">
+          <span className="text-[10px] uppercase tracking-[0.35em] text-zinc-500 font-semibold">
+            {tr ? 'Keşfet' : 'Scroll'}
+          </span>
+          <span className="w-px h-10 bg-gradient-to-b from-zinc-400 to-transparent animate-pulse" aria-hidden="true" />
         </div>
       </section>
 
