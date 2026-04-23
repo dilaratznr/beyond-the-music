@@ -332,7 +332,14 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
                 'from-amber-900/40 via-zinc-950 to-black',
               ];
               return (
-                <div key={p.id} className={`flex-shrink-0 w-[240px] group relative rounded-2xl overflow-hidden aspect-[9/16] bg-gradient-to-br ${palettes[i % palettes.length]} img-zoom hover-lift card-shine cursor-pointer`}>
+                // Bug: kart <div> idi, tıklanmıyordu. <Link>'e çevrildi
+                // ve /listening-paths/[slug] detayına gidiyor. cursor-pointer
+                // sınıfı artık gerçek link anchor'ı veriyor.
+                <Link
+                  key={p.id}
+                  href={`/${locale}/listening-paths/${p.slug}`}
+                  className={`flex-shrink-0 w-[240px] group relative block rounded-2xl overflow-hidden aspect-[9/16] bg-gradient-to-br ${palettes[i % palettes.length]} img-zoom hover-lift card-shine`}
+                >
                   {p.image ? (
                     <img src={p.image} alt="" loading="lazy" decoding="async" className="absolute inset-0 w-full h-full object-cover opacity-40 group-hover:opacity-60 transition-opacity duration-500" />
                   ) : (
@@ -350,7 +357,7 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
                     <h3 className="text-sm font-bold leading-tight">{title}</h3>
                     <p className="text-white/30 text-[10px] mt-1.5 line-clamp-2">{tr ? p.descriptionTr : p.descriptionEn}</p>
                   </div>
-                </div>
+                </Link>
               );
             })}
           </div>
