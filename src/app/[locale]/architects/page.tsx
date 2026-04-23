@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { isSectionEnabled } from '@/lib/site-sections';
 import EmptyState from '@/components/public/EmptyState';
+import PageHero from '@/components/public/PageHero';
 
 export default async function ArchitectsPage({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params;
@@ -24,18 +25,24 @@ export default async function ArchitectsPage({ params }: { params: Promise<{ loc
     RECORD_LABEL: dict.architects.recordLabels,
   };
 
+  const tr = locale === 'tr';
+
   return (
     <div className="bg-[#0a0a0b] text-white min-h-screen">
-      <section className="bg-zinc-900 pt-24 pb-14">
-        <div className="max-w-[1480px] mx-auto px-6 lg:px-10 xl:px-14">
-          <h1 className="text-3xl md:text-4xl font-bold text-white">{dict.architects.title}</h1>
-          <div className="flex flex-wrap gap-2 mt-4">
+      <PageHero
+        eyebrow={tr ? 'Yapı' : 'Structure'}
+        title={dict.architects.title}
+        subtitle={tr ? 'Sahne önünde olmayan isimler — prodüktörler, stüdyolar, etiketler.' : 'Names not in the spotlight — producers, studios, labels.'}
+        meta={
+          <div className="flex flex-wrap gap-2">
             {types.map((type) => (
-              <span key={type} className="px-3 py-1 bg-zinc-900/10 rounded-full text-xs font-medium text-zinc-300">{labels[type]}</span>
+              <span key={type} className="px-3 py-1 bg-white/[0.04] border border-white/10 rounded-full text-[11px] font-semibold text-zinc-300 uppercase tracking-wider">
+                {labels[type]}
+              </span>
             ))}
           </div>
-        </div>
-      </section>
+        }
+      />
 
       <div className="max-w-[1480px] mx-auto px-6 lg:px-10 xl:px-14 py-12">
         {architects.length > 0 ? (

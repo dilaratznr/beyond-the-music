@@ -11,10 +11,14 @@ import Link from 'next/link';
  *   - subtle hover state, visible placeholder
  */
 
+// Editorial dokunuşlu input stili: zinc-950 bg yerine hafif beyaz tint
+// (bg-white/[0.02]) + zinc yerine daha karakterli alt border (iki-ton:
+// üst zinc-800, alt zinc-700 — hafif hacim verir). Focus ring daha geniş
+// ve yumuşak. Tüm inputlar (text, textarea, select) paylaşıyor.
 const inputBase =
-  'w-full px-3 py-2 text-sm text-zinc-100 bg-zinc-950 border border-zinc-800 rounded-md outline-none transition-colors ' +
-  'hover:border-zinc-700 focus:border-zinc-500 focus:ring-2 focus:ring-zinc-500/20 ' +
-  'placeholder:text-zinc-600 disabled:bg-zinc-900 disabled:text-zinc-500 disabled:cursor-not-allowed';
+  'w-full px-3.5 py-2.5 text-sm text-zinc-100 bg-white/[0.02] border border-zinc-800 rounded-lg outline-none transition-all ' +
+  'hover:border-zinc-700 hover:bg-white/[0.04] focus:border-white/40 focus:bg-white/[0.05] focus:ring-4 focus:ring-white/[0.04] ' +
+  'placeholder:text-zinc-600 placeholder:italic disabled:opacity-50 disabled:cursor-not-allowed';
 
 export function FieldLabel({
   children,
@@ -28,12 +32,12 @@ export function FieldLabel({
   hint?: string;
 }) {
   return (
-    <div className="flex items-baseline justify-between mb-1.5">
-      <label htmlFor={htmlFor} className="text-[12px] font-medium text-zinc-300">
+    <div className="flex items-baseline justify-between mb-2">
+      <label htmlFor={htmlFor} className="text-[11px] font-semibold text-zinc-300 uppercase tracking-[0.08em]">
         {children}
-        {required && <span className="text-red-400 ml-0.5">*</span>}
+        {required && <span className="text-rose-400 ml-1 normal-case">*</span>}
       </label>
-      {hint && <span className="text-[10px] text-zinc-500">{hint}</span>}
+      {hint && <span className="text-[10px] text-zinc-500 italic">{hint}</span>}
     </div>
   );
 }
@@ -153,11 +157,15 @@ export function FormSection({
   children: ReactNode;
 }) {
   return (
-    <section className="space-y-4">
+    <section className="space-y-5">
       {(title || description) && (
-        <div className="pb-1">
-          {title && <h2 className="text-sm font-semibold text-zinc-100 tracking-tight">{title}</h2>}
-          {description && <p className="text-[11px] text-zinc-500 mt-0.5">{description}</p>}
+        <div className="pb-3 border-b border-white/5">
+          {title && (
+            <h2 className="text-[11px] font-bold text-zinc-400 tracking-[0.25em] uppercase">
+              {title}
+            </h2>
+          )}
+          {description && <p className="text-[12px] text-zinc-500 mt-2 italic leading-relaxed max-w-xl">{description}</p>}
         </div>
       )}
       {children}

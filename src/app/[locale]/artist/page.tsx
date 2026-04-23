@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import ScrollReveal from '@/components/public/ScrollReveal';
 import EmptyState from '@/components/public/EmptyState';
+import PageHero from '@/components/public/PageHero';
 import { isSectionEnabled } from '@/lib/site-sections';
 
 type ArtistWithRelations = Awaited<ReturnType<typeof loadArtists>>[number];
@@ -73,12 +74,16 @@ export default async function ArtistPage({ params }: { params: Promise<{ locale:
   const groups = artists.filter((a) => a.type === 'GROUP');
   const composers = artists.filter((a) => a.type === 'COMPOSER');
 
+  const tr = locale === 'tr';
+
   return (
     <div className="bg-[#0a0a0b] text-white">
-      <section className="bg-[#0a0a0b] pt-24 pb-10 border-b border-white/5">
-        <div className="max-w-[1480px] mx-auto px-6 lg:px-10 xl:px-14">
-          <h1 className="text-3xl md:text-4xl font-bold font-editorial">{dict.artist.title}</h1>
-          <div className="flex gap-3 mt-4">
+      <PageHero
+        eyebrow={tr ? 'Spotlight' : 'Spotlight'}
+        title={dict.artist.title}
+        subtitle={tr ? 'Sesin arkasındaki kimlikler — solo, grup, besteci.' : 'The identities behind the sound — solo, group, composer.'}
+        meta={
+          <div className="flex gap-2 flex-wrap">
             {[
               { id: 'solo', label: dict.artist.solo, count: soloArtists.length },
               { id: 'group', label: dict.artist.group, count: groups.length },
@@ -87,14 +92,14 @@ export default async function ArtistPage({ params }: { params: Promise<{ locale:
               <a
                 key={tab.id}
                 href={`#${tab.id}`}
-                className="px-4 py-1.5 bg-white/5 hover:bg-white/10 text-white text-xs font-medium rounded-full transition-colors border border-white/5"
+                className="px-3.5 py-1.5 bg-white/[0.04] hover:bg-white/[0.08] text-white text-[11px] font-semibold rounded-full transition-colors border border-white/10 hover:border-white/20 uppercase tracking-wider"
               >
-                {tab.label} <span className="text-white/30 ml-1">{tab.count}</span>
+                {tab.label} <span className="text-white/40 ml-1.5 font-normal">{tab.count}</span>
               </a>
             ))}
           </div>
-        </div>
-      </section>
+        }
+      />
 
       <div className="max-w-[1480px] mx-auto px-6 lg:px-10 xl:px-14 py-12 space-y-14">
         {soloArtists.length > 0 && (

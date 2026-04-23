@@ -5,6 +5,8 @@ import prisma from '@/lib/prisma';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { isSectionEnabled } from '@/lib/site-sections';
+import PageHero from '@/components/public/PageHero';
+import EmptyState from '@/components/public/EmptyState';
 
 export default async function TheoryPage({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params;
@@ -21,29 +23,27 @@ export default async function TheoryPage({ params }: { params: Promise<{ locale:
   });
 
   const topics = [dict.theory.soundStructure, dict.theory.rhythm, dict.theory.harmony, dict.theory.texture, dict.theory.production, dict.theory.structural];
+  const tr = locale === 'tr';
 
   return (
     <div className="bg-[#0a0a0b] text-white min-h-screen">
-      {/* Header - artist page style */}
-      <section className="bg-[#0a0a0b] pt-24 pb-10 border-b border-white/5">
-        <div className="max-w-[1480px] mx-auto px-6 lg:px-10 xl:px-14">
-          <h1 className="text-3xl md:text-4xl font-bold font-editorial">{dict.theory.title}</h1>
-          <p className="text-zinc-500 text-sm mt-2">
-            {locale === 'tr' ? 'Müzik yapısı, üretim ve analiz' : 'Music structure, production and analysis'}
-          </p>
-          {/* Topic chips */}
-          <div className="flex flex-wrap gap-2 mt-4">
+      <PageHero
+        eyebrow={tr ? 'Analiz' : 'Analysis'}
+        title={dict.theory.title}
+        subtitle={tr ? 'Müzik yapısı, üretim estetiği, form ve doku analizi.' : 'Music structure, production aesthetics, form and texture.'}
+        meta={
+          <div className="flex flex-wrap gap-2">
             {topics.map((t) => (
-              <span key={t} className="px-4 py-1.5 bg-white/5 border border-white/5 rounded-full text-xs text-zinc-400 hover:text-white hover:bg-white/10 transition-colors cursor-default">
+              <span key={t} className="px-3 py-1 bg-white/[0.04] border border-white/10 rounded-full text-[11px] font-semibold text-zinc-300 uppercase tracking-wider">
                 {t}
               </span>
             ))}
           </div>
-        </div>
-      </section>
+        }
+      />
 
       {/* Articles grid */}
-      <div className="max-w-[1480px] mx-auto px-6 lg:px-10 xl:px-14 py-12">
+      <div className="max-w-[1480px] mx-auto px-6 lg:px-10 xl:px-14 py-12 md:py-16">
         {articles.length > 0 ? (
           <div className="gsap-stagger grid md:grid-cols-2 lg:grid-cols-3 gap-4">
             {articles.map((a) => (
@@ -55,16 +55,17 @@ export default async function TheoryPage({ params }: { params: Promise<{ locale:
                   </div>
                 )}
                 <div className="p-5">
-                  <h3 className="text-sm font-bold group-hover:underline">{locale === 'tr' ? a.titleTr : a.titleEn}</h3>
+                  <h3 className="text-sm font-bold group-hover:underline">{tr ? a.titleTr : a.titleEn}</h3>
                   <p className="text-[10px] text-zinc-500 mt-2">{a.author.name}</p>
                 </div>
               </Link>
             ))}
           </div>
         ) : (
-          <div className="text-center py-20">
-            <p className="text-zinc-600 text-sm">{locale === 'tr' ? 'Henüz içerik yok.' : 'No content yet.'}</p>
-          </div>
+          <EmptyState
+            title={tr ? 'Henüz teori makalesi yayınlanmadı.' : 'No theory articles published yet.'}
+            hint={tr ? 'Analiz yazıları — yakında' : 'Analysis pieces — soon'}
+          />
         )}
       </div>
     </div>
