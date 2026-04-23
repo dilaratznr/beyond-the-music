@@ -72,7 +72,7 @@ export default async function ArtistPage({ params }: { params: Promise<{ locale:
   return (
     <div className="bg-[#0a0a0b] text-white">
       <section className="bg-[#0a0a0b] pt-24 pb-10 border-b border-white/5">
-        <div className="max-w-7xl mx-auto px-6">
+        <div className="max-w-[1480px] mx-auto px-6 lg:px-10 xl:px-14">
           <h1 className="text-3xl md:text-4xl font-bold font-editorial">{dict.artist.title}</h1>
           <div className="flex gap-3 mt-4">
             {[
@@ -92,7 +92,7 @@ export default async function ArtistPage({ params }: { params: Promise<{ locale:
         </div>
       </section>
 
-      <div className="max-w-7xl mx-auto px-6 py-12 space-y-14">
+      <div className="max-w-[1480px] mx-auto px-6 lg:px-10 xl:px-14 py-12 space-y-14">
         {soloArtists.length > 0 && (
           <section id="solo" className="scroll-mt-24">
             <h2 className="text-lg font-bold mb-5 flex items-center gap-2">

@@ -117,7 +117,7 @@ export default async function GenreDetailPage({ params }: { params: Params }) {
   return (
     <div className="bg-[#0a0a0b] text-white min-h-screen pt-20">
     <JsonLd data={jsonLd} />
-    <div className="max-w-7xl mx-auto px-6 py-8">
+    <div className="max-w-[1480px] mx-auto px-6 lg:px-10 xl:px-14 py-8">
       {/* Breadcrumb */}
       <nav aria-label="Breadcrumb" className="text-sm text-zinc-500 mb-4">
         <Link href={`/${locale}/genre`} className="hover:text-white">{dict.nav.genre}</Link>

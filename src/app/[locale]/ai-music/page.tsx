@@ -25,7 +25,7 @@ export default async function AiMusicPage({ params }: { params: Promise<{ locale
   return (
     <div className="bg-[#0a0a0b] text-white min-h-screen">
       <section className="bg-zinc-900 pt-24 pb-14">
-        <div className="max-w-7xl mx-auto px-6">
+        <div className="max-w-[1480px] mx-auto px-6 lg:px-10 xl:px-14">
           <h1 className="text-3xl md:text-4xl font-bold text-white">{dict.nav.aiMusic}</h1>
           <p className="text-zinc-400 mt-2 text-sm max-w-lg">
             {locale === 'tr' ? 'Algoritmik üretim, insan-makine işbirliği ve geleceğe dair üretim trendleri' : 'Algorithmic production, human-machine collaboration, and future production trends'}
@@ -33,7 +33,7 @@ export default async function AiMusicPage({ params }: { params: Promise<{ locale
         </div>
       </section>
 
-      <div className="max-w-7xl mx-auto px-6 py-12">
+      <div className="max-w-[1480px] mx-auto px-6 lg:px-10 xl:px-14 py-12">
         {articles.length > 0 ? (
           <div className="grid md:grid-cols-2 gap-5">
             {articles.map((a) => (

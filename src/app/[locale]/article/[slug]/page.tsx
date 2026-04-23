@@ -144,7 +144,7 @@ export default async function ArticleDetailPage({ params }: { params: Params }) 
           <div className="absolute inset-0 bg-gradient-to-t from-[#0a0a0b] via-black/55 to-black/30" />
         </div>
 
-        <div className="relative z-10 w-full max-w-7xl mx-auto px-6 pb-14 md:pb-20 pt-32">
+        <div className="relative z-10 w-full max-w-[1480px] mx-auto px-6 lg:px-10 xl:px-14 pb-14 md:pb-20 pt-32">
           {/* Eyebrow / breadcrumb — home sayfasındaki section eyebrow'ları
               ile aynı tracking ve renk. */}
           <div className="text-[11px] md:text-[12px] tracking-[0.3em] uppercase font-bold text-zinc-300 mb-7 flex items-center gap-3 flex-wrap">
@@ -175,8 +175,8 @@ export default async function ArticleDetailPage({ params }: { params: Params }) 
           </div>
 
           <h1
-            className="font-editorial font-black leading-[0.95] tracking-[-0.03em] max-w-5xl"
-            style={{ fontSize: 'clamp(2.25rem, 6vw, 5rem)' }}
+            className="font-editorial font-black leading-[1] tracking-[-0.03em] max-w-5xl"
+            style={{ fontSize: 'clamp(2rem, 4.5vw, 4rem)' }}
           >
             {title}
           </h1>

@@ -7,8 +7,8 @@ interface FooterProps {
 
 export default function Footer({ locale, dict }: FooterProps) {
   return (
-    <footer className="bg-zinc-950 text-zinc-500 pt-16 pb-8">
-      <div className="max-w-7xl mx-auto px-6">
+    <footer className="bg-zinc-950 text-zinc-500 pt-20 pb-10">
+      <div className="max-w-[1480px] mx-auto px-6 lg:px-10 xl:px-14">
         <div className="grid md:grid-cols-4 gap-10 pb-12 border-b border-zinc-800">
           <div className="md:col-span-2">
             <div className="flex items-center gap-2 mb-4">

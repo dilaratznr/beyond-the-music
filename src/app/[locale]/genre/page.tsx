@@ -23,14 +23,14 @@ export default async function GenrePage({ params }: { params: Promise<{ locale: 
     <div className="bg-[#0a0a0b] text-white">
       {/* Header - same style as artist page */}
       <section className="bg-[#0a0a0b] pt-24 pb-10 border-b border-white/5">
-        <div className="max-w-7xl mx-auto px-6">
+        <div className="max-w-[1480px] mx-auto px-6 lg:px-10 xl:px-14">
           <h1 className="text-3xl md:text-4xl font-bold font-editorial">{dict.genre.title}</h1>
           <p className="text-zinc-500 text-sm mt-2">{genres.length} {locale === 'tr' ? 'ana tür' : 'main genres'} · {allSubgenres.length} {locale === 'tr' ? 'alt tür' : 'subgenres'}</p>
         </div>
       </section>
 
       {/* Genre Grid */}
-      <div className="max-w-7xl mx-auto px-6 py-12">
+      <div className="max-w-[1480px] mx-auto px-6 lg:px-10 xl:px-14 py-12">
         <div className="gsap-stagger grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-3">
           {genres.map((g) => (
             <Link key={g.id} href={`/${locale}/genre/${g.slug}`}

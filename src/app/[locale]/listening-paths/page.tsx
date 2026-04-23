@@ -25,14 +25,14 @@ export default async function ListeningPathsPage({ params }: { params: Promise<{
   return (
     <div className="bg-[#0a0a0b] text-white min-h-screen">
       <section className="bg-zinc-900 pt-24 pb-14">
-        <div className="max-w-7xl mx-auto px-6">
+        <div className="max-w-[1480px] mx-auto px-6 lg:px-10 xl:px-14">
           <p className="text-xs uppercase tracking-[0.25em] text-emerald-500/50 font-bold mb-2">Curated Journeys</p>
           <h1 className="text-3xl md:text-4xl font-bold text-white">{dict.listeningPaths.title}</h1>
           <p className="text-zinc-400 mt-3 max-w-xl text-sm">{dict.listeningPaths.description}</p>
         </div>
       </section>
 
-      <div className="max-w-7xl mx-auto px-6 py-12">
+      <div className="max-w-[1480px] mx-auto px-6 lg:px-10 xl:px-14 py-12">
         <div className="flex flex-wrap gap-2 mb-10">
           {Object.entries(typeLabels).map(([key, label]) => (
             <span key={key} className="px-3 py-1.5 bg-zinc-900 rounded-full text-xs font-medium text-zinc-400 border border-white/10">

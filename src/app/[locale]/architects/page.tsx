@@ -26,7 +26,7 @@ export default async function ArchitectsPage({ params }: { params: Promise<{ loc
   return (
     <div className="bg-[#0a0a0b] text-white min-h-screen">
       <section className="bg-zinc-900 pt-24 pb-14">
-        <div className="max-w-7xl mx-auto px-6">
+        <div className="max-w-[1480px] mx-auto px-6 lg:px-10 xl:px-14">
           <h1 className="text-3xl md:text-4xl font-bold text-white">{dict.architects.title}</h1>
           <div className="flex flex-wrap gap-2 mt-4">
             {types.map((type) => (
@@ -36,7 +36,7 @@ export default async function ArchitectsPage({ params }: { params: Promise<{ loc
         </div>
       </section>
 
-      <div className="max-w-7xl mx-auto px-6 py-12">
+      <div className="max-w-[1480px] mx-auto px-6 lg:px-10 xl:px-14 py-12">
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
           {architects.map((arch) => (
             <Link key={arch.id} href={`/${locale}/architects/${arch.slug}`}

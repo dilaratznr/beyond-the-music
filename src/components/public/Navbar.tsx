@@ -49,16 +49,16 @@ export default function Navbar({ locale, sections }: NavbarProps) {
         ? 'bg-transparent'
         : 'bg-zinc-900/95 backdrop-blur-md shadow-sm'
     )}>
-      <nav className="max-w-7xl mx-auto flex items-center justify-between px-6 h-14">
+      <nav className="max-w-[1480px] mx-auto flex items-center justify-between px-6 lg:px-10 xl:px-14 h-14">
         <Link href={`/${locale}`} className="flex items-center gap-2 hover:opacity-80 transition-opacity">
           <span className="text-lg">🎧</span>
           <span className="font-bold text-white text-sm tracking-tight">Beyond The Music</span>
         </Link>
-        <div className="hidden md:flex items-center gap-5">
+        <div className="hidden md:flex items-center gap-7 lg:gap-8">
           {links.map((link) => {
             const active = link.exact ? pathname === link.href : pathname.startsWith(link.href);
             const className = cn(
-              'text-xs font-medium transition-colors tracking-wide',
+              'text-[13px] font-medium transition-colors tracking-wide',
               active && !link.external ? 'text-white' : 'text-zinc-400 hover:text-white'
             );
             if (link.external) {

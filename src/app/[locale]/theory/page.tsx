@@ -28,7 +28,7 @@ export default async function TheoryPage({ params }: { params: Promise<{ locale:
     <div className="bg-[#0a0a0b] text-white min-h-screen">
       {/* Header - artist page style */}
       <section className="bg-[#0a0a0b] pt-24 pb-10 border-b border-white/5">
-        <div className="max-w-7xl mx-auto px-6">
+        <div className="max-w-[1480px] mx-auto px-6 lg:px-10 xl:px-14">
           <h1 className="text-3xl md:text-4xl font-bold font-editorial">{dict.theory.title}</h1>
           <p className="text-zinc-500 text-sm mt-2">
             {locale === 'tr' ? 'Müzik yapısı, üretim ve analiz' : 'Music structure, production and analysis'}
@@ -45,7 +45,7 @@ export default async function TheoryPage({ params }: { params: Promise<{ locale:
       </section>
 
       {/* Articles grid */}
-      <div className="max-w-7xl mx-auto px-6 py-12">
+      <div className="max-w-[1480px] mx-auto px-6 lg:px-10 xl:px-14 py-12">
         {articles.length > 0 ? (
           <div className="gsap-stagger grid md:grid-cols-2 lg:grid-cols-3 gap-4">
             {articles.map((a) => (
