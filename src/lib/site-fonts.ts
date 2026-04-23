@@ -1,5 +1,7 @@
 import { cache } from 'react';
+import { unstable_cache } from 'next/cache';
 import prisma from '@/lib/prisma';
+import { CACHE_TAGS } from '@/lib/db-cache';
 import { FONT_CSS_VARS, FONT_LOADERS, type FontFamily } from '@/app/fonts';
 
 /**
@@ -74,14 +76,13 @@ export function getFontOption(family: string | null | undefined): FontOption | u
 }
 
 /**
- * Read the super-admin-selected body & display fonts from SiteSetting.
- * Falls back to the stock Inter / Outfit pairing if nothing is set or the
- * stored value isn't in the curated list.
- *
- * Cached per-request so the locale layout and any child reading this don't
- * hit the DB twice.
+ * DB read wrapped in `unstable_cache` so it persists across requests
+ * (tag: `settings`). Admin font changes call `revalidateTag('settings')`
+ * via the settings route handler, so the next public request picks
+ * them up. Before this wrapper the layout hit the DB on every request
+ * and forced every public page out of ISR.
  */
-export const getSiteFonts = cache(
+const loadSiteFonts = unstable_cache(
   async (): Promise<{ body: FontFamily; display: FontFamily }> => {
     try {
       const rows: Array<{ key: string; value: string }> = await prisma.siteSetting.findMany({
@@ -98,7 +99,19 @@ export const getSiteFonts = cache(
       return { body: DEFAULT_BODY_FONT, display: DEFAULT_DISPLAY_FONT };
     }
   },
+  ['site-fonts'],
+  { tags: [CACHE_TAGS.settings], revalidate: 300 },
 );
+
+/**
+ * Read the super-admin-selected body & display fonts from SiteSetting.
+ * Falls back to the stock Inter / Outfit pairing if nothing is set or the
+ * stored value isn't in the curated list.
+ *
+ * React `cache` on top of the cross-request `unstable_cache` layer
+ * dedupes a single render pass (layout + page both needing fonts).
+ */
+export const getSiteFonts = cache(loadSiteFonts);
 
 /**
  * Resolve a pair of families to the next/font loaders plus a ready-to-apply
