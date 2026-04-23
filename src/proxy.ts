@@ -66,6 +66,18 @@ export async function proxy(request: NextRequest) {
       loginUrl.searchParams.set('callbackUrl', pathname);
       return NextResponse.redirect(loginUrl);
     }
+
+    // Role-based hard gate: session var ama rol ADMIN/SUPER_ADMIN/EDITOR
+    // değilse kullanıcı admin bölgesine giremez. Önceden sadece session
+    // varlığı kontrol ediliyordu → pasif/yanlış rollü bir kullanıcı
+    // admin'e sızabilirdi. Şimdi role de doğrulanıyor.
+    const ALLOWED_ROLES = new Set(['SUPER_ADMIN', 'ADMIN', 'EDITOR']);
+    const role = (token.role as string | undefined) ?? '';
+    if (!ALLOWED_ROLES.has(role)) {
+      const loginUrl = new URL('/admin/login', request.url);
+      loginUrl.searchParams.set('error', 'unauthorized');
+      return NextResponse.redirect(loginUrl);
+    }
   }
 
   // API routes, asset paths — just pass through (CSP not meaningful for JSON).
