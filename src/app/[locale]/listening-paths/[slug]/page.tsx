@@ -156,8 +156,9 @@ export default async function ListeningPathDetailPage({
             </p>
           )}
           <p className="text-xs text-zinc-500 mt-6 uppercase tracking-widest">
-            {path.items.length}{' '}
-            {locale === 'tr' ? 'durak' : 'stops'}
+            {path.items.length === 0
+              ? (locale === 'tr' ? 'Henüz parça yok' : 'No tracks yet')
+              : `${path.items.length} ${locale === 'tr' ? 'parça' : 'tracks'}`}
           </p>
         </div>
       </section>
