@@ -48,20 +48,12 @@ export default function PageHero({
         ) : (
           <>
             {/* Sade arka plan — önceden sağ kenarda büyük tek-harf
-                watermark vardı (S, M, T...); Dilara feedback: "aşırı
-                saçma duruyor". Yerine çok hafif radial gradient +
-                editoryel yatay çizgi ızgarası (dergi kapak alt rejimi
-                hissi) — karakterli ama bağırmıyor. */}
+                watermark ve yatay çizgi ızgarası vardı; Dilara "çok
+                saçma / çok kötü duruyor" dedi, ikisi de kaldırıldı.
+                Şimdi sadece siyah + çok hafif köşe radial gradient
+                (hafif hacim, sessiz). */}
             <div className="absolute inset-0 bg-[#0a0a0b]" />
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_15%_85%,rgba(255,255,255,0.035),transparent_55%)]" />
-            <div
-              className="absolute inset-0 opacity-[0.04] pointer-events-none"
-              style={{
-                backgroundImage:
-                  'repeating-linear-gradient(0deg, transparent, transparent 48px, rgba(255,255,255,0.5) 48px, rgba(255,255,255,0.5) 49px)',
-              }}
-              aria-hidden="true"
-            />
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_15%_85%,rgba(255,255,255,0.03),transparent_55%)]" />
           </>
         )}
       </div>
