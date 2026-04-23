@@ -30,7 +30,7 @@ export default function PageHero({
   backgroundImage,
 }: PageHeroProps) {
   return (
-    <section className="relative w-full min-h-[45vh] md:min-h-[55vh] flex items-end overflow-hidden border-b border-white/5">
+    <section className="relative w-full min-h-[30vh] md:min-h-[38vh] flex items-end overflow-hidden border-b border-white/5">
       {/* Arka plan — görsel varsa + gradient, yoksa sadece karanlık
           nötr bg. Detay hero'larına göre daha kısa (min-h-[55vh]) —
           bu sayfalar liste içeriğini hemen göstermeli, hero tam bir
@@ -66,19 +66,19 @@ export default function PageHero({
         )}
       </div>
 
-      <div className="relative z-10 w-full max-w-[1480px] mx-auto px-6 lg:px-10 xl:px-14 pb-12 md:pb-16 pt-32">
-        <p className="text-zinc-400 text-[11px] md:text-[12px] tracking-[0.35em] uppercase mb-5 flex items-center gap-3 font-semibold">
+      <div className="relative z-10 w-full max-w-[1480px] mx-auto px-6 lg:px-10 xl:px-14 pb-10 md:pb-14 pt-28 md:pt-32">
+        <p className="text-zinc-400 text-[11px] tracking-[0.35em] uppercase mb-4 flex items-center gap-3 font-semibold">
           <span className="w-10 h-px bg-zinc-500" />
           {eyebrow}
         </p>
         <h1
-          className="font-editorial leading-[1] tracking-[-0.025em] max-w-4xl"
-          style={{ fontSize: 'clamp(2.25rem, 5vw, 4.5rem)', fontWeight: 700 }}
+          className="font-editorial leading-[1.05] tracking-[-0.02em] max-w-3xl"
+          style={{ fontSize: 'clamp(1.875rem, 3.5vw, 3rem)', fontWeight: 700 }}
         >
           {title}
         </h1>
         {subtitle && (
-          <p className="mt-6 text-zinc-500 text-base md:text-lg leading-relaxed font-light italic max-w-xl">
+          <p className="mt-5 text-zinc-500 text-sm md:text-base leading-relaxed font-light italic max-w-xl">
             {subtitle}
           </p>
         )}
