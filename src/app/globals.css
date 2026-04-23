@@ -59,14 +59,14 @@ html { scroll-behavior: smooth; }
    paint edilmiyor, geldiğinde hero her zaman kocaman çiziliyor.
    `clamp(min, fluid, max)`: dar ekranda 52px taban, geniş ekranda 144px tavan. */
 .hero-title {
-  font-size: clamp(3.25rem, 11vw, 9rem) !important;
-  line-height: 0.9;
-  font-weight: 900;
+  font-size: clamp(2.5rem, 6.5vw, 5.5rem) !important;
+  line-height: 1;
+  font-weight: 800;
 }
 .section-title {
-  font-size: clamp(2.5rem, 6.5vw, 5.5rem) !important;
-  line-height: 0.95;
-  font-weight: 900;
+  font-size: clamp(2rem, 4.5vw, 3.75rem) !important;
+  line-height: 1.05;
+  font-weight: 800;
 }
 
 /* ── KEYFRAMES ── */

@@ -57,11 +57,12 @@ export const FONT_OPTIONS: FontOption[] = [
 ];
 
 export const DEFAULT_BODY_FONT: FontFamily = 'Inter';
-// Hero ve büyük başlıklar `font-black` (900) kullanıyor. Space Grotesk
-// yalnızca 300-700 destekliyor → 900 "fake bold" olarak çiziliyor, başlıklar
-// inceltik/stilsiz görünüyordu. Outfit: 100-900 tam aralık, geometrik
-// modern sans — Space Grotesk'e görsel olarak yakın ama gerçek 900'e sahip.
-export const DEFAULT_DISPLAY_FONT: FontFamily = 'Outfit';
+// Hero ve büyük başlıklar için editoryel serif. Fraunces: modern dergi
+// serif'i, köşeleri yumuşak, tüm ağırlıkları (100-900) destekliyor — büyük
+// puntoda Didone-esque yüksek kontrast yerine daha dingin, karakterli bir
+// "küratöryel" ton veriyor. Müzik/kültür platformunun redaksiyonel
+// kimliğine Outfit (geometrik sans)'ten çok daha yakın.
+export const DEFAULT_DISPLAY_FONT: FontFamily = 'Fraunces';
 
 /**
  * Narrow an arbitrary (possibly DB-stored) string to a known family, or

@@ -80,7 +80,7 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
           <div className="absolute inset-0 bg-gradient-to-r from-black/90 via-black/50 to-transparent" />
           <div className="absolute inset-0 bg-gradient-to-t from-[#0a0a0b] via-transparent to-black/10" />
         </div>
-        <div className="relative z-10 max-w-7xl mx-auto px-6 w-full">
+        <div className="relative z-10 max-w-[1480px] mx-auto px-6 lg:px-10 xl:px-14 w-full">
           <p className="text-zinc-400 text-[11px] md:text-[13px] tracking-[0.35em] uppercase mb-6 flex items-center gap-3 font-semibold">
             <span className="w-10 h-px bg-zinc-500" />{loc('hero_subtitle')}
           </p>
@@ -101,8 +101,8 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
           komponenti). Başlık üstte sabit kalır, sonra section pin'lenir
           ve kartlar 1:1 oranda yatay olarak akar. Görünür scrollbar yok,
           swipe/wheel/trackpad hepsi aynı kayma mekaniğini kullanır. */}
-      <section className="relative bg-[#0a0a0b] pt-24 md:pt-32">
-        <div className="max-w-7xl mx-auto px-6 mb-10 flex items-end justify-between gap-6 gsap-fade-up">
+      <section className="relative bg-[#0a0a0b] pt-16 md:pt-20">
+        <div className="max-w-[1480px] mx-auto px-6 lg:px-10 xl:px-14 mb-6 md:mb-8 flex items-end justify-between gap-6 gsap-fade-up">
           <div>
             <p className="text-zinc-400 text-[11px] tracking-[0.3em] uppercase font-bold mb-3">{tr ? 'Keşfet' : 'Explore'}</p>
             <h2 className="section-title font-editorial tracking-[-0.03em]">{dict.genre.title}</h2>
@@ -162,8 +162,8 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
       </section>
 
       {/* ▸▸▸ SCENE 4: ARTISTS - zoom-in sahne ▸▸▸ */}
-      <section className="scene py-28 bg-[#111113] text-white">
-        <div className="scene-inner max-w-7xl mx-auto px-6">
+      <section className="scene py-20 bg-[#111113] text-white">
+        <div className="scene-inner max-w-[1480px] mx-auto px-6 lg:px-10 xl:px-14">
           <div className="flex items-end justify-between mb-10 gsap-fade-up">
             <div>
               <p className="text-[10px] uppercase tracking-[0.3em] text-zinc-400 font-bold">Spotlight</p>
@@ -189,8 +189,8 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
 
       {/* ▸▸▸ SCENE 5: ARTICLES ▸▸▸ */}
       {articles.length > 0 && (
-        <section className="scene py-28 bg-[#0a0a0b]">
-          <div className="scene-inner max-w-7xl mx-auto px-6">
+        <section className="scene py-20 bg-[#0a0a0b]">
+          <div className="scene-inner max-w-[1480px] mx-auto px-6 lg:px-10 xl:px-14">
             <div className="gsap-fade-up mb-12">
               <p className="text-[10px] uppercase tracking-[0.3em] text-zinc-600 font-bold">{dict.home.latest}</p>
               <h2 className="text-3xl md:text-4xl font-black font-editorial mt-1 tracking-[-0.03em] gsap-title-reveal">{tr ? 'Editörün Seçimi' : "Editor's Pick"}</h2>
@@ -246,8 +246,8 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
 
       {/* ▸▸▸ FEATURED ALBUMS — only rendered when the editor has curated one ▸▸▸ */}
       {featuredAlbums.length > 0 && (
-        <section className="scene py-28 bg-[#0a0a0b]">
-          <div className="scene-inner max-w-7xl mx-auto px-6">
+        <section className="scene py-20 bg-[#0a0a0b]">
+          <div className="scene-inner max-w-[1480px] mx-auto px-6 lg:px-10 xl:px-14">
             <div className="gsap-fade-up mb-10 flex items-end justify-between">
               <div>
                 <p className="text-[10px] uppercase tracking-[0.3em] text-zinc-600 font-bold">{tr ? 'Öne Çıkan' : 'Featured'}</p>
@@ -280,8 +280,8 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
       )}
 
       {/* ▸▸▸ SCENE 6: PILLARS - zoom-in sahne ▸▸▸ */}
-      <section className="scene py-28 bg-[#111113] text-white">
-        <div className="scene-inner max-w-7xl mx-auto px-6">
+      <section className="scene py-20 bg-[#111113] text-white">
+        <div className="scene-inner max-w-[1480px] mx-auto px-6 lg:px-10 xl:px-14">
           <div className="text-center mb-14 gsap-fade-up">
             <p className="text-[10px] uppercase tracking-[0.4em] text-zinc-400 font-bold mb-2">Discover</p>
             <h2 className="text-3xl md:text-5xl font-black font-editorial tracking-[-0.03em] gsap-title-reveal">{tr ? 'Keşfet' : 'Explore'}</h2>
@@ -307,8 +307,8 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
       </section>
 
       {/* ▸▸▸ SCENE 7: LISTENING PATHS ▸▸▸ */}
-      <section className="scene py-28 bg-[#0a0a0b]">
-        <div className="scene-inner max-w-7xl mx-auto px-6">
+      <section className="scene py-20 bg-[#0a0a0b]">
+        <div className="scene-inner max-w-[1480px] mx-auto px-6 lg:px-10 xl:px-14">
           <div className="gsap-fade-up mb-12">
             <p className="text-[10px] uppercase tracking-[0.3em] text-emerald-500/50 font-bold">Curated Journeys</p>
             <h2 className="text-3xl md:text-4xl font-black font-editorial mt-1 tracking-[-0.03em] gsap-title-reveal">{dict.listeningPaths.title}</h2>
