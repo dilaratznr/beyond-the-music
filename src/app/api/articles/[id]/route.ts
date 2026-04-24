@@ -19,7 +19,32 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
   });
 
   if (!article) return NextResponse.json({ error: 'Article not found' }, { status: 404 });
-  return NextResponse.json(article);
+
+  // Son reddedilen review — editör neden reddedildiğini görsün diye.
+  // Yalnızca REJECTED durumundaki en son review'i çekiyoruz; onay
+  // gören veya bekleyen review'ler edit sayfasında gösterilmez.
+  // Tablo migration'ı yapılmamış DB'de hata atmasın diye try/catch.
+  let lastRejection: {
+    reviewNote: string | null;
+    reviewedAt: Date | null;
+    reviewedBy: { name: string } | null;
+  } | null = null;
+  try {
+    const review = await prisma.contentReview.findFirst({
+      where: { section: 'ARTICLE', entityId: id, status: 'REJECTED' },
+      orderBy: { reviewedAt: 'desc' },
+      select: {
+        reviewNote: true,
+        reviewedAt: true,
+        reviewedBy: { select: { name: true } },
+      },
+    });
+    if (review) lastRejection = review;
+  } catch {
+    // ContentReview tablosu henüz yoksa sessizce atla
+  }
+
+  return NextResponse.json({ ...article, lastRejection });
 }
 
 export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {

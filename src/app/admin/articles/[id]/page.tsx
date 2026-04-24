@@ -47,6 +47,13 @@ export default function EditArticlePage({ params }: { params: Promise<{ id: stri
   const [error, setError] = useState('');
   const [initialStatus, setInitialStatus] = useState<Status>('DRAFT');
   const [canPublish, setCanPublish] = useState<boolean>(false);
+  // Son red edilmiş review notu — makale DRAFT'a alındıysa editöre
+  // neden reddedildiği gösterilsin.
+  const [lastRejection, setLastRejection] = useState<{
+    reviewNote: string | null;
+    reviewedAt: string | null;
+    reviewedBy: { name: string } | null;
+  } | null>(null);
 
   // --- Auto-save state ---
   // Baseline = what's currently persisted on the server. We diff the live form
@@ -103,6 +110,12 @@ export default function EditArticlePage({ params }: { params: Promise<{ id: stri
           setInitialStatus(status);
           // Establish the baseline for autosave diffing once the form is hydrated.
           baselineRef.current = JSON.stringify(loaded);
+          // Son red edilen review varsa kaydet — form başlığı DRAFT
+          // ise UI'da görünür (aksi halde yayındaki makalede gereksiz
+          // uyarı çıkmasın).
+          if (article.lastRejection) {
+            setLastRejection(article.lastRejection);
+          }
         }
         setGenres(Array.isArray(genresList) ? genresList : []);
         setArtists(Array.isArray(artistsList) ? artistsList : []);
@@ -294,6 +307,40 @@ export default function EditArticlePage({ params }: { params: Promise<{ id: stri
 
       <form onSubmit={handleSubmit} className="space-y-6">
         {error && <div className="p-3 bg-red-500/10 border border-red-500/20 text-red-300 text-sm rounded-lg">{error}</div>}
+
+        {/* Son red edilmiş review varsa editöre net bir geri bildirim
+            olarak gösterilir. Yalnızca makale şu an DRAFT'ta iken mantıklı —
+            yayınlandıysa zaten geride kalmış bir reddetme, ilgisiz. */}
+        {lastRejection && initialStatus === 'DRAFT' && (
+          <div className="p-4 rounded-lg border border-rose-500/30 bg-rose-500/5">
+            <div className="flex items-start gap-3">
+              <span className="flex-shrink-0 mt-0.5 text-rose-400 text-[14px]" aria-hidden="true">●</span>
+              <div className="min-w-0 flex-1">
+                <p className="text-[11px] uppercase tracking-wider font-semibold text-rose-300">
+                  Son gönderin reddedildi
+                </p>
+                {lastRejection.reviewNote ? (
+                  <p className="text-sm text-rose-100 mt-2 leading-relaxed">
+                    {lastRejection.reviewNote}
+                  </p>
+                ) : (
+                  <p className="text-sm text-rose-100/70 mt-2 italic">
+                    Red notu bırakılmadı.
+                  </p>
+                )}
+                {lastRejection.reviewedBy && lastRejection.reviewedAt && (
+                  <p className="text-[10px] text-rose-200/60 mt-2">
+                    {lastRejection.reviewedBy.name} ·{' '}
+                    {new Date(lastRejection.reviewedAt).toLocaleString('tr-TR')}
+                  </p>
+                )}
+                <p className="text-[11px] text-rose-200/80 mt-3">
+                  Gerekli düzenlemeleri yapıp tekrar &quot;Onaya Gönder&quot; diyebilirsin.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
 
         <div className="bg-zinc-900/40 p-6 rounded-lg border border-zinc-800 space-y-4">
           <div className="grid grid-cols-2 gap-4">

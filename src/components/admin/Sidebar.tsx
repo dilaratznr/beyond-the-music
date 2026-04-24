@@ -21,7 +21,6 @@ import {
   IconLogout,
   IconChevronLeft,
   IconChevronRight,
-  IconHeadphones,
   IconPlus,
   IconStar,
   IconUpload,
