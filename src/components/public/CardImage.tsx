@@ -91,12 +91,9 @@ export function CardImage({
               'repeating-linear-gradient(45deg, transparent 0 22px, rgba(255,255,255,1) 22px 23px)',
           }}
         />
-        <span
-          className="absolute inset-0 flex items-center justify-center font-editorial font-black text-white/15 select-none leading-none"
-          style={{ fontSize: 'clamp(3rem, 10vw, 6rem)' }}
-        >
-          {letter.toUpperCase()}
-        </span>
+        {/* Eskiden burada büyük harf fallback'i (letter) gözüküyordu —
+            Dilara: "kartlardaki harfleri kaldır". Artık sadece gradient
+            + radial spotlight + çapraz tarama; görsel daha sade. */}
       </div>
 
       {showImage && (

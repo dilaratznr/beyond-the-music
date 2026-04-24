@@ -204,9 +204,8 @@ export default function SearchBar({ locale }: { locale: string }) {
                   {r.image ? (
                     <img src={r.image} alt="" aria-hidden="true" className="w-11 h-11 rounded-lg object-cover flex-shrink-0" />
                   ) : (
-                    <div className="w-11 h-11 rounded-lg bg-gradient-to-br from-zinc-800 to-zinc-950 flex items-center justify-center font-editorial font-black text-white/20 text-base flex-shrink-0" aria-hidden="true">
-                      {r.title.charAt(0).toUpperCase()}
-                    </div>
+                    // Harf fallback'i yok — sadece gradient kutu (Dilara talebi)
+                    <div className="w-11 h-11 rounded-lg bg-gradient-to-br from-zinc-800 to-zinc-950 flex-shrink-0" aria-hidden="true" />
                   )}
                   <div className="min-w-0 flex-1">
                     <p className="text-[13px] font-semibold text-white truncate">{r.title}</p>

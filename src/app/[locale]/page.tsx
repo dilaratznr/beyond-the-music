@@ -232,7 +232,6 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
                     <>
                       <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(255,255,255,0.08),transparent_50%)]" />
                       <div className="absolute inset-0 opacity-20" style={{ backgroundImage: 'repeating-linear-gradient(45deg, transparent, transparent 40px, rgba(255,255,255,0.03) 40px, rgba(255,255,255,0.03) 80px)' }} />
-                      <span className="absolute top-8 right-8 font-editorial font-black text-white/5" style={{ fontSize: 'clamp(6rem, 14vw, 12rem)', lineHeight: 1 }}>{(tr ? articles[0].titleTr : articles[0].titleEn)?.charAt(0) ?? '♪'}</span>
                     </>
                   )}
                   <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/20 to-transparent" />
@@ -251,12 +250,7 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
                         {a.featuredImage ? (
                           <img src={a.featuredImage} alt="" loading="lazy" decoding="async" className="w-full h-full object-cover" />
                         ) : (
-                          <>
-                            <div className="absolute inset-0 bg-[radial-gradient(circle_at_40%_30%,rgba(255,255,255,0.1),transparent_60%)]" />
-                            <span className="absolute inset-0 flex items-center justify-center font-editorial font-black text-white/20 text-3xl leading-none">
-                              {title?.charAt(0) ?? '♪'}
-                            </span>
-                          </>
+                          <div className="absolute inset-0 bg-[radial-gradient(circle_at_40%_30%,rgba(255,255,255,0.1),transparent_60%)]" />
                         )}
                       </div>
                       <div className="py-2.5 pr-3 flex flex-col justify-center min-w-0">
@@ -364,13 +358,10 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
                     <img src={p.image} alt="" loading="lazy" decoding="async" className="absolute inset-0 w-full h-full object-cover opacity-40 group-hover:opacity-60 transition-opacity duration-500" />
                   ) : (
                     <>
-                      {/* Fallback spotlight: önceden emerald tint idi, artık
-                          nötr beyaz — yeşil vurgu site genelinden çıkarıldı. */}
+                      {/* Fallback: sadece gradient + diagonal tarama;
+                          harf artık yok (Dilara talebi). */}
                       <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(255,255,255,0.08),transparent_60%)]" />
                       <div className="absolute inset-0 opacity-30" style={{ backgroundImage: 'repeating-linear-gradient(60deg, transparent, transparent 30px, rgba(255,255,255,0.02) 30px, rgba(255,255,255,0.02) 60px)' }} />
-                      <span className="absolute top-6 right-6 font-editorial font-black text-white/5 leading-none" style={{ fontSize: 'clamp(5rem, 10vw, 9rem)' }}>
-                        {title?.charAt(0) ?? '♪'}
-                      </span>
                     </>
                   )}
                   <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent" />
