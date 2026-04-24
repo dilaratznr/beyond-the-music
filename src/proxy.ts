@@ -57,7 +57,16 @@ export async function proxy(request: NextRequest) {
     const isPublicAdminPath =
       pathname.startsWith('/admin/login') ||
       pathname.startsWith('/admin/forgot-password') ||
-      pathname.startsWith('/admin/reset-password');
+      pathname.startsWith('/admin/reset-password') ||
+      // Davet linkine tıklayan henüz login değil — auth gate'inden
+      // muaf. Ayrıca nonce CSP de uygulanmıyor (aşağıda): client-side
+      // chunk'lar Turbopack hash'leriyle geliyor, strict-dynamic'in
+      // talep ettiği nonce tag'i her zaman inject olmadığı için
+      // (özellikle client-heavy sayfalarda) bloke ediliyordu. Accept-
+      // invite sensitive session verisi taşımadığı için hafifletilmiş
+      // policy yeterli — next.config.ts'teki genel güvenlik header'ları
+      // (HSTS, X-Frame-Options vb.) zaten her route'ta aktif.
+      pathname.startsWith('/admin/accept-invite');
 
     if (!isPublicAdminPath) {
       const token = await getToken({
@@ -82,6 +91,13 @@ export async function proxy(request: NextRequest) {
         loginUrl.searchParams.set('error', 'unauthorized');
         return NextResponse.redirect(loginUrl);
       }
+    }
+
+    // Public admin path'ler nonce CSP'den muaf — yukarıdaki açıklamaya
+    // bakın. Next'in kendi varsayılan güvenlik davranışı + next.config.ts
+    // global header'ları kalır.
+    if (isPublicAdminPath) {
+      return NextResponse.next();
     }
 
     // Fresh nonce per request. Passing it through request headers is

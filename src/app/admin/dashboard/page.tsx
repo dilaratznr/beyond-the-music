@@ -283,42 +283,32 @@ export default async function DashboardPage() {
         </Link>
       )}
 
-      {/* Article status strip — published / scheduled / draft at a glance. */}
+      {/* Article status strip — published / scheduled / draft at a glance.
+          Tek ton editoryal: renkli çerçeve/pill'lar yerine sade kartlar.
+          Sadece durum adı farklı — sayı ve açıklama nötr zinc tonunda. */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <div className="bg-emerald-500/5 rounded-lg p-4 border border-emerald-500/20">
-          <div className="flex items-center gap-2 mb-1">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
-            <p className="text-[10px] text-emerald-300 uppercase tracking-wider font-semibold">Yayında</p>
-          </div>
-          <p className="text-2xl font-semibold text-emerald-200 tracking-tight">{d.articleCounts.published}</p>
-          <p className="text-[10px] text-emerald-500/80 mt-0.5">makale yayında</p>
+        <div className="bg-zinc-900/40 rounded-lg p-4 border border-zinc-800">
+          <p className="text-[10px] text-zinc-500 uppercase tracking-wider font-semibold">Yayında</p>
+          <p className="text-2xl font-semibold text-zinc-100 tracking-tight mt-1.5">{d.articleCounts.published}</p>
+          <p className="text-[10px] text-zinc-600 mt-0.5">makale yayında</p>
         </div>
         <Link
           href="/admin/articles?status=SCHEDULED"
-          className="bg-sky-500/5 rounded-lg p-4 border border-sky-500/20 hover:border-sky-500/40 hover:bg-sky-500/10 transition-colors group"
+          className="bg-zinc-900/40 rounded-lg p-4 border border-zinc-800 hover:border-zinc-700 hover:bg-zinc-900/70 transition-colors group"
         >
-          <div className="flex items-center gap-2 mb-1">
-            <span className="w-1.5 h-1.5 rounded-full bg-sky-400" />
-            <p className="text-[10px] text-sky-300 uppercase tracking-wider font-semibold">Zamanlanmış</p>
-          </div>
-          <p className="text-2xl font-semibold text-sky-200 tracking-tight">{d.articleCounts.scheduled}</p>
-          <p className="text-[10px] text-sky-500/80 mt-0.5 group-hover:text-sky-400/90">yayın bekliyor</p>
+          <p className="text-[10px] text-zinc-500 uppercase tracking-wider font-semibold">Zamanlanmış</p>
+          <p className="text-2xl font-semibold text-zinc-100 tracking-tight mt-1.5">{d.articleCounts.scheduled}</p>
+          <p className="text-[10px] text-zinc-600 mt-0.5 group-hover:text-zinc-500">yayın bekliyor</p>
         </Link>
-        <div className="bg-amber-500/5 rounded-lg p-4 border border-amber-500/20">
-          <div className="flex items-center gap-2 mb-1">
-            <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
-            <p className="text-[10px] text-amber-300 uppercase tracking-wider font-semibold">Taslak</p>
-          </div>
-          <p className="text-2xl font-semibold text-amber-200 tracking-tight">{d.articleCounts.draft}</p>
-          <p className="text-[10px] text-amber-500/80 mt-0.5">taslak bekliyor</p>
+        <div className="bg-zinc-900/40 rounded-lg p-4 border border-zinc-800">
+          <p className="text-[10px] text-zinc-500 uppercase tracking-wider font-semibold">Taslak</p>
+          <p className="text-2xl font-semibold text-zinc-100 tracking-tight mt-1.5">{d.articleCounts.draft}</p>
+          <p className="text-[10px] text-zinc-600 mt-0.5">taslak bekliyor</p>
         </div>
-        <div className="bg-zinc-900/50 rounded-lg p-4 border border-zinc-800">
-          <div className="flex items-center gap-2 mb-1">
-            <span className="w-1.5 h-1.5 rounded-full bg-zinc-400" />
-            <p className="text-[10px] text-zinc-400 uppercase tracking-wider font-semibold">Kullanıcı</p>
-          </div>
-          <p className="text-2xl font-semibold text-zinc-100 tracking-tight">{d.counts.users}</p>
-          <p className="text-[10px] text-zinc-500 mt-0.5">editör hesabı</p>
+        <div className="bg-zinc-900/40 rounded-lg p-4 border border-zinc-800">
+          <p className="text-[10px] text-zinc-500 uppercase tracking-wider font-semibold">Kullanıcı</p>
+          <p className="text-2xl font-semibold text-zinc-100 tracking-tight mt-1.5">{d.counts.users}</p>
+          <p className="text-[10px] text-zinc-600 mt-0.5">editör hesabı</p>
         </div>
       </div>
 
@@ -343,30 +333,30 @@ export default async function DashboardPage() {
         ))}
       </div>
 
-      {/* Scheduled articles — only render the card if anything is waiting. */}
+      {/* Scheduled articles — only render the card if anything is waiting.
+          Tek ton zinc — "amator AI yapımı gibi" renkli vurguları kaldırıldı. */}
       {d.scheduledArticles.length > 0 && (
-        <div className="bg-sky-500/[0.03] rounded-lg border border-sky-500/20 overflow-hidden">
-          <div className="flex items-center justify-between px-4 py-3 border-b border-sky-500/20">
+        <div className="bg-zinc-900/40 rounded-lg border border-zinc-800 overflow-hidden">
+          <div className="flex items-center justify-between px-4 py-3 border-b border-zinc-800">
             <div className="flex items-center gap-2">
-              <span className="text-sky-400" aria-hidden="true">◷</span>
-              <h2 className="text-sm font-semibold text-sky-100 tracking-tight">Zamanlanmış Yayınlar</h2>
-              <span className="text-[10px] text-sky-400/80 bg-sky-500/10 border border-sky-500/20 rounded-full px-1.5 py-0.5 font-mono">
+              <h2 className="text-sm font-semibold text-zinc-100 tracking-tight">Zamanlanmış Yayınlar</h2>
+              <span className="text-[10px] text-zinc-400 bg-zinc-900 border border-zinc-800 rounded-full px-1.5 py-0.5 font-mono">
                 {d.articleCounts.scheduled}
               </span>
             </div>
             <Link
               href="/admin/articles"
-              className="text-[11px] text-sky-300/80 hover:text-sky-200 font-medium transition-colors"
+              className="text-[11px] text-zinc-400 hover:text-white font-medium transition-colors"
             >
               Tümü →
             </Link>
           </div>
-          <div className="divide-y divide-sky-500/10">
+          <div className="divide-y divide-zinc-800">
             {d.scheduledArticles.map((a) => (
               <Link
                 key={a.id}
                 href={`/admin/articles/${a.id}`}
-                className="px-4 py-2.5 flex items-center gap-3 hover:bg-sky-500/5 transition-colors"
+                className="px-4 py-2.5 flex items-center gap-3 hover:bg-zinc-900/60 transition-colors"
               >
                 <div className="flex-1 min-w-0">
                   <p className="text-xs font-medium text-zinc-100 truncate">{a.titleTr}</p>
@@ -374,7 +364,7 @@ export default async function DashboardPage() {
                     {a.author.name} · {a.category.replace(/_/g, ' ').toLowerCase()}
                   </p>
                 </div>
-                <span className="font-mono text-[11px] text-sky-300 whitespace-nowrap">
+                <span className="font-mono text-[11px] text-zinc-300 whitespace-nowrap">
                   {formatScheduled(a.publishedAt)}
                 </span>
               </Link>
@@ -481,18 +471,12 @@ export default async function DashboardPage() {
             </div>
           ) : (
             d.recentArticles.map((a) => {
-              const statusPill =
-                a.status === 'PUBLISHED'
-                  ? 'bg-emerald-500/10 text-emerald-300 border-emerald-500/20'
-                  : a.status === 'SCHEDULED'
-                  ? 'bg-sky-500/10 text-sky-300 border-sky-500/20'
-                  : 'bg-amber-500/10 text-amber-300 border-amber-500/20';
               const statusLabel =
                 a.status === 'PUBLISHED'
                   ? 'Yayında'
                   : a.status === 'SCHEDULED'
-                  ? 'Zamanlanmış'
-                  : 'Taslak';
+                    ? 'Zamanlanmış'
+                    : 'Taslak';
               return (
                 <Link
                   key={a.id}
@@ -505,9 +489,7 @@ export default async function DashboardPage() {
                       {a.author.name} · {a.category.replace(/_/g, ' ').toLowerCase()}
                     </p>
                   </div>
-                  <span
-                    className={`px-2 py-0.5 rounded text-[9px] font-bold whitespace-nowrap border ${statusPill}`}
-                  >
+                  <span className="px-2 py-0.5 rounded-full bg-zinc-900/60 border border-zinc-800 text-[9px] uppercase tracking-wider font-medium text-zinc-400 whitespace-nowrap">
                     {statusLabel}
                   </span>
                 </Link>
@@ -548,19 +530,13 @@ function HealthCard({
           <h3 className="text-[12px] font-semibold text-zinc-100 tracking-tight truncate">{title}</h3>
           <p className="text-[10px] text-zinc-500 mt-0.5 truncate">{subtitle}</p>
         </div>
-        <span
-          className={`text-[11px] font-mono font-semibold border rounded-full px-2 py-0.5 whitespace-nowrap ${
-            clean
-              ? 'bg-emerald-500/10 text-emerald-300 border-emerald-500/20'
-              : 'bg-rose-500/10 text-rose-300 border-rose-500/20'
-          }`}
-        >
+        <span className="text-[11px] font-mono font-semibold rounded-full px-2 py-0.5 whitespace-nowrap bg-zinc-900 border border-zinc-800 text-zinc-300">
           {total}
         </span>
       </div>
       {clean ? (
         <div className="flex-1 p-4 flex flex-col items-center justify-center text-center">
-          <span className="w-7 h-7 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-300 flex items-center justify-center text-[13px]">
+          <span className="w-7 h-7 rounded-full bg-zinc-900 border border-zinc-800 text-zinc-400 flex items-center justify-center text-[13px]">
             ✓
           </span>
           <p className="text-[11px] text-zinc-400 mt-2">{emptyLabel}</p>
