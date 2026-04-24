@@ -71,6 +71,13 @@ export default function ReviewsPage() {
 
   const refresh = useCallback(() => setReloadToken((t) => t + 1), []);
 
+  // Sidebar badge'inin güncel sayıyı hemen yakalaması için — sayfa
+  // içindeki refresh zaten liste'yi tazeliyor, ama sidebar ayrı bir
+  // component, pathname değişmediği için kendi fetch'ini tetiklemiyor.
+  function notifyReviewsChanged() {
+    window.dispatchEvent(new CustomEvent('btm:reviews-changed'));
+  }
+
   async function handleApprove(review: Review) {
     setBusyId(review.id);
     try {
@@ -78,6 +85,7 @@ export default function ReviewsPage() {
       if (res.ok) {
         toast('İçerik onaylandı ve yayınlandı');
         refresh();
+        notifyReviewsChanged();
       } else {
         const data = await res.json().catch(() => ({}));
         toast(data.error || 'Onaylama hatası', 'error');
@@ -100,6 +108,7 @@ export default function ReviewsPage() {
         setRejectingId(null);
         setRejectNote('');
         refresh();
+        notifyReviewsChanged();
       } else {
         const data = await res.json().catch(() => ({}));
         toast(data.error || 'Reddetme hatası', 'error');
@@ -204,8 +213,8 @@ export default function ReviewsPage() {
                       <span className="text-zinc-400">{review.submittedBy.name}</span> gönderdi · {when}
                     </p>
                     {review.status === 'REJECTED' && review.reviewNote && (
-                      <p className="text-[12px] text-red-300 mt-2 px-3 py-2 bg-red-500/10 border border-red-500/20 rounded-md">
-                        <span className="font-semibold">Red notu: </span>
+                      <p className="text-[12px] text-zinc-300 mt-2 px-3 py-2 bg-zinc-900/40 border border-zinc-800 rounded-md">
+                        <span className="font-semibold text-zinc-400">Red notu: </span>
                         {review.reviewNote}
                       </p>
                     )}
@@ -231,7 +240,7 @@ export default function ReviewsPage() {
                         type="button"
                         onClick={() => setRejectingId(review.id)}
                         disabled={busyId === review.id}
-                        className="px-3 py-1.5 text-[11px] font-medium text-red-300 bg-red-500/10 border border-red-500/30 rounded-md hover:bg-red-500/20 transition-colors disabled:opacity-50"
+                        className="px-3 py-1.5 text-[11px] font-medium text-zinc-300 bg-zinc-900/40 border border-zinc-800 rounded-md hover:border-zinc-700 hover:bg-zinc-900/70 hover:text-rose-300 transition-colors disabled:opacity-50"
                       >
                         Reddet
                       </button>
@@ -239,7 +248,7 @@ export default function ReviewsPage() {
                         type="button"
                         onClick={() => handleApprove(review)}
                         disabled={busyId === review.id}
-                        className="px-3 py-1.5 text-[11px] font-semibold text-zinc-950 bg-emerald-400 rounded-md hover:bg-emerald-300 transition-colors disabled:opacity-50"
+                        className="px-3 py-1.5 text-[11px] font-semibold text-zinc-950 bg-white rounded-md hover:bg-zinc-200 transition-colors disabled:opacity-50"
                       >
                         {busyId === review.id ? 'İşleniyor…' : 'Onayla'}
                       </button>
@@ -274,7 +283,7 @@ export default function ReviewsPage() {
                         type="button"
                         onClick={() => handleReject(review)}
                         disabled={busyId === review.id}
-                        className="px-3 py-1.5 text-[11px] font-semibold text-white bg-red-500 rounded-md hover:bg-red-400 transition-colors disabled:opacity-50"
+                        className="px-3 py-1.5 text-[11px] font-semibold text-zinc-950 bg-white rounded-md hover:bg-zinc-200 transition-colors disabled:opacity-50"
                       >
                         {busyId === review.id ? 'İşleniyor…' : 'Reddi Onayla'}
                       </button>

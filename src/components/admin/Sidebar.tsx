@@ -125,10 +125,12 @@ export default function Sidebar() {
       });
   }, []);
 
-  // Super Admin için bekleyen onay sayısı. Her navigasyonda fetch etmek
-  // gereksiz — başarıyla bir sayı aldıktan sonra 60 saniye soğuma süresi.
-  // Özellikle /admin/reviews sayfasına girişte anında refresh (o sayfanın
-  // kendisi onaylayınca/reddedince hızlı güncelleme bekliyoruz).
+  // Super Admin için bekleyen onay sayısı. Üç tetikleyici:
+  //   1. Mount + her 60 saniyede bir otomatik refresh
+  //   2. Pathname değiştikçe (sayfaya girerken güncel gelsin)
+  //   3. Custom `btm:reviews-changed` event'i — reviews page approve/reject
+  //      sonrası yayınlıyor, badge aynı sayfada kalan kullanıcı için de
+  //      anında güncellensin.
   const isSuperAdminNow = perms?.isSuperAdmin || perms?.role === 'SUPER_ADMIN';
   useEffect(() => {
     if (!isSuperAdminNow) return;
@@ -146,14 +148,16 @@ export default function Sidebar() {
       }
     }
 
-    // İlk yüklemede hemen çek
     fetchCount();
-    // Her 60 saniyede bir yenile
     const interval = setInterval(fetchCount, 60_000);
+    // Manuel refresh signal — reviews page onay/red sonrası yayınlar.
+    const onReviewChange = () => fetchCount();
+    window.addEventListener('btm:reviews-changed', onReviewChange);
 
     return () => {
       cancelled = true;
       clearInterval(interval);
+      window.removeEventListener('btm:reviews-changed', onReviewChange);
     };
   }, [isSuperAdminNow]);
 

@@ -4,6 +4,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { publishDueArticles } from '@/lib/article-publishing';
 import { countPendingReviews } from '@/lib/content-review';
+import { getUserPermissions } from '@/lib/permissions';
 import {
   IconGenre,
   IconArtist,
@@ -189,12 +190,46 @@ function formatScheduled(d: Date | string | null | undefined): string {
   });
 }
 
+/**
+ * statCard key → yetki bölüm ismi. Dashboard'daki stat card'ı sadece
+ * kullanıcının o bölüme erişimi varsa göstermek için.
+ */
+const SECTION_FOR_CARD: Record<string, string> = {
+  articles: 'ARTICLE',
+  artists: 'ARTIST',
+  albums: 'ALBUM',
+  genres: 'GENRE',
+  architects: 'ARCHITECT',
+  listeningPaths: 'LISTENING_PATH',
+};
+
 export default async function DashboardPage() {
-  const [d, session] = await Promise.all([getDashboard(), getServerSession(authOptions)]);
-  const isSuperAdmin = (session?.user as { role?: string } | undefined)?.role === 'SUPER_ADMIN';
+  const session = await getServerSession(authOptions);
+  const userId = (session?.user as { id?: string } | undefined)?.id;
+  const perms = userId ? await getUserPermissions(userId) : null;
+  const isSuperAdmin = !!perms?.isSuperAdmin;
+
+  const d = await getDashboard();
   // Super Admin için onay bekleyen içerik sayısı. Admin'ler bu kutuyu
   // görmez (onay kuyruğu üzerinde yetkileri yok).
   const pendingReviews = isSuperAdmin ? await countPendingReviews() : 0;
+
+  // Bölüme erişim helper'ı: canCreate / canEdit / canDelete / canPublish'den
+  // biri varsa kullanıcı o bölümü "görebiliyor" sayılır.
+  function canAccess(sectionKey: string): boolean {
+    if (isSuperAdmin) return true;
+    const sec = perms?.sections[sectionKey];
+    return !!sec && (sec.canCreate || sec.canEdit || sec.canDelete || sec.canPublish);
+  }
+  function canCreate(sectionKey: string): boolean {
+    if (isSuperAdmin) return true;
+    return !!perms?.sections[sectionKey]?.canCreate;
+  }
+
+  const canAccessArticle = canAccess('ARTICLE');
+  const visibleStatCards = statCards.filter((c) =>
+    canAccess(SECTION_FOR_CARD[c.key] ?? c.key),
+  );
 
   return (
     <div className="space-y-6">
@@ -214,27 +249,36 @@ export default async function DashboardPage() {
           </p>
         </div>
         <div className="flex gap-2 flex-wrap">
-          <Link
-            href="/admin/articles/new"
-            className="inline-flex items-center gap-1.5 px-4 py-2 bg-white text-zinc-950 text-[12px] font-semibold rounded-md hover:bg-zinc-200 transition-colors"
-          >
-            <IconPlus size={12} />
-            Yeni Makale
-          </Link>
-          <Link
-            href="/admin/artists/new"
-            className="inline-flex items-center gap-1.5 px-4 py-2 bg-white/[0.03] border border-white/10 text-zinc-200 text-[12px] font-medium rounded-md hover:bg-white/[0.06] hover:border-white/20 hover:text-white transition-colors"
-          >
-            <IconPlus size={12} />
-            Yeni Sanatçı
-          </Link>
-          <Link
-            href="/admin/albums/new"
-            className="inline-flex items-center gap-1.5 px-4 py-2 bg-white/[0.03] border border-white/10 text-zinc-200 text-[12px] font-medium rounded-md hover:bg-white/[0.06] hover:border-white/20 hover:text-white transition-colors"
-          >
-            <IconPlus size={12} />
-            Yeni Albüm
-          </Link>
+          {/* Quick actions — sadece canCreate yetkisi varsa gösterilir.
+              Editor yalnızca yetkili olduğu content tipine hızlı erişim
+              görür; diğer butonlar UI'dan temizlenir. */}
+          {canCreate('ARTICLE') && (
+            <Link
+              href="/admin/articles/new"
+              className="inline-flex items-center gap-1.5 px-4 py-2 bg-white text-zinc-950 text-[12px] font-semibold rounded-md hover:bg-zinc-200 transition-colors"
+            >
+              <IconPlus size={12} />
+              Yeni Makale
+            </Link>
+          )}
+          {canCreate('ARTIST') && (
+            <Link
+              href="/admin/artists/new"
+              className="inline-flex items-center gap-1.5 px-4 py-2 bg-white/[0.03] border border-white/10 text-zinc-200 text-[12px] font-medium rounded-md hover:bg-white/[0.06] hover:border-white/20 hover:text-white transition-colors"
+            >
+              <IconPlus size={12} />
+              Yeni Sanatçı
+            </Link>
+          )}
+          {canCreate('ALBUM') && (
+            <Link
+              href="/admin/albums/new"
+              className="inline-flex items-center gap-1.5 px-4 py-2 bg-white/[0.03] border border-white/10 text-zinc-200 text-[12px] font-medium rounded-md hover:bg-white/[0.06] hover:border-white/20 hover:text-white transition-colors"
+            >
+              <IconPlus size={12} />
+              Yeni Albüm
+            </Link>
+          )}
         </div>
       </div>
 
@@ -283,38 +327,49 @@ export default async function DashboardPage() {
         </Link>
       )}
 
-      {/* Article status strip — published / scheduled / draft at a glance.
-          Tek ton editoryal: renkli çerçeve/pill'lar yerine sade kartlar.
-          Sadece durum adı farklı — sayı ve açıklama nötr zinc tonunda. */}
+      {/* Article status strip — yalnızca ARTICLE erişimi olan kullanıcı
+          görür. Kullanıcı sayısı kutusu sadece Super Admin için — editor
+          ve admin'ler için anlamsız bir sayı. */}
+      {(canAccessArticle || isSuperAdmin) && (
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <div className="bg-zinc-900/40 rounded-lg p-4 border border-zinc-800">
-          <p className="text-[10px] text-zinc-500 uppercase tracking-wider font-semibold">Yayında</p>
-          <p className="text-2xl font-semibold text-zinc-100 tracking-tight mt-1.5">{d.articleCounts.published}</p>
-          <p className="text-[10px] text-zinc-600 mt-0.5">makale yayında</p>
-        </div>
-        <Link
-          href="/admin/articles?status=SCHEDULED"
-          className="bg-zinc-900/40 rounded-lg p-4 border border-zinc-800 hover:border-zinc-700 hover:bg-zinc-900/70 transition-colors group"
-        >
-          <p className="text-[10px] text-zinc-500 uppercase tracking-wider font-semibold">Zamanlanmış</p>
-          <p className="text-2xl font-semibold text-zinc-100 tracking-tight mt-1.5">{d.articleCounts.scheduled}</p>
-          <p className="text-[10px] text-zinc-600 mt-0.5 group-hover:text-zinc-500">yayın bekliyor</p>
-        </Link>
-        <div className="bg-zinc-900/40 rounded-lg p-4 border border-zinc-800">
-          <p className="text-[10px] text-zinc-500 uppercase tracking-wider font-semibold">Taslak</p>
-          <p className="text-2xl font-semibold text-zinc-100 tracking-tight mt-1.5">{d.articleCounts.draft}</p>
-          <p className="text-[10px] text-zinc-600 mt-0.5">taslak bekliyor</p>
-        </div>
+        {canAccessArticle && (
+          <div className="bg-zinc-900/40 rounded-lg p-4 border border-zinc-800">
+            <p className="text-[10px] text-zinc-500 uppercase tracking-wider font-semibold">Yayında</p>
+            <p className="text-2xl font-semibold text-zinc-100 tracking-tight mt-1.5">{d.articleCounts.published}</p>
+            <p className="text-[10px] text-zinc-600 mt-0.5">makale yayında</p>
+          </div>
+        )}
+        {canAccessArticle && (
+          <Link
+            href="/admin/articles?status=SCHEDULED"
+            className="bg-zinc-900/40 rounded-lg p-4 border border-zinc-800 hover:border-zinc-700 hover:bg-zinc-900/70 transition-colors group"
+          >
+            <p className="text-[10px] text-zinc-500 uppercase tracking-wider font-semibold">Zamanlanmış</p>
+            <p className="text-2xl font-semibold text-zinc-100 tracking-tight mt-1.5">{d.articleCounts.scheduled}</p>
+            <p className="text-[10px] text-zinc-600 mt-0.5 group-hover:text-zinc-500">yayın bekliyor</p>
+          </Link>
+        )}
+        {canAccessArticle && (
+          <div className="bg-zinc-900/40 rounded-lg p-4 border border-zinc-800">
+            <p className="text-[10px] text-zinc-500 uppercase tracking-wider font-semibold">Taslak</p>
+            <p className="text-2xl font-semibold text-zinc-100 tracking-tight mt-1.5">{d.articleCounts.draft}</p>
+            <p className="text-[10px] text-zinc-600 mt-0.5">taslak bekliyor</p>
+          </div>
+        )}
+        {isSuperAdmin && (
         <div className="bg-zinc-900/40 rounded-lg p-4 border border-zinc-800">
           <p className="text-[10px] text-zinc-500 uppercase tracking-wider font-semibold">Kullanıcı</p>
           <p className="text-2xl font-semibold text-zinc-100 tracking-tight mt-1.5">{d.counts.users}</p>
           <p className="text-[10px] text-zinc-600 mt-0.5">editör hesabı</p>
         </div>
+        )}
       </div>
+      )}
 
-      {/* Stats Grid */}
+      {/* Stats Grid — yalnızca erişim yetkisi olan bölümler */}
+      {visibleStatCards.length > 0 && (
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
-        {statCards.map((c) => (
+        {visibleStatCards.map((c) => (
           <Link
             key={c.key}
             href={c.href}
@@ -332,10 +387,11 @@ export default async function DashboardPage() {
           </Link>
         ))}
       </div>
+      )}
 
-      {/* Scheduled articles — only render the card if anything is waiting.
-          Tek ton zinc — "amator AI yapımı gibi" renkli vurguları kaldırıldı. */}
-      {d.scheduledArticles.length > 0 && (
+      {/* Scheduled articles — yayınlanmaya hazırlanan makaleler. ARTICLE
+          erişimi olan görsün. */}
+      {canAccessArticle && d.scheduledArticles.length > 0 && (
         <div className="bg-zinc-900/40 rounded-lg border border-zinc-800 overflow-hidden">
           <div className="flex items-center justify-between px-4 py-3 border-b border-zinc-800">
             <div className="flex items-center gap-2">
@@ -373,9 +429,10 @@ export default async function DashboardPage() {
         </div>
       )}
 
-      {/* Content health — four columns, each is a prioritized checklist of
-          things the editor should fix. Each card links items to the edit
-          page so the fix is one click away. */}
+      {/* Content health — yalnızca Super Admin görür. Editor/Admin için
+          burası "benim işim değil" tonunda — kendi yazdıkları makaleleri
+          kendi liste sayfalarından yönetirler. */}
+      {isSuperAdmin && (
       <div>
         <div className="flex items-center justify-between mb-3">
           <h2 className="text-sm font-semibold text-zinc-100 tracking-tight">Eksik İçerik</h2>
@@ -446,8 +503,10 @@ export default async function DashboardPage() {
           />
         </div>
       </div>
+      )}
 
-      {/* Recent activity */}
+      {/* Recent activity — ARTICLE erişimi olmayana gösterme */}
+      {canAccessArticle && (
       <div className="bg-zinc-900/40 rounded-lg border border-zinc-800 overflow-hidden">
         <div className="flex items-center justify-between px-4 py-3 border-b border-zinc-800">
           <h2 className="text-sm font-semibold text-zinc-100 tracking-tight">Son Düzenlenen Makaleler</h2>
@@ -498,6 +557,7 @@ export default async function DashboardPage() {
           )}
         </div>
       </div>
+      )}
     </div>
   );
 }

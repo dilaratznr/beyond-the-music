@@ -72,8 +72,10 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Mesaj çok uzun' }, { status: 400 });
   }
 
+  // SMTP_PASSWORD (davet akışı standart'ı) veya SMTP_PASS (eski) — her ikisi de kabul.
+  const smtpPass = process.env.SMTP_PASSWORD || process.env.SMTP_PASS;
   const hasSmtp =
-    process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS;
+    process.env.SMTP_HOST && process.env.SMTP_USER && smtpPass;
 
   if (hasSmtp) {
     try {
@@ -84,7 +86,7 @@ export async function POST(request: NextRequest) {
         secure: port === 465,
         auth: {
           user: process.env.SMTP_USER!,
-          pass: process.env.SMTP_PASS!,
+          pass: smtpPass!,
         },
       });
 

@@ -104,12 +104,14 @@ export default function TypedConfirmDialog({
         className="absolute inset-0 bg-black/70 backdrop-blur-sm"
       />
 
-      {/* Panel */}
-      <div className="relative w-full max-w-md bg-zinc-950 border border-rose-500/30 rounded-xl shadow-2xl overflow-hidden">
+      {/* Panel — editoryal ton: zinc çerçeve, renk ikonda değil uyarı
+          metninde. Modal zaten "dikkatli ol" demek için açıldı, renk
+          blokları gereksiz. */}
+      <div className="relative w-full max-w-md bg-zinc-950 border border-zinc-800 rounded-xl shadow-2xl overflow-hidden">
         <div className="px-5 pt-5 pb-4 border-b border-zinc-900">
           <div className="flex items-start gap-3">
             <span
-              className="flex-shrink-0 w-9 h-9 rounded-full bg-rose-500/10 border border-rose-500/30 flex items-center justify-center text-rose-400 text-sm mt-0.5"
+              className="flex-shrink-0 w-9 h-9 rounded-full bg-zinc-900 border border-zinc-800 flex items-center justify-center text-zinc-400 text-sm mt-0.5"
               aria-hidden="true"
             >
               ⚠
@@ -128,8 +130,8 @@ export default function TypedConfirmDialog({
 
         <div className="px-5 py-4 space-y-4">
           {impact && impact.length > 0 && totalImpact > 0 && (
-            <div className="rounded-md border border-rose-500/20 bg-rose-500/[0.04] p-3">
-              <p className="text-[10px] uppercase tracking-wider font-semibold text-rose-300 mb-2">
+            <div className="rounded-md border border-zinc-800 bg-zinc-900/40 p-3">
+              <p className="text-[10px] uppercase tracking-wider font-semibold text-zinc-400 mb-2">
                 Bu silme sırasında ayrıca kaybolacak
               </p>
               <ul className="space-y-1">
@@ -139,7 +141,7 @@ export default function TypedConfirmDialog({
                     className="flex items-center justify-between text-[12px]"
                   >
                     <span className="text-zinc-300">{item.label}</span>
-                    <span className="font-mono font-semibold text-rose-200">
+                    <span className="font-mono font-semibold text-zinc-100">
                       {item.count}
                     </span>
                   </li>
@@ -173,7 +175,7 @@ export default function TypedConfirmDialog({
               autoComplete="off"
               spellCheck={false}
               placeholder={entityName}
-              className="w-full px-3 py-2 text-sm bg-zinc-900 border border-zinc-800 rounded-md text-zinc-100 placeholder:text-zinc-600 outline-none focus:border-rose-500/60 focus:ring-2 focus:ring-rose-500/20 transition-colors"
+              className="w-full px-3 py-2 text-sm bg-zinc-900 border border-zinc-800 rounded-md text-zinc-100 placeholder:text-zinc-600 outline-none focus:border-zinc-500 focus:ring-2 focus:ring-zinc-500/20 transition-colors"
             />
           </div>
         </div>
@@ -191,7 +193,10 @@ export default function TypedConfirmDialog({
             type="button"
             onClick={onConfirm}
             disabled={!matches || loading}
-            className="px-4 py-2 text-[12px] font-semibold rounded-md bg-rose-500 text-white hover:bg-rose-400 disabled:bg-zinc-800 disabled:text-zinc-500 disabled:cursor-not-allowed transition-colors"
+            // Aktif primary action — bilinçli beyaz, site genelindeki
+            // "Kaydet / Yayına Al" butonlarıyla aynı görünüm. Destructive
+            // anlamı ikon/uyarı metni + typed confirm ile zaten kurulmuş.
+            className="px-4 py-2 text-[12px] font-semibold rounded-md bg-white text-zinc-950 hover:bg-zinc-200 disabled:bg-zinc-800 disabled:text-zinc-500 disabled:cursor-not-allowed transition-colors"
           >
             {loading ? 'Siliniyor…' : confirmLabel}
           </button>

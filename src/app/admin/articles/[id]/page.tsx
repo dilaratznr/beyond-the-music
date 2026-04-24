@@ -312,29 +312,29 @@ export default function EditArticlePage({ params }: { params: Promise<{ id: stri
             olarak gösterilir. Yalnızca makale şu an DRAFT'ta iken mantıklı —
             yayınlandıysa zaten geride kalmış bir reddetme, ilgisiz. */}
         {lastRejection && initialStatus === 'DRAFT' && (
-          <div className="p-4 rounded-lg border border-rose-500/30 bg-rose-500/5">
+          <div className="p-4 rounded-lg border border-zinc-800 bg-zinc-900/40">
             <div className="flex items-start gap-3">
-              <span className="flex-shrink-0 mt-0.5 text-rose-400 text-[14px]" aria-hidden="true">●</span>
+              <span className="flex-shrink-0 mt-0.5 text-zinc-500 text-[14px]" aria-hidden="true">●</span>
               <div className="min-w-0 flex-1">
-                <p className="text-[11px] uppercase tracking-wider font-semibold text-rose-300">
+                <p className="text-[11px] uppercase tracking-wider font-semibold text-zinc-400">
                   Son gönderin reddedildi
                 </p>
                 {lastRejection.reviewNote ? (
-                  <p className="text-sm text-rose-100 mt-2 leading-relaxed">
+                  <p className="text-sm text-zinc-200 mt-2 leading-relaxed">
                     {lastRejection.reviewNote}
                   </p>
                 ) : (
-                  <p className="text-sm text-rose-100/70 mt-2 italic">
+                  <p className="text-sm text-zinc-500 mt-2 italic">
                     Red notu bırakılmadı.
                   </p>
                 )}
                 {lastRejection.reviewedBy && lastRejection.reviewedAt && (
-                  <p className="text-[10px] text-rose-200/60 mt-2">
+                  <p className="text-[10px] text-zinc-500 mt-2">
                     {lastRejection.reviewedBy.name} ·{' '}
                     {new Date(lastRejection.reviewedAt).toLocaleString('tr-TR')}
                   </p>
                 )}
-                <p className="text-[11px] text-rose-200/80 mt-3">
+                <p className="text-[11px] text-zinc-400 mt-3">
                   Gerekli düzenlemeleri yapıp tekrar &quot;Onaya Gönder&quot; diyebilirsin.
                 </p>
               </div>

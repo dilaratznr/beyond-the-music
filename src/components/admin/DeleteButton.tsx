@@ -127,7 +127,10 @@ export default function DeleteButton({
           type="button"
           onClick={handleInitialClick}
           disabled={loading}
-          className="inline-flex items-center gap-1.5 px-3 py-2 rounded-md text-[12px] font-medium text-rose-300 bg-rose-500/10 border border-rose-500/30 hover:bg-rose-500/20 hover:text-rose-200 hover:border-rose-500/50 transition-colors disabled:opacity-50 disabled:cursor-wait focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-500/50"
+          // Idle'da nötr zinc — renkli çerçeve/bg yok, editoryal ton.
+          // Hover'da sadece metin rose'a döner — "destructive" işareti
+          // kelime + ince niyansla, büyük kırmızı blok olmadan.
+          className="inline-flex items-center gap-1.5 px-3 py-2 rounded-md text-[12px] font-medium text-zinc-300 bg-zinc-900/40 border border-zinc-800 hover:border-zinc-700 hover:bg-zinc-900/70 hover:text-rose-300 transition-colors disabled:opacity-50 disabled:cursor-wait focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-500/30"
           aria-label={label}
         >
           {loading ? (
@@ -150,7 +153,10 @@ export default function DeleteButton({
           type="button"
           onClick={handleInitialClick}
           disabled={loading}
-          className="text-red-400 hover:text-red-300 hover:bg-red-500/10 px-2.5 py-1 rounded-md text-[11px] font-medium transition-colors disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500/50"
+          // Ghost variant — liste satırlarında. Idle sade zinc, hover'da
+          // nötr bir highlight; "sil" kelimesi aksiyonun anlamını zaten
+          // taşıyor, renklendirmeye gerek yok.
+          className="text-zinc-400 hover:text-rose-300 hover:bg-zinc-800/60 px-2.5 py-1 rounded-md text-[11px] font-medium transition-colors disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-500/30"
           aria-label={label}
         >
           {loading ? '…' : label}
