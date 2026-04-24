@@ -327,14 +327,16 @@ export default async function DashboardPage() {
         </Link>
       )}
 
-      {/* Article status strip — yalnızca ARTICLE erişimi olan kullanıcı
-          görür. Kullanıcı sayısı kutusu sadece Super Admin için — editor
-          ve admin'ler için anlamsız bir sayı. */}
+      {/* Article status strip — nötr zinc kart, başlığın yanında küçük
+          renkli dot. İşlevsel sinyal ince, profesyonel. */}
       {(canAccessArticle || isSuperAdmin) && (
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         {canAccessArticle && (
           <div className="bg-zinc-900/40 rounded-lg p-4 border border-zinc-800">
-            <p className="text-[10px] text-zinc-500 uppercase tracking-wider font-semibold">Yayında</p>
+            <div className="flex items-center gap-2">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" aria-hidden="true" />
+              <p className="text-[10px] text-zinc-500 uppercase tracking-wider font-semibold">Yayında</p>
+            </div>
             <p className="text-2xl font-semibold text-zinc-100 tracking-tight mt-1.5">{d.articleCounts.published}</p>
             <p className="text-[10px] text-zinc-600 mt-0.5">makale yayında</p>
           </div>
@@ -344,14 +346,20 @@ export default async function DashboardPage() {
             href="/admin/articles?status=SCHEDULED"
             className="bg-zinc-900/40 rounded-lg p-4 border border-zinc-800 hover:border-zinc-700 hover:bg-zinc-900/70 transition-colors group"
           >
-            <p className="text-[10px] text-zinc-500 uppercase tracking-wider font-semibold">Zamanlanmış</p>
+            <div className="flex items-center gap-2">
+              <span className="w-1.5 h-1.5 rounded-full bg-sky-400" aria-hidden="true" />
+              <p className="text-[10px] text-zinc-500 uppercase tracking-wider font-semibold">Zamanlanmış</p>
+            </div>
             <p className="text-2xl font-semibold text-zinc-100 tracking-tight mt-1.5">{d.articleCounts.scheduled}</p>
             <p className="text-[10px] text-zinc-600 mt-0.5 group-hover:text-zinc-500">yayın bekliyor</p>
           </Link>
         )}
         {canAccessArticle && (
           <div className="bg-zinc-900/40 rounded-lg p-4 border border-zinc-800">
-            <p className="text-[10px] text-zinc-500 uppercase tracking-wider font-semibold">Taslak</p>
+            <div className="flex items-center gap-2">
+              <span className="w-1.5 h-1.5 rounded-full bg-zinc-500" aria-hidden="true" />
+              <p className="text-[10px] text-zinc-500 uppercase tracking-wider font-semibold">Taslak</p>
+            </div>
             <p className="text-2xl font-semibold text-zinc-100 tracking-tight mt-1.5">{d.articleCounts.draft}</p>
             <p className="text-[10px] text-zinc-600 mt-0.5">taslak bekliyor</p>
           </div>
@@ -536,6 +544,12 @@ export default async function DashboardPage() {
                   : a.status === 'SCHEDULED'
                     ? 'Zamanlanmış'
                     : 'Taslak';
+              const statusDot =
+                a.status === 'PUBLISHED'
+                  ? 'bg-emerald-400'
+                  : a.status === 'SCHEDULED'
+                    ? 'bg-sky-400'
+                    : 'bg-zinc-500';
               return (
                 <Link
                   key={a.id}
@@ -548,7 +562,8 @@ export default async function DashboardPage() {
                       {a.author.name} · {a.category.replace(/_/g, ' ').toLowerCase()}
                     </p>
                   </div>
-                  <span className="px-2 py-0.5 rounded-full bg-zinc-900/60 border border-zinc-800 text-[9px] uppercase tracking-wider font-medium text-zinc-400 whitespace-nowrap">
+                  <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-zinc-900/60 border border-zinc-800 text-[9px] uppercase tracking-wider font-medium text-zinc-300 whitespace-nowrap">
+                    <span className={`w-1.5 h-1.5 rounded-full ${statusDot}`} aria-hidden="true" />
                     {statusLabel}
                   </span>
                 </Link>

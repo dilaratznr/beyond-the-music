@@ -35,18 +35,18 @@ const FILTERS = [
  * Visual treatment for each status, kept in a single map so the list row,
  * dashboard badge, and the form status select can stay consistent.
  */
-// Tüm durumlar aynı tek-ton pill'a çekildi (Dilara: "renkli pill'ler
-// sevmiyorum, her yerde"). Durumu metin ayırt ediyor; renk gerekmiyor.
-// Dot hâlâ var — canlı liste bakışında satırları kayboldurmayan
-// minimal bir durum işareti, aynı tonda.
-const STATUS_PILL_CLASSNAME =
-  'bg-zinc-900/60 text-zinc-300 border-zinc-800';
-const STATUS_DOT_CLASSNAME = 'bg-zinc-500';
+// Status pill'leri minimal renk vurgusu — pill'in kendisi nötr zinc,
+// yalnızca dot (◉) işlevsel durumun rengini taşır. Büyük renkli blok
+// yok; okunaklı, profesyonel editoryal sinyal. "Yayında" için yeşil
+// dot, "Zamanlanmış" için mavi, "Onayda" için amber, "Taslak" için
+// nötr — renk burada kategori değil anlam taşıyor.
+const STATUS_PILL_BASE =
+  'bg-zinc-900/60 text-zinc-200 border-zinc-800';
 const STATUS_STYLE: Record<string, { label: string; pill: string; dot: string }> = {
-  PUBLISHED: { label: 'Yayında', pill: STATUS_PILL_CLASSNAME, dot: STATUS_DOT_CLASSNAME },
-  SCHEDULED: { label: 'Zamanlanmış', pill: STATUS_PILL_CLASSNAME, dot: STATUS_DOT_CLASSNAME },
-  PENDING_REVIEW: { label: 'Onayda', pill: STATUS_PILL_CLASSNAME, dot: STATUS_DOT_CLASSNAME },
-  DRAFT: { label: 'Taslak', pill: STATUS_PILL_CLASSNAME, dot: STATUS_DOT_CLASSNAME },
+  PUBLISHED: { label: 'Yayında', pill: STATUS_PILL_BASE, dot: 'bg-emerald-400' },
+  SCHEDULED: { label: 'Zamanlanmış', pill: STATUS_PILL_BASE, dot: 'bg-sky-400' },
+  PENDING_REVIEW: { label: 'Onayda', pill: STATUS_PILL_BASE, dot: 'bg-amber-400' },
+  DRAFT: { label: 'Taslak', pill: STATUS_PILL_BASE, dot: 'bg-zinc-500' },
 };
 
 const ALLOWED_FILTERS = new Set(['', 'PUBLISHED', 'SCHEDULED', 'PENDING_REVIEW', 'DRAFT']);
@@ -293,9 +293,9 @@ function ArticlesPageInner() {
                       </td>
                       <td className="px-4 py-2">
                         <span
-                          className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-bold border ${style.pill}`}
+                          className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-medium uppercase tracking-[0.1em] border ${style.pill}`}
                         >
-                          <span className={`w-1 h-1 rounded-full ${style.dot}`} />
+                          <span className={`w-1.5 h-1.5 rounded-full ${style.dot}`} aria-hidden="true" />
                           {style.label}
                         </span>
                       </td>
