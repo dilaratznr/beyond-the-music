@@ -27,6 +27,7 @@ const FILTERS = [
   { v: '', l: 'Tümü' },
   { v: 'PUBLISHED', l: 'Yayında' },
   { v: 'SCHEDULED', l: 'Zamanlanmış' },
+  { v: 'PENDING_REVIEW', l: 'Onayda' },
   { v: 'DRAFT', l: 'Taslak' },
 ];
 
@@ -45,6 +46,14 @@ const STATUS_STYLE: Record<string, { label: string; pill: string; dot: string }>
     pill: 'bg-sky-500/10 text-sky-300 border-sky-500/20',
     dot: 'bg-sky-400',
   },
+  PENDING_REVIEW: {
+    label: 'Onayda',
+    // Menekşe — yayın için bekleyen, editörün elinden çıkmış ama henüz
+    // yayında olmayan içerik. Taslaktan (amber) ve yayından (emerald)
+    // görsel olarak ayrı durması için farklı renk ailesi.
+    pill: 'bg-violet-500/10 text-violet-300 border-violet-500/20',
+    dot: 'bg-violet-400',
+  },
   DRAFT: {
     label: 'Taslak',
     pill: 'bg-amber-500/10 text-amber-300 border-amber-500/20',
@@ -52,7 +61,7 @@ const STATUS_STYLE: Record<string, { label: string; pill: string; dot: string }>
   },
 };
 
-const ALLOWED_FILTERS = new Set(['', 'PUBLISHED', 'SCHEDULED', 'DRAFT']);
+const ALLOWED_FILTERS = new Set(['', 'PUBLISHED', 'SCHEDULED', 'PENDING_REVIEW', 'DRAFT']);
 
 export default function ArticlesPage() {
   // useSearchParams() içerdiği için Next.js statik pre-render'da bailout

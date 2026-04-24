@@ -181,6 +181,17 @@ export function IconStar(p: IconProps) {
   );
 }
 
+export function IconReview(p: IconProps) {
+  // İçi "check"li clipboard — "onay bekleyen içerikler" için.
+  return (
+    <Base {...p}>
+      <path d="M9 3h6a1 1 0 0 1 1 1v2H8V4a1 1 0 0 1 1-1z" />
+      <path d="M8 6H5a1 1 0 0 0-1 1v13a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1V7a1 1 0 0 0-1-1h-3" />
+      <path d="M9 14l2 2 4-4" />
+    </Base>
+  );
+}
+
 export function IconExternal(p: IconProps) {
   return (
     <Base {...p}>

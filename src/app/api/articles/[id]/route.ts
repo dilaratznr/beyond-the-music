@@ -5,6 +5,7 @@ import { requireSectionAccess } from '@/lib/auth-guard';
 import { CACHE_TAGS } from '@/lib/db-cache';
 import { slugify } from '@/lib/utils';
 import { parseScheduledFor } from '@/lib/datetime-local';
+import { canUserPublish, submitForReview } from '@/lib/content-review';
 
 export async function GET(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -22,8 +23,8 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
 }
 
 export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const { error } = await requireSectionAccess('ARTICLE', 'canEdit');
-  if (error) return error;
+  const { error, user } = await requireSectionAccess('ARTICLE', 'canEdit');
+  if (error || !user) return error;
 
   const { id } = await params;
   const body = await request.json();
@@ -53,18 +54,34 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
   if (relatedGenreId !== undefined) data.relatedGenreId = relatedGenreId || null;
   if (relatedArtistId !== undefined) data.relatedArtistId = relatedArtistId || null;
 
+  // Onay akışı için — canPublish'i olmayan admin yayın değişiklikleri
+  // istiyorsa, makale PENDING_REVIEW'a düşer ve yeni bir review
+  // kaydı açılır (zaten açık olan güncellenir).
+  let needsReview = false;
+
   if (status !== undefined) {
     const current = await prisma.article.findUnique({
       where: { id },
-      select: { status: true, publishedAt: true },
+      select: { status: true, publishedAt: true, titleTr: true, titleEn: true },
     });
     if (!current) return NextResponse.json({ error: 'Article not found' }, { status: 404 });
 
+    const canPublish = await canUserPublish(user.id, 'ARTICLE');
+
     if (status === 'PUBLISHED') {
-      data.status = 'PUBLISHED';
-      // Preserve original publish date if already published; otherwise stamp now.
-      if (current.status !== 'PUBLISHED' || !current.publishedAt) {
-        data.publishedAt = new Date();
+      if (canPublish) {
+        data.status = 'PUBLISHED';
+        // Preserve original publish date if already published; otherwise stamp now.
+        if (current.status !== 'PUBLISHED' || !current.publishedAt) {
+          data.publishedAt = new Date();
+        }
+      } else {
+        // canPublish yoksa — eğer zaten yayındaysa olduğu gibi kalsın,
+        // yoksa onaya düşsün. "Yayındaki makalede düzenleme" de canPublish
+        // gerektirir (aksi halde admin sessizce canlı içeriği değiştirirdi).
+        data.status = 'PENDING_REVIEW';
+        data.publishedAt = null;
+        needsReview = true;
       }
     } else if (status === 'SCHEDULED') {
       const when = parseScheduledFor(scheduledFor);
@@ -74,14 +91,23 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
           { status: 400 },
         );
       }
-      if (when.getTime() <= Date.now()) {
-        // Scheduled to the past → publish immediately
-        data.status = 'PUBLISHED';
-        data.publishedAt = new Date();
+      if (canPublish) {
+        if (when.getTime() <= Date.now()) {
+          data.status = 'PUBLISHED';
+          data.publishedAt = new Date();
+        } else {
+          data.status = 'SCHEDULED';
+          data.publishedAt = when;
+        }
       } else {
-        data.status = 'SCHEDULED';
-        data.publishedAt = when;
+        data.status = 'PENDING_REVIEW';
+        data.publishedAt = null;
+        needsReview = true;
       }
+    } else if (status === 'PENDING_REVIEW') {
+      data.status = 'PENDING_REVIEW';
+      data.publishedAt = null;
+      needsReview = true;
     } else {
       // DRAFT
       data.status = 'DRAFT';
@@ -90,6 +116,18 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
   }
 
   const article = await prisma.article.update({ where: { id }, data });
+
+  if (needsReview) {
+    await submitForReview({
+      section: 'ARTICLE',
+      entityId: article.id,
+      // Yeni başlık verildiyse onu kullan, yoksa DB'dekini
+      entityTitle: (titleTr as string) || (titleEn as string) || article.titleTr || article.titleEn,
+      changeType: 'EDIT',
+      submittedById: user.id,
+    });
+  }
+
   revalidateTag(CACHE_TAGS.article, 'max');
   return NextResponse.json(article);
 }

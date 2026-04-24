@@ -6,6 +6,7 @@ import { CACHE_TAGS } from '@/lib/db-cache';
 import { slugify } from '@/lib/utils';
 import { publishDueArticles } from '@/lib/article-publishing';
 import { parseScheduledFor } from '@/lib/datetime-local';
+import { canUserPublish, submitForReview } from '@/lib/content-review';
 
 export async function GET(request: NextRequest) {
   // Promote any scheduled articles whose time has come before reading the list —
@@ -66,15 +67,25 @@ export async function POST(request: NextRequest) {
   }
 
   // Normalise the status/publishedAt pair:
-  //   DRAFT      → publishedAt = null
-  //   SCHEDULED  → publishedAt = future date (required); if in the past, publish now
-  //   PUBLISHED  → publishedAt = now
-  let resolvedStatus: 'DRAFT' | 'SCHEDULED' | 'PUBLISHED' = 'DRAFT';
+  //   DRAFT           → publishedAt = null
+  //   SCHEDULED       → publishedAt = future date (required); if in the past, publish now
+  //   PUBLISHED       → publishedAt = now
+  //   PENDING_REVIEW  → canPublish olmayan kullanıcı "yayınla/zamanla" istediğinde;
+  //                     içerik Super Admin onayına düşer, publishedAt boş.
+  let resolvedStatus: 'DRAFT' | 'SCHEDULED' | 'PUBLISHED' | 'PENDING_REVIEW' = 'DRAFT';
   let resolvedPublishedAt: Date | null = null;
+  let needsReview = false;
+
+  const canPublish = await canUserPublish(user.id, 'ARTICLE');
 
   if (status === 'PUBLISHED') {
-    resolvedStatus = 'PUBLISHED';
-    resolvedPublishedAt = new Date();
+    if (canPublish) {
+      resolvedStatus = 'PUBLISHED';
+      resolvedPublishedAt = new Date();
+    } else {
+      resolvedStatus = 'PENDING_REVIEW';
+      needsReview = true;
+    }
   } else if (status === 'SCHEDULED') {
     const when = parseScheduledFor(scheduledFor);
     if (!when) {
@@ -83,13 +94,23 @@ export async function POST(request: NextRequest) {
         { status: 400 },
       );
     }
-    if (when.getTime() <= Date.now()) {
-      resolvedStatus = 'PUBLISHED';
-      resolvedPublishedAt = new Date();
+    if (canPublish) {
+      if (when.getTime() <= Date.now()) {
+        resolvedStatus = 'PUBLISHED';
+        resolvedPublishedAt = new Date();
+      } else {
+        resolvedStatus = 'SCHEDULED';
+        resolvedPublishedAt = when;
+      }
     } else {
-      resolvedStatus = 'SCHEDULED';
-      resolvedPublishedAt = when;
+      // canPublish yoksa zamanlanmış yayın da onay gerektirir
+      resolvedStatus = 'PENDING_REVIEW';
+      needsReview = true;
     }
+  } else if (status === 'PENDING_REVIEW') {
+    // Admin açıkça "Onaya Gönder" demiş
+    resolvedStatus = 'PENDING_REVIEW';
+    needsReview = true;
   }
 
   const slug = slugify(titleEn);
@@ -109,6 +130,16 @@ export async function POST(request: NextRequest) {
       relatedArtistId: relatedArtistId || null,
     },
   });
+
+  if (needsReview) {
+    await submitForReview({
+      section: 'ARTICLE',
+      entityId: article.id,
+      entityTitle: article.titleTr || article.titleEn,
+      changeType: 'CREATE',
+      submittedById: user.id,
+    });
+  }
 
   revalidateTag(CACHE_TAGS.article, 'max');
   return NextResponse.json(article, { status: 201 });

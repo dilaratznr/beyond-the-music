@@ -13,7 +13,7 @@ import { toDatetimeLocalValue } from '@/lib/datetime-local';
 
 const RichEditor = dynamic(() => import('@/components/admin/RichEditor'), { ssr: false });
 
-type Status = 'DRAFT' | 'SCHEDULED' | 'PUBLISHED';
+type Status = 'DRAFT' | 'SCHEDULED' | 'PUBLISHED' | 'PENDING_REVIEW';
 
 function defaultScheduledFor(): string {
   const d = new Date();
@@ -46,6 +46,7 @@ export default function EditArticlePage({ params }: { params: Promise<{ id: stri
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [initialStatus, setInitialStatus] = useState<Status>('DRAFT');
+  const [canPublish, setCanPublish] = useState<boolean>(false);
 
   // --- Auto-save state ---
   // Baseline = what's currently persisted on the server. We diff the live form
@@ -57,6 +58,18 @@ export default function EditArticlePage({ params }: { params: Promise<{ id: stri
   const [autosaveStatus, setAutosaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
   const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null);
   const [autosaveTick, setAutosaveTick] = useState(0); // re-render every minute for relative time
+
+  // Kullanıcının ARTICLE yayın yetkisi var mı? Yoksa "Onaya Gönder"
+  // akışına girer.
+  useEffect(() => {
+    fetch('/api/users/me')
+      .then((r) => r.json())
+      .then((d) => {
+        const cp = d?.isSuperAdmin || d?.sections?.ARTICLE?.canPublish;
+        setCanPublish(!!cp);
+      })
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     Promise.all([
@@ -296,6 +309,7 @@ export default function EditArticlePage({ params }: { params: Promise<{ id: stri
               onChange={updateStatus}
               scheduledFor={form.scheduledFor}
               onScheduledForChange={(v) => setForm({ ...form, scheduledFor: v })}
+              canPublish={canPublish}
             />
           </div>
           <ImageUploader
@@ -456,17 +470,30 @@ function StatusSelector({
   onChange,
   scheduledFor,
   onScheduledForChange,
+  canPublish,
 }: {
   status: Status;
   onChange: (v: Status) => void;
   scheduledFor: string;
   onScheduledForChange: (v: string) => void;
+  /** Bkz. new/page.tsx StatusSelector — canPublish yoksa "Onaya Gönder" modu. */
+  canPublish: boolean;
 }) {
-  const options: { v: Status; label: string; hint: string }[] = [
-    { v: 'DRAFT', label: 'Taslak', hint: 'Sitede görünmez' },
-    { v: 'SCHEDULED', label: 'Zamanla', hint: 'İleri tarihte yayına al' },
-    { v: 'PUBLISHED', label: 'Yayına Al', hint: 'Hemen yayınla' },
-  ];
+  // PENDING_REVIEW durumunda açılan sayfada admin bu durumu manuel
+  // olarak göremese bile, review reddedildiğinde status DRAFT'a çekilir —
+  // yani form başlangıç status'u hiçbir zaman PENDING_REVIEW olmaz.
+  // Ama super admin onay ekranından buraya dönebildiğinde görünür olsun
+  // diye yine de enumda tutuyoruz.
+  const options: { v: Status; label: string; hint: string }[] = canPublish
+    ? [
+        { v: 'DRAFT', label: 'Taslak', hint: 'Sitede görünmez' },
+        { v: 'SCHEDULED', label: 'Zamanla', hint: 'İleri tarihte yayına al' },
+        { v: 'PUBLISHED', label: 'Yayına Al', hint: 'Hemen yayınla' },
+      ]
+    : [
+        { v: 'DRAFT', label: 'Taslak', hint: 'Sitede görünmez' },
+        { v: 'PENDING_REVIEW', label: 'Onaya Gönder', hint: 'Super Admin onayına gönder' },
+      ];
 
   return (
     <div>
@@ -476,7 +503,9 @@ function StatusSelector({
       <div
         role="radiogroup"
         aria-label="Yayın durumu"
-        className="grid grid-cols-3 gap-1 p-1 bg-zinc-950 border border-zinc-800 rounded-lg"
+        className={`grid gap-1 p-1 bg-zinc-950 border border-zinc-800 rounded-lg ${
+          canPublish ? 'grid-cols-3' : 'grid-cols-2'
+        }`}
       >
         {options.map((opt) => {
           const active = status === opt.v;
@@ -518,6 +547,11 @@ function StatusSelector({
             </p>
           </div>
         </div>
+      )}
+      {status === 'PENDING_REVIEW' && (
+        <p className="mt-2 text-[11px] text-amber-300 px-3 py-2 bg-amber-500/10 border border-amber-500/20 rounded-md">
+          Kaydettiğinde Super Admin&apos;in onay kuyruğuna düşer. Onaylanırsa otomatik yayına alınır.
+        </p>
       )}
     </div>
   );

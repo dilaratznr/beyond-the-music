@@ -1,6 +1,9 @@
 import prisma from '@/lib/prisma';
 import Link from 'next/link';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
 import { publishDueArticles } from '@/lib/article-publishing';
+import { countPendingReviews } from '@/lib/content-review';
 import {
   IconGenre,
   IconArtist,
@@ -9,6 +12,7 @@ import {
   IconArticle,
   IconPath,
   IconPlus,
+  IconReview,
 } from '@/components/admin/Icons';
 
 export const dynamic = 'force-dynamic';
@@ -186,7 +190,11 @@ function formatScheduled(d: Date | string | null | undefined): string {
 }
 
 export default async function DashboardPage() {
-  const d = await getDashboard();
+  const [d, session] = await Promise.all([getDashboard(), getServerSession(authOptions)]);
+  const isSuperAdmin = (session?.user as { role?: string } | undefined)?.role === 'SUPER_ADMIN';
+  // Super Admin için onay bekleyen içerik sayısı. Admin'ler bu kutuyu
+  // görmez (onay kuyruğu üzerinde yetkileri yok).
+  const pendingReviews = isSuperAdmin ? await countPendingReviews() : 0;
 
   return (
     <div className="space-y-6">
@@ -229,6 +237,51 @@ export default async function DashboardPage() {
           </Link>
         </div>
       </div>
+
+      {/* Super Admin için onay bekleyen içerikler. Sayı > 0 ise amber
+          tonda dikkat çeker, 0 ise sessiz "yakalandın" kutusu. Admin'ler
+          bu alanı hiç görmez. */}
+      {isSuperAdmin && (
+        <Link
+          href="/admin/reviews"
+          className={
+            pendingReviews > 0
+              ? 'flex items-center justify-between gap-4 px-5 py-4 bg-amber-500/10 border border-amber-500/30 rounded-lg hover:bg-amber-500/15 hover:border-amber-500/50 transition-colors group'
+              : 'flex items-center justify-between gap-4 px-5 py-4 bg-zinc-900/40 border border-zinc-800 rounded-lg hover:border-zinc-700 transition-colors group'
+          }
+        >
+          <div className="flex items-center gap-3 min-w-0">
+            <span
+              className={
+                pendingReviews > 0
+                  ? 'w-10 h-10 rounded-md bg-amber-400 text-zinc-950 flex items-center justify-center flex-shrink-0'
+                  : 'w-10 h-10 rounded-md bg-zinc-800 text-zinc-500 flex items-center justify-center flex-shrink-0'
+              }
+            >
+              <IconReview size={18} />
+            </span>
+            <div className="min-w-0">
+              <p
+                className={
+                  pendingReviews > 0
+                    ? 'text-sm font-semibold text-amber-100 tracking-tight'
+                    : 'text-sm font-semibold text-zinc-200 tracking-tight'
+                }
+              >
+                {pendingReviews > 0
+                  ? `${pendingReviews} içerik onayını bekliyor`
+                  : 'Onay bekleyen içerik yok'}
+              </p>
+              <p className="text-[11px] text-zinc-500 mt-0.5">
+                canPublish yetkisi olmayan editörlerin yayına gönderdiği içerikler burada listelenir.
+              </p>
+            </div>
+          </div>
+          <span className="text-[11px] font-medium text-zinc-400 group-hover:text-white whitespace-nowrap hidden sm:inline">
+            Onay Kuyruğu →
+          </span>
+        </Link>
+      )}
 
       {/* Article status strip — published / scheduled / draft at a glance. */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">

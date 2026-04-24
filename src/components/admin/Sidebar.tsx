@@ -25,6 +25,7 @@ import {
   IconPlus,
   IconStar,
   IconUpload,
+  IconReview,
 } from './Icons';
 
 type IconComp = ComponentType<{ size?: number; className?: string }>;
@@ -67,12 +68,15 @@ function NavLink({
   Icon,
   active,
   collapsed,
+  badge,
 }: {
   href: string;
   label: string;
   Icon: IconComp;
   active: boolean;
   collapsed: boolean;
+  /** Opsiyonel sayısal badge (örn. bekleyen onay adedi). 0 veya yoksa basılmaz. */
+  badge?: number;
 }) {
   return (
     <Link
@@ -89,10 +93,20 @@ function NavLink({
       {active && (
         <span className="absolute left-0 top-1.5 bottom-1.5 w-0.5 rounded-full bg-white" aria-hidden />
       )}
-      <span className="w-4 h-4 flex items-center justify-center flex-shrink-0">
+      <span className="w-4 h-4 flex items-center justify-center flex-shrink-0 relative">
         <Icon size={15} />
+        {collapsed && badge && badge > 0 && (
+          <span className="absolute -top-1 -right-1 min-w-[14px] h-[14px] px-1 rounded-full bg-amber-400 text-zinc-950 text-[9px] font-bold flex items-center justify-center leading-none">
+            {badge > 99 ? '99+' : badge}
+          </span>
+        )}
       </span>
-      {!collapsed && <span className="truncate">{label}</span>}
+      {!collapsed && <span className="truncate flex-1">{label}</span>}
+      {!collapsed && badge && badge > 0 && (
+        <span className="min-w-[18px] h-[18px] px-1.5 rounded-full bg-amber-400 text-zinc-950 text-[10px] font-bold flex items-center justify-center leading-none">
+          {badge > 99 ? '99+' : badge}
+        </span>
+      )}
     </Link>
   );
 }
@@ -102,6 +116,7 @@ export default function Sidebar() {
   const { data: session } = useSession();
   const [perms, setPerms] = useState<UserPerms | null>(null);
   const [collapsed, setCollapsed] = useState(false);
+  const [pendingReviews, setPendingReviews] = useState(0);
 
   useEffect(() => {
     fetch('/api/users/me')
@@ -110,6 +125,26 @@ export default function Sidebar() {
         if (d.sections) setPerms(d);
       });
   }, []);
+
+  // Super Admin için bekleyen onay sayısı. Navigasyonda refresh oluyor ki
+  // "Onaya Gönder" sonrası hemen yansısın. Listenin tamamını almak yerine
+  // sadece sayı önemli; şimdilik limit=200 ile çekiyoruz — Faz 2'de ayrı
+  // bir `/api/admin/reviews/count` endpoint'i yapılabilir.
+  const isSuperAdminNow = perms?.isSuperAdmin || perms?.role === 'SUPER_ADMIN';
+  useEffect(() => {
+    if (!isSuperAdminNow) return;
+    let cancelled = false;
+    fetch('/api/admin/reviews?status=PENDING&limit=200')
+      .then((r) => r.json())
+      .then((data) => {
+        if (cancelled) return;
+        setPendingReviews(Array.isArray(data) ? data.length : 0);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [isSuperAdminNow, pathname]);
 
   // Keyboard shortcut: ⌘\ (macOS) / Ctrl+\ (Linux/Win) toggles the sidebar —
   // skipped when focus is inside a text input so typing a backslash still works.
@@ -279,6 +314,18 @@ export default function Sidebar() {
               </p>
             )}
             <div className="space-y-0.5">
+              {/* Onay Bekleyenler — bekleyen onay varsa amber badge ile
+                  belirginleşir. Yönetimin en üst satırı çünkü Super
+                  Admin'in güncel olarak haberdar olmasını istediğimiz
+                  iş burası. */}
+              <NavLink
+                href="/admin/reviews"
+                label="Onay Bekleyenler"
+                Icon={IconReview}
+                active={pathname.startsWith('/admin/reviews')}
+                collapsed={collapsed}
+                badge={pendingReviews}
+              />
               {managementItems.map((item) => (
                 <NavLink
                   key={item.href}

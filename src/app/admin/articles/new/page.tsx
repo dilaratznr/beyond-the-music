@@ -11,7 +11,7 @@ import { toDatetimeLocalValue } from '@/lib/datetime-local';
 
 const RichEditor = dynamic(() => import('@/components/admin/RichEditor'), { ssr: false });
 
-type Status = 'DRAFT' | 'SCHEDULED' | 'PUBLISHED';
+type Status = 'DRAFT' | 'SCHEDULED' | 'PUBLISHED' | 'PENDING_REVIEW';
 
 /**
  * Default scheduled time = 1 hour from now, rounded up to the next hour.
@@ -40,6 +40,7 @@ export default function NewArticlePage() {
   });
   const [genres, setGenres] = useState<{ id: string; nameTr: string }[]>([]);
   const [artists, setArtists] = useState<{ id: string; name: string }[]>([]);
+  const [canPublish, setCanPublish] = useState<boolean>(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const router = useRouter();
@@ -48,6 +49,15 @@ export default function NewArticlePage() {
   useEffect(() => {
     fetch('/api/genres?all=true').then((r) => r.json()).then(setGenres);
     fetch('/api/artists?all=true').then((r) => r.json()).then(setArtists);
+    // Yayın yetkisi kontrolü. Yoksa form "Onaya Gönder" moduna geçer —
+    // Publish/Schedule seçenekleri gizlenir, yerine tek bir onay akışı.
+    fetch('/api/users/me')
+      .then((r) => r.json())
+      .then((d) => {
+        const cp = d?.isSuperAdmin || d?.sections?.ARTICLE?.canPublish;
+        setCanPublish(!!cp);
+      })
+      .catch(() => {});
   }, []);
 
   function updateStatus(next: Status) {
@@ -65,9 +75,16 @@ export default function NewArticlePage() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
 
-    if (form.status === 'PUBLISHED') {
+    if (form.status === 'PUBLISHED' && canPublish) {
       const ok = window.confirm(
         `"${form.titleTr}" makalesini yayına almak istediğinizden emin misiniz? Makale siteye anında yansıyacak.`,
+      );
+      if (!ok) return;
+    }
+
+    if (form.status === 'PENDING_REVIEW') {
+      const ok = window.confirm(
+        `"${form.titleTr}" makalesi onay için Super Admin'e gönderilecek. Devam edilsin mi?`,
       );
       if (!ok) return;
     }
@@ -99,17 +116,23 @@ export default function NewArticlePage() {
         form.status === 'SCHEDULED'
           ? 'Makale zamanlandı'
           : form.status === 'PUBLISHED'
-            ? 'Makale yayında'
-            : 'Taslak kaydedildi',
+            ? canPublish
+              ? 'Makale yayında'
+              : 'Makale onaya gönderildi'
+            : form.status === 'PENDING_REVIEW'
+              ? 'Makale onaya gönderildi'
+              : 'Taslak kaydedildi',
       );
       router.push('/admin/articles');
     }
   }
 
   const saveLabel =
-    form.status === 'PUBLISHED'
-      ? 'Yayına Al'
-      : form.status === 'SCHEDULED'
+    form.status === 'PENDING_REVIEW'
+      ? 'Onaya Gönder'
+      : form.status === 'PUBLISHED'
+        ? canPublish ? 'Yayına Al' : 'Onaya Gönder'
+        : form.status === 'SCHEDULED'
         ? 'Yayın Zamanla'
         : 'Taslağı Kaydet';
 
@@ -149,6 +172,7 @@ export default function NewArticlePage() {
               onChange={updateStatus}
               scheduledFor={form.scheduledFor}
               onScheduledForChange={(v) => setForm({ ...form, scheduledFor: v })}
+              canPublish={canPublish}
             />
           </div>
           <ImageUploader
@@ -323,17 +347,30 @@ function StatusSelector({
   onChange,
   scheduledFor,
   onScheduledForChange,
+  canPublish,
 }: {
   status: Status;
   onChange: (v: Status) => void;
   scheduledFor: string;
   onScheduledForChange: (v: string) => void;
+  /**
+   * Kullanıcının bu bölümde yayın yetkisi var mı? Yoksa "Zamanla" ve
+   * "Yayına Al" seçenekleri gizlenir, yerine tek bir "Onaya Gönder"
+   * adımı gelir. Super Admin onaylayınca içerik otomatik yayına girer.
+   */
+  canPublish: boolean;
 }) {
-  const options: { v: Status; label: string; hint: string }[] = [
-    { v: 'DRAFT', label: 'Taslak', hint: 'Sitede görünmez' },
-    { v: 'SCHEDULED', label: 'Zamanla', hint: 'İleri tarihte yayına al' },
-    { v: 'PUBLISHED', label: 'Yayına Al', hint: 'Hemen yayınla' },
-  ];
+  // Yayın yetkisi olanlara tam akış, olmayanlara sadece Taslak / Onay
+  const options: { v: Status; label: string; hint: string }[] = canPublish
+    ? [
+        { v: 'DRAFT', label: 'Taslak', hint: 'Sitede görünmez' },
+        { v: 'SCHEDULED', label: 'Zamanla', hint: 'İleri tarihte yayına al' },
+        { v: 'PUBLISHED', label: 'Yayına Al', hint: 'Hemen yayınla' },
+      ]
+    : [
+        { v: 'DRAFT', label: 'Taslak', hint: 'Sitede görünmez' },
+        { v: 'PENDING_REVIEW', label: 'Onaya Gönder', hint: 'Super Admin onayına gönder' },
+      ];
 
   return (
     <div>
@@ -343,7 +380,9 @@ function StatusSelector({
       <div
         role="radiogroup"
         aria-label="Yayın durumu"
-        className="grid grid-cols-3 gap-1 p-1 bg-zinc-950 border border-zinc-800 rounded-lg"
+        className={`grid gap-1 p-1 bg-zinc-950 border border-zinc-800 rounded-lg ${
+          canPublish ? 'grid-cols-3' : 'grid-cols-2'
+        }`}
       >
         {options.map((opt) => {
           const active = status === opt.v;
@@ -385,6 +424,11 @@ function StatusSelector({
             </p>
           </div>
         </div>
+      )}
+      {status === 'PENDING_REVIEW' && (
+        <p className="mt-2 text-[11px] text-amber-300 px-3 py-2 bg-amber-500/10 border border-amber-500/20 rounded-md">
+          Makale kaydedildiğinde Super Admin&apos;in onay kuyruğuna düşer. Onaylanırsa otomatik yayına alınır.
+        </p>
       )}
     </div>
   );

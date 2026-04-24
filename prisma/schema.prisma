@@ -43,6 +43,16 @@ enum ArticleStatus {
   DRAFT
   SCHEDULED
   PUBLISHED
+  // canPublish yetkisi olmayan admin/editor "Yayınla" veya "Zamanla"
+  // istediğinde makale doğrudan yayınlanmaz — PENDING_REVIEW'a düşer
+  // ve ContentReview kuyruğunda Super Admin onayı bekler.
+  PENDING_REVIEW
+}
+
+enum ReviewStatus {
+  PENDING
+  APPROVED
+  REJECTED
 }
 
 enum ListeningPathType {
@@ -72,6 +82,11 @@ model User {
   updatedAt   DateTime         @updatedAt
   articles    Article[]
   permissions UserPermission[]
+  // Onay kuyruğu ilişkileri — bir user hem kendi gönderdiklerini
+  // ("submittedReviews"), hem de Super Admin'se karar verdiklerini
+  // ("reviewedReviews") görür. İkisi ayrı relation name ile.
+  submittedReviews ContentReview[] @relation("ReviewSubmitter")
+  reviewedReviews  ContentReview[] @relation("ReviewReviewer")
 }
 
 model UserPermission {
@@ -256,6 +271,38 @@ model SiteSetting {
   id    String @id @default(cuid())
   key   String @unique
   value String @db.Text
+}
+
+/// Merkezi onay kuyruğu. İçerik modellerinin kendisine dokunmadan
+/// "Super Admin onayından geçiyor" durumunu tutuyor:
+///   - section + entityId: hangi modelin hangi kaydıyla ilgili
+///     (başlangıçta sadece ARTICLE kullanılıyor, ilerideki fazlarda
+///     ARTIST/ALBUM/... genişleyecek)
+///   - changeType: CREATE ya da EDIT — yayındaki bir makalede düzenleme
+///     mi, yoksa yeni makalenin yayın talebi mi
+///   - entityTitle: admin listede göstermek için dondurulmuş başlık
+///     (makale silinirse bile kuyruk okunabilir kalsın diye)
+///   - submittedBy → reviewedBy: kim gönderdi → Super Admin kim karar verdi
+///   - reviewNote: reddederken opsiyonel açıklama
+model ContentReview {
+  id            String       @id @default(cuid())
+  section       String       // 'ARTICLE' | 'ARTIST' | 'ALBUM' | ... (Faz 2'de genişleyecek)
+  entityId      String
+  entityTitle   String
+  changeType    String       // 'CREATE' | 'EDIT'
+  status        ReviewStatus @default(PENDING)
+  reviewNote    String?      @db.Text
+
+  submittedById String
+  submittedBy   User         @relation("ReviewSubmitter", fields: [submittedById], references: [id], onDelete: Cascade)
+  submittedAt   DateTime     @default(now())
+
+  reviewedById  String?
+  reviewedBy    User?        @relation("ReviewReviewer", fields: [reviewedById], references: [id])
+  reviewedAt    DateTime?
+
+  @@index([status, submittedAt])
+  @@index([section, entityId])
 }
 
 model HeroVideo {
