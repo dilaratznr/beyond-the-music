@@ -42,6 +42,17 @@ export default function Navbar({ locale, sections, brand }: NavbarProps) {
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
 
+  // Aynı sayfaya tekrar tıklama davranışı (Dilara: "anasayfadayken
+  // logoya ya da Ana Sayfa'ya basınca yukarı çıkmalı"). Router-level'da
+  // aynı route'a tıklamak zaten noop — kullanıcı scroll pozisyonunda
+  // kalıyor. Bunun yerine preventDefault edip smooth scroll ile en
+  // tepeye çıkıyoruz. Mobile menü ise kapanıyor.
+  function scrollToTop(e: React.MouseEvent<HTMLAnchorElement>) {
+    e.preventDefault();
+    setMobileOpen(false);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
   const homeLabel = locale === 'tr' ? 'Ana Sayfa' : 'Home';
 
   const links: Array<{ href: string; label: string; exact?: boolean; external?: boolean }> = [
@@ -61,6 +72,7 @@ export default function Navbar({ locale, sections, brand }: NavbarProps) {
       <nav className="max-w-[1480px] mx-auto flex items-center justify-between px-6 lg:px-10 xl:px-14 h-14">
         <Link
           href={`/${locale}`}
+          onClick={isHome ? scrollToTop : undefined}
           className="flex items-center gap-2 hover:opacity-80 transition-opacity"
           aria-label={brand.name}
         >
@@ -100,8 +112,19 @@ export default function Navbar({ locale, sections, brand }: NavbarProps) {
                 </a>
               );
             }
+            // Aynı sayfaya tıklamak = yukarı scroll (Ana Sayfa / zaten o
+            // section'daki bir link için). Başka sayfaya gidiyorsa normal
+            // Next router navigasyonu.
+            const onSamePage = link.exact
+              ? pathname === link.href
+              : pathname === link.href;
             return (
-              <Link key={link.href} href={link.href} className={className}>
+              <Link
+                key={link.href}
+                href={link.href}
+                onClick={onSamePage ? scrollToTop : undefined}
+                className={className}
+              >
                 {link.label}
               </Link>
             );
@@ -176,8 +199,14 @@ export default function Navbar({ locale, sections, brand }: NavbarProps) {
                   </a>
                 );
               }
+              const onSamePage = pathname === link.href;
               return (
-                <Link key={link.href} href={link.href} onClick={() => setMobileOpen(false)} className={cls}>
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  onClick={onSamePage ? scrollToTop : () => setMobileOpen(false)}
+                  className={cls}
+                >
                   {content}
                 </Link>
               );

@@ -14,45 +14,30 @@ interface Props {
  * frame'de re-render ağır kaçıyordu. Bunun yerine ref üzerinden doğrudan
  * `element.style.transform` yazıyoruz. rAF ile throttled.
  *
- * Spacing evrimi:
- *   1. items-center → items-start: başlık + kartlar arasında ~1 viewport
- *      boşluk oluşuyordu, kartları yukarı çektik.
- *   2. pt-[10vh] → pt-[4vh]: üstteki payı azalttık.
- *   3. (Dilara geri bildirimi: "türler ve sanatçılar arası çok boşluk var")
- *      h-screen pin alanı problemliydi — kartlar ~370px, viewport ~900px,
- *      altta ~500px ölü alan kalıyor ve bir sonraki section'a geçiş geç
- *      hissediliyordu. Şimdi pin yüksekliği içeriğe göre ölçülüyor:
- *      kart yüksekliği + ufak üst/alt nefes. Yatay scroll bitince sıradaki
- *      section hemen geliyor.
+ * Dikey hizalama (Dilara geri bildirimi: "kaydirirken alti cok bos duruyor"):
+ * Sticky alanı `h-screen` (viewport) tutuyoruz — aksi halde viewport'un
+ * kalan kısmı "sticky altı" boşluğu olarak siyah kalıyordu. Ancak kartlar
+ * `items-start`'ta olunca altta kocaman dead zone oluyordu; çözüm:
+ * kartları `items-center` + hafif `-mt` ile yatay ortanın biraz üstüne
+ * al. Üst/alt boşluk dengeli, kartlar "optik merkezde" ve scroll pin'i
+ * tamamlandığında hemen sonraki section geliyor.
  */
-const TOP_PAD = 32; // sticky pin üst nefes (px)
-const BOTTOM_PAD = 32; // sticky pin alt nefes (px)
-
 export default function HorizontalScroll({ children, className = '' }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const [sectionHeight, setSectionHeight] = useState<number | null>(null);
-  const [pinHeight, setPinHeight] = useState<number | null>(null);
 
-  // Overflow + pin yüksekliğini ölç
+  // Overflow ölç ve section yüksekliğini ayarla
   useLayoutEffect(() => {
     function measure() {
       const scroll = scrollRef.current;
       if (!scroll) return;
       const overflow = Math.max(0, scroll.scrollWidth - window.innerWidth);
-      // Pin alanı viewport'un tamamı değil — içerik kadar + nefes.
-      // Viewport'tan büyük olmamalı (sticky davranışı bozulur).
-      const cardsH = scroll.offsetHeight;
-      const pin = Math.min(
-        window.innerHeight,
-        cardsH + TOP_PAD + BOTTOM_PAD,
-      );
-      setPinHeight(pin);
-      setSectionHeight(pin + overflow);
+      setSectionHeight(window.innerHeight + overflow);
     }
     measure();
     window.addEventListener('resize', measure);
-    // Resimler yüklendikçe boyut değişebilir — ResizeObserver yakalar
+    // Resimler yüklendikçe genişlik değişebilir — ResizeObserver yakalar
     let ro: ResizeObserver | null = null;
     if ('ResizeObserver' in window && scrollRef.current) {
       ro = new ResizeObserver(measure);
@@ -67,20 +52,19 @@ export default function HorizontalScroll({ children, className = '' }: Props) {
   useEffect(() => {
     const container = containerRef.current;
     const scroll = scrollRef.current;
-    if (!container || !scroll || !sectionHeight || !pinHeight) return;
+    if (!container || !scroll || !sectionHeight) return;
 
     let rafId = 0;
     function update() {
       rafId = 0;
       const rect = container!.getBoundingClientRect();
       const overflow = Math.max(0, scroll!.scrollWidth - window.innerWidth);
-      // Scroll aralığı: section toplam yüksekliği - pin (= overflow kadar)
-      const scrollRange = sectionHeight! - pinHeight!;
+      const scrollRange = sectionHeight! - window.innerHeight;
 
       let tx = 0;
       if (rect.top >= 0) {
         tx = 0;
-      } else if (rect.bottom <= pinHeight!) {
+      } else if (rect.bottom <= window.innerHeight) {
         tx = overflow;
       } else if (scrollRange > 0) {
         const progress = Math.min(1, Math.max(0, -rect.top / scrollRange));
@@ -100,25 +84,24 @@ export default function HorizontalScroll({ children, className = '' }: Props) {
       window.removeEventListener('scroll', onScroll);
       if (rafId) cancelAnimationFrame(rafId);
     };
-  }, [sectionHeight, pinHeight]);
+  }, [sectionHeight]);
 
   return (
     <div
       ref={containerRef}
       className={`relative ${className}`}
-      style={{ height: sectionHeight ? `${sectionHeight}px` : 'auto' }}
+      style={{ height: sectionHeight ? `${sectionHeight}px` : '100vh' }}
     >
-      <div
-        className="sticky top-0 overflow-hidden flex items-start"
-        style={{
-          height: pinHeight ? `${pinHeight}px` : 'auto',
-          paddingTop: `${TOP_PAD}px`,
-          paddingBottom: `${BOTTOM_PAD}px`,
-        }}
-      >
+      {/* Sticky alan viewport'u tamamen kaplar (h-screen) ki sonraki
+          section'ın dışarı taşmasına izin vermesin — ama içerik (kartlar)
+          `items-center` ile dikey ortada, `-translate-y-[8vh]` ile
+          optik olarak biraz yukarıda dursun (insan gözü tam merkezi
+          "aşağı kaymış" algılar, hafif yukarı ofset daha dengeli görünür).
+          Başlık sticky'nin dışında, pin aktif olunca zaten yukarı kayıyor. */}
+      <div className="sticky top-0 h-screen overflow-hidden flex items-center">
         <div
           ref={scrollRef}
-          className="flex gap-4 md:gap-5 px-6 lg:px-10 xl:px-14 will-change-transform"
+          className="flex gap-4 md:gap-5 px-6 lg:px-10 xl:px-14 will-change-transform -translate-y-[6vh]"
         >
           {children}
         </div>
