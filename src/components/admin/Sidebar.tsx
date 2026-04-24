@@ -125,25 +125,48 @@ export default function Sidebar() {
       });
   }, []);
 
-  // Super Admin için bekleyen onay sayısı. Navigasyonda refresh oluyor ki
-  // "Onaya Gönder" sonrası hemen yansısın. Listenin tamamını almak yerine
-  // sadece sayı önemli; şimdilik limit=200 ile çekiyoruz — Faz 2'de ayrı
-  // bir `/api/admin/reviews/count` endpoint'i yapılabilir.
+  // Super Admin için bekleyen onay sayısı. Her navigasyonda fetch etmek
+  // gereksiz — başarıyla bir sayı aldıktan sonra 60 saniye soğuma süresi.
+  // Özellikle /admin/reviews sayfasına girişte anında refresh (o sayfanın
+  // kendisi onaylayınca/reddedince hızlı güncelleme bekliyoruz).
   const isSuperAdminNow = perms?.isSuperAdmin || perms?.role === 'SUPER_ADMIN';
   useEffect(() => {
     if (!isSuperAdminNow) return;
     let cancelled = false;
-    fetch('/api/admin/reviews?status=PENDING&limit=200')
-      .then((r) => r.json())
-      .then((data) => {
+
+    async function fetchCount() {
+      try {
+        const r = await fetch('/api/admin/reviews?status=PENDING&limit=200');
+        if (!r.ok) return;
+        const data = await r.json();
         if (cancelled) return;
         setPendingReviews(Array.isArray(data) ? data.length : 0);
-      })
-      .catch(() => {});
+      } catch {
+        // Sessizce geç — ağ hatası / migration eksik. Badge 0 kalsın.
+      }
+    }
+
+    // İlk yüklemede hemen çek
+    fetchCount();
+    // Her 60 saniyede bir yenile
+    const interval = setInterval(fetchCount, 60_000);
+
     return () => {
       cancelled = true;
+      clearInterval(interval);
     };
-  }, [isSuperAdminNow, pathname]);
+  }, [isSuperAdminNow]);
+
+  // Reviews sayfasındayken her pathname değişiminde refresh (o sayfadan
+  // çıkınca veya dönünce count güncel gelsin)
+  useEffect(() => {
+    if (!isSuperAdminNow) return;
+    if (!pathname.startsWith('/admin/reviews')) return;
+    fetch('/api/admin/reviews?status=PENDING&limit=200')
+      .then((r) => r.json())
+      .then((data) => setPendingReviews(Array.isArray(data) ? data.length : 0))
+      .catch(() => {});
+  }, [pathname, isSuperAdminNow]);
 
   // Keyboard shortcut: ⌘\ (macOS) / Ctrl+\ (Linux/Win) toggles the sidebar —
   // skipped when focus is inside a text input so typing a backslash still works.

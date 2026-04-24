@@ -59,10 +59,17 @@ function AcceptInviteForm() {
   const [errorMsg, setErrorMsg] = useState('');
 
   // Token'ı sayfa yüklendiğinde doğrula, kullanıcı bilgilerini göster.
+  // 10 saniye timeout — API takılırsa "Yükleniyor…" sonsuza kadar
+  // kalmasın, invalid durumuna düşsün ki kullanıcı aksiyon alabilsin.
   useEffect(() => {
     if (!token) return;
     let cancelled = false;
-    fetch(`/api/auth/accept-invite?token=${encodeURIComponent(token)}`)
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 10_000);
+
+    fetch(`/api/auth/accept-invite?token=${encodeURIComponent(token)}`, {
+      signal: controller.signal,
+    })
       .then(async (r) => {
         if (cancelled) return;
         if (!r.ok) {
@@ -75,9 +82,13 @@ function AcceptInviteForm() {
       })
       .catch(() => {
         if (!cancelled) setInfoStatus('invalid');
-      });
+      })
+      .finally(() => clearTimeout(timeout));
+
     return () => {
       cancelled = true;
+      clearTimeout(timeout);
+      controller.abort();
     };
   }, [token]);
 
@@ -114,7 +125,15 @@ function AcceptInviteForm() {
   }
 
   if (infoStatus === 'loading') {
-    return <div className="text-center text-sm text-zinc-500 py-8">Davet kontrol ediliyor…</div>;
+    return (
+      <div className="flex items-center justify-center gap-3 py-12" role="status" aria-live="polite">
+        <span
+          className="w-4 h-4 border-2 border-zinc-700 border-t-zinc-100 rounded-full animate-spin"
+          aria-hidden="true"
+        />
+        <span className="text-sm text-zinc-400">Davet kontrol ediliyor…</span>
+      </div>
+    );
   }
 
   if (infoStatus === 'invalid') {
@@ -310,7 +329,17 @@ export default function AcceptInvitePage() {
       title="Beyond The Music'e hoş geldin."
       subtitle="Sana bir yönetim paneli hesabı açıldı. Şifreni belirleyerek hesabını aktifleştir — bu adımdan sonra giriş yapıp çalışmaya başlayabilirsin."
     >
-      <Suspense fallback={<div className="text-center text-sm text-zinc-500 py-8">Yükleniyor…</div>}>
+      <Suspense
+        fallback={
+          <div className="flex items-center justify-center gap-3 py-12" role="status" aria-live="polite">
+            <span
+              className="w-4 h-4 border-2 border-zinc-700 border-t-zinc-100 rounded-full animate-spin"
+              aria-hidden="true"
+            />
+            <span className="text-sm text-zinc-400">Davet kontrol ediliyor…</span>
+          </div>
+        }
+      >
         <AcceptInviteForm />
       </Suspense>
     </AuthLayout>
