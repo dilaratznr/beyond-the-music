@@ -18,6 +18,10 @@ export async function GET() {
   // Admins can see users, but only super admin sees all
   const where = user!.role === 'SUPER_ADMIN' ? {} : { role: 'EDITOR' as const };
 
+  // Migration yapılmadıysa mustSetPassword kolonu DB'de yok — o yüzden
+  // select'e açıkça eklemiyoruz. Prisma client regenerate olunca ek
+  // bir davranış lazımsa (örn. admin users listesinde "davet bekliyor"
+  // rozeti), o zaman ayrı bir select'e eklenir.
   const users = await prisma.user.findMany({
     where,
     select: {
@@ -26,7 +30,6 @@ export async function GET() {
       name: true,
       role: true,
       isActive: true,
-      mustSetPassword: true,
       createdAt: true,
       permissions: true,
     },

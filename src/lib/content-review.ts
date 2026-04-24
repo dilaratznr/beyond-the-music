@@ -115,7 +115,18 @@ export async function rejectReview(
 
 /**
  * Bekleyen review sayısı — sidebar badge'i ve dashboard için.
+ *
+ * `npm run db:push` henüz çalıştırılmamışsa ContentReview tablosu DB'de
+ * bulunmaz; Prisma "relation does not exist" hatası atar. Bu admin
+ * panelinin tamamen kırılmasına yol açmamalı — dashboard için sessizce
+ * 0 dönüyoruz ve Super Admin migration yapana kadar olağan çalışmaya
+ * devam ediyor.
  */
 export async function countPendingReviews(): Promise<number> {
-  return prisma.contentReview.count({ where: { status: 'PENDING' } });
+  try {
+    return await prisma.contentReview.count({ where: { status: 'PENDING' } });
+  } catch (err) {
+    console.warn('[content-review] count hatası — migration yapıldı mı?', err);
+    return 0;
+  }
 }

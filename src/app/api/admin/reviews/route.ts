@@ -18,15 +18,21 @@ export async function GET(request: NextRequest) {
   const status = (searchParams.get('status') as 'PENDING' | 'APPROVED' | 'REJECTED' | null) || 'PENDING';
   const limit = Math.min(parseInt(searchParams.get('limit') || '50'), 200);
 
-  const reviews = await prisma.contentReview.findMany({
-    where: { status },
-    orderBy: { submittedAt: 'desc' },
-    take: limit,
-    include: {
-      submittedBy: { select: { id: true, name: true, email: true, role: true } },
-      reviewedBy: { select: { id: true, name: true, email: true } },
-    },
-  });
-
-  return NextResponse.json(reviews);
+  // db:push henüz çalışmadıysa contentReview tablosu DB'de yok;
+  // panel komple kırılmasın diye sessizce boş dizi dönüyoruz.
+  try {
+    const reviews = await prisma.contentReview.findMany({
+      where: { status },
+      orderBy: { submittedAt: 'desc' },
+      take: limit,
+      include: {
+        submittedBy: { select: { id: true, name: true, email: true, role: true } },
+        reviewedBy: { select: { id: true, name: true, email: true } },
+      },
+    });
+    return NextResponse.json(reviews);
+  } catch (err) {
+    console.warn('[reviews] fetch hatası — migration yapıldı mı?', err);
+    return NextResponse.json([]);
+  }
 }
