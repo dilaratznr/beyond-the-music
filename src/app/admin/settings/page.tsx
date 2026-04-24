@@ -305,6 +305,50 @@ export default function SettingsPage() {
           </div>
         </SettingsCard>
 
+        {/* ── Logo & Branding (Super Admin only) ────────────── */}
+        {isSuperAdmin && (
+          <SettingsCard
+            title="Logo ve Marka"
+            description="Sitede her sayfanın üstünde (Navbar) ve altında (Footer) görünen logo ve site adı. Boş bırakılan alanlar için 🎧 emoji + 'Beyond The Music' fallback'i kullanılır."
+            badge="Sadece Super Admin"
+          >
+            <div>
+              <FieldLabel htmlFor="site-name">Site Adı</FieldLabel>
+              <TextInput
+                id="site-name"
+                value={settings.site_name || ''}
+                onChange={(v) => update('site_name', v)}
+                placeholder="Beyond The Music"
+              />
+              <FieldHelp>
+                Logonun yanında / altında görünen metin. Logo yüklenmediğinde tek başına gösterilir.
+                Boş bırakılırsa varsayılan &quot;Beyond The Music&quot; kullanılır.
+              </FieldHelp>
+            </div>
+
+            <SharedFieldsDivider />
+
+            <div className="grid sm:grid-cols-2 gap-5">
+              <ImageUploader
+                value={settings.site_logo_url || ''}
+                onChange={(url) => update('site_logo_url', url || '')}
+                category="logo"
+                aspect="wide"
+                label="Ana Logo (Header)"
+                helperText="Koyu arka plan üzerinde okunabilir olmalı — beyaz/açık renkli logo tercih edin. Navbar yüksekliğine (56 px) ölçeklenir."
+              />
+              <ImageUploader
+                value={settings.site_logo_footer_url || ''}
+                onChange={(url) => update('site_logo_footer_url', url || '')}
+                category="logo"
+                aspect="wide"
+                label="Footer Logosu (opsiyonel)"
+                helperText="Footer için ayrı logo. Boş bırakılırsa Navbar logosu kullanılır."
+              />
+            </div>
+          </SettingsCard>
+        )}
+
         {/* ── Typography (Super Admin only) ─────────────────── */}
         {isSuperAdmin && (
           <SettingsCard

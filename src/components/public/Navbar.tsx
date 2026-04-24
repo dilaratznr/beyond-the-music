@@ -13,14 +13,23 @@ interface NavSection {
   external?: boolean;
 }
 
+interface NavbarBrand {
+  /** Logo URL'i — admin panelinden yüklenir; boşsa 🎧 emoji fallback */
+  logoUrl: string;
+  /** Logonun yanındaki metin; her zaman dolu (fallback "Beyond The Music") */
+  name: string;
+}
+
 interface NavbarProps {
   locale: string;
   // Pre-filtered list of enabled nav sections, resolved server-side from
   // super-admin toggles in SiteSetting. Home is added separately.
   sections: NavSection[];
+  /** Marka bilgisi. Bkz. src/lib/site-branding.ts */
+  brand: NavbarBrand;
 }
 
-export default function Navbar({ locale, sections }: NavbarProps) {
+export default function Navbar({ locale, sections, brand }: NavbarProps) {
   const pathname = usePathname();
   const otherLocale = locale === 'tr' ? 'en' : 'tr';
   const switchPath = pathname.replace(`/${locale}`, `/${otherLocale}`);
@@ -50,9 +59,26 @@ export default function Navbar({ locale, sections }: NavbarProps) {
         : 'bg-zinc-900/95 backdrop-blur-md shadow-sm'
     )}>
       <nav className="max-w-[1480px] mx-auto flex items-center justify-between px-6 lg:px-10 xl:px-14 h-14">
-        <Link href={`/${locale}`} className="flex items-center gap-2 hover:opacity-80 transition-opacity">
-          <span className="text-lg">🎧</span>
-          <span className="font-bold text-white text-sm tracking-tight">Beyond The Music</span>
+        <Link
+          href={`/${locale}`}
+          className="flex items-center gap-2 hover:opacity-80 transition-opacity"
+          aria-label={brand.name}
+        >
+          {brand.logoUrl ? (
+            // Admin'den yüklenen logo — `h-8` ile navbar yüksekliğine
+            // (h-14 = 56px) sığıyor, `w-auto` en-boy oranını korur.
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={brand.logoUrl}
+              alt={brand.name}
+              className="h-8 w-auto max-w-[160px] object-contain"
+            />
+          ) : (
+            <>
+              <span className="text-lg" aria-hidden="true">🎧</span>
+              <span className="font-bold text-white text-sm tracking-tight">{brand.name}</span>
+            </>
+          )}
         </Link>
         <div className="hidden md:flex items-center gap-7 lg:gap-8">
           {links.map((link) => {
@@ -160,7 +186,7 @@ export default function Navbar({ locale, sections }: NavbarProps) {
           {/* Alt imza — dil geçişi hatırlatması, footer'daki gibi küçük
               uppercase metin. */}
           <p className="mt-8 text-[10px] uppercase tracking-[0.3em] text-zinc-600 font-semibold">
-            Beyond the Music · {new Date().getFullYear()}
+            {brand.name} · {new Date().getFullYear()}
           </p>
         </div>
       )}

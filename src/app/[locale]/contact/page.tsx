@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useParams } from 'next/navigation';
+import { SITE_CONTACT, SOCIAL_LINKS } from '@/lib/site-config';
 
 export default function ContactPage() {
   const { locale } = useParams();
@@ -209,8 +210,8 @@ export default function ContactPage() {
                   </div>
                   <div>
                     <p className="text-xs text-zinc-500">{tr ? 'E-posta' : 'Email'}</p>
-                    <a href="mailto:themusicbeyondtr@gmail.com" className="text-sm text-white font-medium hover:underline">
-                      themusicbeyondtr@gmail.com
+                    <a href={`mailto:${SITE_CONTACT.email}`} className="text-sm text-white font-medium hover:underline">
+                      {SITE_CONTACT.email}
                     </a>
                   </div>
                 </div>
@@ -220,8 +221,8 @@ export default function ContactPage() {
                   </div>
                   <div>
                     <p className="text-xs text-zinc-500">{tr ? 'Telefon' : 'Phone'}</p>
-                    <a href="tel:+905374225708" className="text-sm text-white font-medium hover:underline">
-                      0 537 422 57 08
+                    <a href={`tel:${SITE_CONTACT.phone}`} className="text-sm text-white font-medium hover:underline">
+                      {SITE_CONTACT.phoneDisplay}
                     </a>
                   </div>
                 </div>
@@ -231,8 +232,8 @@ export default function ContactPage() {
                   </div>
                   <div>
                     <p className="text-xs text-zinc-500">{tr ? 'Adres' : 'Address'}</p>
-                    <p className="text-sm text-white font-medium">Fade Stage</p>
-                    <p className="text-xs text-zinc-500">Cinnah Cd. Farabi Sk. 39/A, Çankaya/Ankara</p>
+                    <p className="text-sm text-white font-medium">{SITE_CONTACT.addressName}</p>
+                    <p className="text-xs text-zinc-500">{SITE_CONTACT.addressLine}</p>
                   </div>
                 </div>
               </div>
@@ -250,16 +251,24 @@ export default function ContactPage() {
               </p>
             </div>
 
-            <div className="bg-zinc-900 rounded-2xl p-6 border border-white/5">
-              <h3 className="text-sm font-bold text-white mb-3">{tr ? 'Bizi Takip Edin' : 'Follow Us'}</h3>
-              <div className="flex gap-3">
-                {['Instagram', 'YouTube', 'Spotify'].map((platform) => (
-                  <span key={platform} className="px-3 py-1.5 bg-[#0a0a0b] text-white rounded-lg text-xs font-medium text-zinc-400">
-                    {platform}
-                  </span>
-                ))}
+            {SOCIAL_LINKS.length > 0 && (
+              <div className="bg-zinc-900 rounded-2xl p-6 border border-white/5">
+                <h3 className="text-sm font-bold text-white mb-3">{tr ? 'Bizi Takip Edin' : 'Follow Us'}</h3>
+                <div className="flex gap-3 flex-wrap">
+                  {SOCIAL_LINKS.map((platform) => (
+                    <a
+                      key={platform.name}
+                      href={platform.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="px-3 py-1.5 bg-[#0a0a0b] rounded-lg text-xs font-medium text-zinc-400 hover:text-white hover:bg-black transition-colors"
+                    >
+                      {platform.name}
+                    </a>
+                  ))}
+                </div>
               </div>
-            </div>
+            )}
           </aside>
         </div>
       </div>

@@ -31,6 +31,7 @@ export default function ImageUploader({
     | 'architect'
     | 'listening-path'
     | 'hero'
+    | 'logo'
     | 'other';
   label?: string;
   aspect?: 'square' | 'wide' | 'portrait';

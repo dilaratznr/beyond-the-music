@@ -1,19 +1,42 @@
 import Link from 'next/link';
+import { SITE_CONTACT } from '@/lib/site-config';
+
+interface FooterBrand {
+  /** Footer-özel logo URL'i. Boşsa header logosuna düşer. */
+  logoUrl: string;
+  /** Site adı (her zaman dolu). */
+  name: string;
+}
 
 interface FooterProps {
   locale: string;
   dict: { footer: { rights: string; about: string; contact: string } };
+  /** Marka bilgisi. Bkz. src/lib/site-branding.ts */
+  brand: FooterBrand;
 }
 
-export default function Footer({ locale, dict }: FooterProps) {
+export default function Footer({ locale, dict, brand }: FooterProps) {
   return (
     <footer className="bg-zinc-950 text-zinc-500 pt-20 pb-10">
       <div className="max-w-[1480px] mx-auto px-6 lg:px-10 xl:px-14">
         <div className="grid md:grid-cols-4 gap-10 pb-12 border-b border-zinc-800">
           <div className="md:col-span-2">
             <div className="flex items-center gap-2 mb-4">
-              <span className="text-2xl">🎧</span>
-              <span className="font-black text-white text-xl">Beyond The Music</span>
+              {brand.logoUrl ? (
+                // Footer logosu biraz daha büyük (h-10) — kendi başına
+                // duran bölüm olduğu için daha belirgin.
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={brand.logoUrl}
+                  alt={brand.name}
+                  className="h-10 w-auto max-w-[220px] object-contain"
+                />
+              ) : (
+                <>
+                  <span className="text-2xl" aria-hidden="true">🎧</span>
+                  <span className="font-black text-white text-xl">{brand.name}</span>
+                </>
+              )}
             </div>
             <p className="text-sm leading-relaxed max-w-md">
               {locale === 'tr'
@@ -40,13 +63,17 @@ export default function Footer({ locale, dict }: FooterProps) {
                   + platform hakkında blok), ayrı /about route'u yok. */}
               <li><Link href={`/${locale}/contact`} className="hover:text-white transition-colors">{dict.footer.about}</Link></li>
               <li><Link href={`/${locale}/contact`} className="hover:text-white transition-colors">{dict.footer.contact}</Link></li>
-              <li><span className="text-zinc-600">themusicbeyondtr@gmail.com</span></li>
+              <li>
+                <a href={`mailto:${SITE_CONTACT.email}`} className="text-zinc-600 hover:text-white transition-colors">
+                  {SITE_CONTACT.email}
+                </a>
+              </li>
             </ul>
           </div>
         </div>
         <div className="pt-8 flex items-center justify-center">
           <p className="text-xs text-zinc-600">
-            &copy; {new Date().getFullYear()} Beyond The Music. {dict.footer.rights}
+            &copy; {new Date().getFullYear()} {brand.name}. {dict.footer.rights}
           </p>
         </div>
       </div>

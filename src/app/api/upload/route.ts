@@ -25,6 +25,7 @@ const ALLOWED_CATEGORIES = new Set([
   'architect',
   'listening-path',
   'hero',
+  'logo',
   'other',
 ]);
 

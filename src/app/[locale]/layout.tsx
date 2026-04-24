@@ -6,6 +6,7 @@ import SmoothScroll from '@/components/public/SmoothScroll';
 import { PUBLIC_SECTIONS, getSectionEnabledMap } from '@/lib/site-sections';
 import { getCustomNavItems, resolveCustomHref, isExternalHref } from '@/lib/site-custom-nav';
 import { getSiteFonts, resolveFontStyle } from '@/lib/site-fonts';
+import { getSiteBranding } from '@/lib/site-branding';
 
 export async function generateStaticParams() {
   return [{ locale: 'tr' }, { locale: 'en' }];
@@ -22,11 +23,20 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
 export default async function LocaleLayout({ children, params }: { children: React.ReactNode; params: Promise<{ locale: string }> }) {
   const { locale } = await params;
   const dict = getDictionary(locale);
-  const [enabledMap, fonts, customNav] = await Promise.all([
+  const [enabledMap, fonts, customNav, branding] = await Promise.all([
     getSectionEnabledMap(),
     getSiteFonts(),
     getCustomNavItems(),
+    getSiteBranding(),
   ]);
+
+  // Footer logo, ayrı yüklenmemişse header logosuna düşer — tek logo
+  // yükleyen kullanıcı için varsayılan davranış "her yerde aynı logo".
+  const navbarBrand = { logoUrl: branding.logoUrl, name: branding.name };
+  const footerBrand = {
+    logoUrl: branding.logoFooterUrl || branding.logoUrl,
+    name: branding.name,
+  };
 
   // Resolve a human label for each section from the locale dictionary.
   const builtInSections = PUBLIC_SECTIONS.filter((s) => enabledMap[s.key]).map((s) => {
@@ -73,9 +83,9 @@ export default async function LocaleLayout({ children, params }: { children: Rea
         {dict.common.skipToContent}
       </a>
       <SmoothScroll>
-        <Navbar locale={locale} sections={navSections} />
+        <Navbar locale={locale} sections={navSections} brand={navbarBrand} />
         <main id="main-content" tabIndex={-1} className="flex-1">{children}</main>
-        <Footer locale={locale} dict={dict} />
+        <Footer locale={locale} dict={dict} brand={footerBrand} />
       </SmoothScroll>
       <AiChat locale={locale} />
     </div>
