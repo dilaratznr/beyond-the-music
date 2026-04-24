@@ -33,7 +33,11 @@ type ArtistWithRelations = Awaited<ReturnType<typeof loadArtists>>[number];
 
 async function loadArtists() {
   return prisma.artist.findMany({
-    include: { genres: { include: { genre: true } }, _count: { select: { albums: true } } },
+    where: { status: 'PUBLISHED' },
+    include: {
+      genres: { where: { genre: { status: 'PUBLISHED' } }, include: { genre: true } },
+      _count: { select: { albums: { where: { status: 'PUBLISHED' } } } },
+    },
     orderBy: { name: 'asc' },
   });
 }

@@ -169,7 +169,7 @@ export default function GenresPage() {
           )}
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3 items-start">
           {filtered.groups.map(({ main, subs }) => {
             const isOpen = searching ? subs.length > 0 : expanded === main.id;
             const hasSubs = subs.length > 0;
@@ -188,9 +188,10 @@ export default function GenresPage() {
           })}
 
           {filtered.orphans.length > 0 && (
-            <div className="bg-amber-500/5 rounded-lg border border-amber-500/20 overflow-hidden col-span-full">
-              <div className="px-4 py-2 bg-amber-500/10 border-b border-amber-500/20">
-                <p className="text-[11px] font-semibold text-amber-300 uppercase tracking-wider">
+            <div className="bg-zinc-900/40 rounded-lg border border-zinc-800 overflow-hidden col-span-full">
+              <div className="px-4 py-2 bg-zinc-900/60 border-b border-zinc-800 flex items-center gap-2">
+                <span className="w-1.5 h-1.5 rounded-full bg-amber-400" aria-hidden="true" />
+                <p className="text-[11px] font-semibold text-zinc-400 uppercase tracking-wider">
                   Üst türü atanmamış alt türler ({filtered.orphans.length})
                 </p>
               </div>
@@ -226,8 +227,12 @@ function GenreCard({
 }) {
   return (
     <div
-      className={`bg-zinc-900/40 rounded-lg border overflow-hidden transition-all ${
-        isOpen ? 'col-span-full border-zinc-700' : 'border-zinc-800 hover:border-zinc-700'
+      // Önceden `col-span-full` ile açılan kart tüm grid row'unu kaplıyordu,
+      // diğer kartlar alt satıra atlıyordu (Dilara: "alt türlere tıklayınca
+      // alta geçmesi kötü"). Artık kart kendi sütununda yerinde uzuyor —
+      // akordiyon davranışı, grid bozulmuyor.
+      className={`bg-zinc-900/40 rounded-lg border overflow-hidden transition-colors self-start ${
+        isOpen ? 'border-zinc-700' : 'border-zinc-800 hover:border-zinc-700'
       }`}
     >
       <div className="group flex items-start gap-3 p-3 hover:bg-zinc-800/30 transition-colors">
@@ -299,7 +304,9 @@ function GenreCard({
       </div>
 
       {hasSubs && isOpen && (
-        <div className="border-t border-zinc-800 bg-zinc-950/50 p-2 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-1">
+        // Kart tek sütunda uzuyor — alt türleri de dikey liste olarak
+        // göster. Önceden yatay grid'di ama kart dar olunca sıkışıktı.
+        <div className="border-t border-zinc-800 bg-zinc-950/50 p-2 space-y-0.5">
           {subs.map((s) => (
             <SubRow key={s.id} sub={s} locale={locale} onDeleted={onDeleted} />
           ))}

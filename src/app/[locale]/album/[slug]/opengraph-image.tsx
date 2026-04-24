@@ -16,8 +16,8 @@ export default async function Image({
   params: Promise<{ locale: string; slug: string }>;
 }) {
   const { slug } = await params;
-  const album = await prisma.album.findUnique({
-    where: { slug },
+  const album = await prisma.album.findFirst({
+    where: { slug, status: 'PUBLISHED' },
     select: {
       title: true,
       releaseDate: true,

@@ -27,6 +27,7 @@ export default async function ListeningPathsPage({ params }: { params: Promise<{
   const tr = locale === 'tr';
 
   const paths = await prisma.listeningPath.findMany({
+    where: { status: 'PUBLISHED' },
     include: { _count: { select: { items: true } } },
     orderBy: { createdAt: 'desc' },
   });

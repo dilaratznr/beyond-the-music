@@ -9,6 +9,7 @@ import prisma from '@/lib/prisma';
  */
 export async function generateStaticParams(): Promise<Array<{ slug: string }>> {
   const architects: Array<{ slug: string }> = await prisma.architect.findMany({
+    where: { status: 'PUBLISHED' },
     select: { slug: true },
   });
   return architects.map(({ slug }) => ({ slug }));
@@ -28,8 +29,8 @@ export async function generateMetadata({
   params: Params;
 }): Promise<Metadata> {
   const { locale, slug } = await params;
-  const architect = await prisma.architect.findUnique({
-    where: { slug },
+  const architect = await prisma.architect.findFirst({
+    where: { slug, status: 'PUBLISHED' },
     select: { name: true, bioTr: true, bioEn: true, image: true },
   });
   if (!architect) {
@@ -53,9 +54,20 @@ export default async function ArchitectDetailPage({ params }: { params: Params }
   const dict = getDictionary(locale);
   const tr = locale === 'tr';
 
-  const architect = await prisma.architect.findUnique({
-    where: { slug },
-    include: { artists: { include: { artist: { include: { genres: { include: { genre: true } } } } } } },
+  const architect = await prisma.architect.findFirst({
+    where: { slug, status: 'PUBLISHED' },
+    include: {
+      artists: {
+        where: { artist: { status: 'PUBLISHED' } },
+        include: {
+          artist: {
+            include: {
+              genres: { where: { genre: { status: 'PUBLISHED' } }, include: { genre: true } },
+            },
+          },
+        },
+      },
+    },
   });
 
   if (!architect) notFound();

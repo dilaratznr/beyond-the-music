@@ -82,6 +82,13 @@ export default function DeleteButton({
   entityKind,
 }: DeleteButtonProps) {
   const [loading, setLoading] = useState(false);
+  // Modal iki modda çalışıyor:
+  //   - 'simple': Tıklama sonrası açılan ilk onay. "Silmek istediğinize
+  //     emin misiniz?" + İptal/Sil. Yanlışlıkla tıklamaları engeller.
+  //   - 'typed': API 409 + impact dönerse açılır. Kullanıcı entity
+  //     adını bire bir yazmak zorunda. Cascade riski yüksek silmeler
+  //     için (örn. 287 şarkılı bir sanatçı).
+  const [mode, setMode] = useState<null | 'simple' | 'typed'>(null);
   const [conflict, setConflict] = useState<ConflictResponse | null>(null);
   const { toast } = useToast();
 
@@ -93,19 +100,23 @@ export default function DeleteButton({
       const data = await res.json().catch(() => ({}));
 
       if (res.status === 409 && data?.requiresConfirmation) {
-        // Impact etkisi var — typed confirm modal aç
+        // Impact etkisi var — typed confirm'a geçir, modal açık kalsın.
         setConflict(data as ConflictResponse);
+        setMode('typed');
         return;
       }
 
       if (!res.ok) {
         // 409 + requiresConfirmation=false (örn. User+articles) veya
-        // başka bir hata — typed modal açmıyoruz, düz toast yeterli.
+        // başka bir hata — modal kapat, hata göster.
         toast(data?.message || data?.error || 'Silme başarısız', 'error');
+        setMode(null);
+        setConflict(null);
         return;
       }
 
       toast('Silindi');
+      setMode(null);
       setConflict(null);
       if (onDeleted) onDeleted();
     } catch (err) {
@@ -115,9 +126,16 @@ export default function DeleteButton({
     }
   }
 
-  async function handleInitialClick() {
-    if (!window.confirm(confirmMessage)) return;
-    await runDelete(false);
+  // Native window.confirm yerine custom modal. Yanlışlıkla tıklamayı
+  // engeller + site tasarımına uygun görünüm.
+  function handleInitialClick() {
+    setMode('simple');
+  }
+
+  function closeModal() {
+    if (loading) return;
+    setMode(null);
+    setConflict(null);
   }
 
   return (
@@ -163,22 +181,31 @@ export default function DeleteButton({
         </button>
       )}
 
-      {/* Typed confirm modal — sadece backend 409 + requiresConfirmation
-          dönerse açılıyor. Conditional render ile her açılışta fresh
-          mount olur; input state'i sıfırlanır. entityName yoksa fallback. */}
-      {conflict && (
+      {/* Tek modal, iki mod:
+          - simple: basit onay, typed input yok
+          - typed: API 409 + impact sonrası — entity adını yaz + force sil */}
+      {mode && (
         <TypedConfirmDialog
           open={true}
-          title={entityKind ? `${entityKind} silinecek` : 'Silme onayı'}
+          title={
+            mode === 'typed'
+              ? (entityKind ? `${entityKind} silinecek` : 'Silme onayı')
+              : (entityKind ? `${entityKind} sil` : 'Silme onayı')
+          }
           entityName={entityName || 'onaylıyorum'}
-          impact={toImpactList(conflict.impact)}
-          description={conflict.message}
-          confirmLabel="Yine de sil"
+          impact={mode === 'typed' ? toImpactList(conflict?.impact) : undefined}
+          description={
+            mode === 'typed'
+              ? conflict?.message
+              : entityName
+                ? `"${entityName}"`
+                : confirmMessage
+          }
+          confirmLabel={mode === 'typed' ? 'Yine de sil' : 'Sil'}
           loading={loading}
-          onConfirm={() => runDelete(true)}
-          onCancel={() => {
-            if (!loading) setConflict(null);
-          }}
+          requireTypedConfirm={mode === 'typed'}
+          onConfirm={() => runDelete(mode === 'typed')}
+          onCancel={closeModal}
         />
       )}
     </>

@@ -152,7 +152,7 @@ export default function PermissionGrid({
                     checked={perm.enabled}
                     disabled={disabled}
                     onChange={() => toggleEnabled(section.key)}
-                    className="w-4 h-4 rounded border-zinc-700 bg-zinc-950 text-emerald-500 focus:ring-emerald-500/40 focus:ring-offset-0"
+                    className="w-4 h-4 rounded border-zinc-700 bg-zinc-950 text-zinc-200 focus:ring-zinc-500/40 focus:ring-offset-0"
                   />
                   <span className="w-5 text-center text-zinc-500 text-sm">{section.icon}</span>
                   <span className={`text-xs font-medium ${perm.enabled ? 'text-zinc-100' : 'text-zinc-400'}`}>

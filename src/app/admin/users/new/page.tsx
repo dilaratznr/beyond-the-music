@@ -125,18 +125,26 @@ export default function NewUserPage() {
         </div>
 
         {invite.invite.emailSent ? (
-          <div className="p-4 bg-emerald-500/10 border border-emerald-500/30 rounded-lg mb-4">
-            <p className="text-sm text-emerald-300">
-              Davet linki <span className="font-medium">{invite.user.email}</span> adresine
-              gönderildi. Link 48 saat geçerlidir.
+          <div className="p-4 bg-zinc-900/60 border border-zinc-800 rounded-lg mb-4">
+            <p className="flex items-center gap-2 text-sm text-zinc-200">
+              <span
+                className="w-1.5 h-1.5 rounded-full bg-emerald-400 flex-shrink-0"
+                aria-hidden="true"
+              />
+              Davet linki <span className="font-medium text-zinc-100">{invite.user.email}</span>{' '}
+              adresine gönderildi. Link 48 saat geçerlidir.
             </p>
           </div>
         ) : (
-          <div className="p-4 bg-amber-500/10 border border-amber-500/30 rounded-lg mb-4 space-y-2">
-            <p className="text-sm text-amber-300 font-medium">
+          <div className="p-4 bg-zinc-900/60 border border-zinc-800 rounded-lg mb-4 space-y-2">
+            <p className="flex items-center gap-2 text-sm text-zinc-200 font-medium">
+              <span
+                className="w-1.5 h-1.5 rounded-full bg-amber-400 flex-shrink-0"
+                aria-hidden="true"
+              />
               Email gönderilemedi — SMTP yapılandırılmamış.
             </p>
-            <p className="text-xs text-amber-200/80 leading-relaxed">
+            <p className="text-xs text-zinc-500 leading-relaxed">
               Aşağıdaki linki kopyalayıp kullanıcıya manuel ilet. Link 48 saat geçerli.
               Prod&apos;da SMTP kurarsan bu adım otomatikleşir.
             </p>
@@ -212,8 +220,15 @@ export default function NewUserPage() {
 
       <form onSubmit={handleSubmit} className="space-y-6">
         {error && (
-          <div role="alert" className="p-3 bg-red-500/10 border border-red-500/20 text-red-300 text-sm rounded-lg">
-            {error}
+          <div
+            role="alert"
+            className="flex items-start gap-2 p-3 bg-zinc-900/60 border border-zinc-800 text-zinc-200 text-sm rounded-lg"
+          >
+            <span
+              className="mt-1.5 w-1.5 h-1.5 rounded-full bg-rose-400 flex-shrink-0"
+              aria-hidden="true"
+            />
+            <span>{error}</span>
           </div>
         )}
 
@@ -229,7 +244,7 @@ export default function NewUserPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label htmlFor="user-name" className="block text-xs font-medium text-zinc-100 mb-1.5">
-                  Ad Soyad <span className="text-red-500">*</span>
+                  Ad Soyad <span className="text-zinc-500">*</span>
                 </label>
                 <input
                   id="user-name"
@@ -243,7 +258,7 @@ export default function NewUserPage() {
               </div>
               <div>
                 <label htmlFor="user-email" className="block text-xs font-medium text-zinc-100 mb-1.5">
-                  E-posta <span className="text-red-500">*</span>
+                  E-posta <span className="text-zinc-500">*</span>
                 </label>
                 <input
                   id="user-email"
@@ -307,9 +322,9 @@ export default function NewUserPage() {
             </div>
           </section>
         ) : (
-          <section className="bg-violet-500/5 border border-violet-500/20 rounded-lg p-4 text-xs text-violet-300">
-            <p className="font-semibold mb-1">Super Admin seçildi</p>
-            <p className="text-[11px] leading-relaxed">
+          <section className="bg-zinc-900/40 border border-zinc-800 rounded-lg p-4 text-xs text-zinc-300">
+            <p className="font-semibold text-zinc-100 mb-1">Super Admin seçildi</p>
+            <p className="text-[11px] leading-relaxed text-zinc-400">
               Super Admin rolü tüm bölümlere ve yönetim ayarlarına tam erişime sahiptir; ayrı bir yetki ataması gerekmez.
             </p>
           </section>

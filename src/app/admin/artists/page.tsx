@@ -5,6 +5,7 @@ import Link from 'next/link';
 import Pagination from '@/components/admin/Pagination';
 import DeleteButton from '@/components/admin/DeleteButton';
 import { IconExternal } from '@/components/admin/Icons';
+import StatusPill from '@/components/admin/StatusPill';
 
 interface Artist {
   id: string;
@@ -12,6 +13,7 @@ interface Artist {
   type: string;
   slug: string;
   image: string | null;
+  status: string;
   genres: { genre: { nameTr: string } }[];
   _count: { albums: number; articles: number };
 }
@@ -156,9 +158,14 @@ export default function ArtistsPage() {
                 </Link>
                 <div className="p-3">
                   <Link href={`/admin/artists/${a.id}`} className="block min-w-0">
-                    <h3 className="text-[13px] font-semibold text-zinc-100 tracking-tight truncate group-hover:text-white transition-colors">
-                      {a.name}
-                    </h3>
+                    <div className="flex items-center gap-2">
+                      <h3 className="text-[13px] font-semibold text-zinc-100 tracking-tight truncate group-hover:text-white transition-colors">
+                        {a.name}
+                      </h3>
+                      {a.status && a.status !== 'PUBLISHED' && (
+                        <StatusPill status={a.status} compact />
+                      )}
+                    </div>
                     {a.genres.length > 0 ? (
                       <p className="text-[11px] text-zinc-400 truncate mt-0.5">
                         {a.genres

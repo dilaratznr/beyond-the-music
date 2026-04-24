@@ -6,8 +6,9 @@ import Pagination from '@/components/admin/Pagination';
 import DeleteButton from '@/components/admin/DeleteButton';
 import BulkActionBar, { BulkCheckbox } from '@/components/admin/BulkActionBar';
 import { useBulkSelection } from '@/lib/bulk-selection';
+import StatusPill from '@/components/admin/StatusPill';
 
-interface Album { id: string; title: string; slug: string; coverImage: string | null; artist: { name: string }; _count: { songs: number }; releaseDate: string | null; }
+interface Album { id: string; title: string; slug: string; coverImage: string | null; artist: { name: string }; _count: { songs: number }; releaseDate: string | null; status: string; }
 const PER_PAGE = 15;
 
 export default function AlbumsPage() {
@@ -204,9 +205,14 @@ export default function AlbumsPage() {
                   </Link>
                   <div className="p-3">
                     <Link href={`/admin/albums/${a.id}`} className="block min-w-0">
-                      <h3 className="text-[13px] font-semibold text-zinc-100 tracking-tight truncate group-hover:text-white transition-colors">
-                        {a.title}
-                      </h3>
+                      <div className="flex items-center gap-2">
+                        <h3 className="text-[13px] font-semibold text-zinc-100 tracking-tight truncate group-hover:text-white transition-colors">
+                          {a.title}
+                        </h3>
+                        {a.status && a.status !== 'PUBLISHED' && (
+                          <StatusPill status={a.status} compact />
+                        )}
+                      </div>
                       <p className="text-[11px] text-zinc-400 truncate mt-0.5">{a.artist.name}</p>
                       <p className="text-[10px] text-zinc-600 mt-1.5">
                         {a.releaseDate ? new Date(a.releaseDate).getFullYear() : 'Tarih yok'}

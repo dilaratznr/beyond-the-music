@@ -55,6 +55,19 @@ enum ReviewStatus {
   REJECTED
 }
 
+/// Artist / Album / Architect / Genre / ListeningPath için yayın durumu.
+/// Article'ın `ArticleStatus`'u ile aynı mantık — canPublish yetkisi
+/// olmayan kullanıcıların create/edit'leri PENDING_REVIEW'a düşer,
+/// ContentReview kuyruğunda Super Admin onayı bekler.
+///
+/// Var olan tüm kayıtlar migration'da default PUBLISHED alır — eski
+/// içerik onaya girmez, sadece yeni akışa dahil yeni işlemler.
+enum EntityStatus {
+  DRAFT
+  PENDING_REVIEW
+  PUBLISHED
+}
+
 enum ListeningPathType {
   EMOTION
   ERA
@@ -144,10 +157,13 @@ model Genre {
   parent         Genre?    @relation("GenreHierarchy", fields: [parentId], references: [id])
   children       Genre[]   @relation("GenreHierarchy")
   order          Int       @default(0)
+  status         EntityStatus @default(PUBLISHED)
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
   artists        ArtistGenre[]
   articles       Article[] @relation("GenreArticles")
+
+  @@index([status])
 }
 
 model Artist {
@@ -160,6 +176,7 @@ model Artist {
   image       String?
   birthDate   DateTime?
   deathDate   DateTime?
+  status      EntityStatus @default(PUBLISHED)
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
   genres      ArtistGenre[]
@@ -167,6 +184,8 @@ model Artist {
   architects  ArchitectArtist[]
   articles    Article[]    @relation("ArtistArticles")
   listeningPathItems ListeningPathItem[] @relation("ArtistPathItems")
+
+  @@index([status])
 }
 
 model ArtistGenre {
@@ -189,12 +208,14 @@ model Album {
   descriptionTr  String?   @map("description_tr") @db.Text
   descriptionEn  String?   @map("description_en") @db.Text
   featuredOrder  Int?      @map("featured_order")
+  status         EntityStatus @default(PUBLISHED)
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
   songs          Song[]
   listeningPathItems ListeningPathItem[] @relation("AlbumPathItems")
 
   @@index([featuredOrder])
+  @@index([status])
 }
 
 model Song {
@@ -218,9 +239,12 @@ model Architect {
   bioTr     String?        @map("bio_tr") @db.Text
   bioEn     String?        @map("bio_en") @db.Text
   image     String?
+  status    EntityStatus   @default(PUBLISHED)
   createdAt DateTime       @default(now())
   updatedAt DateTime       @updatedAt
   artists   ArchitectArtist[]
+
+  @@index([status])
 }
 
 model ArchitectArtist {
@@ -266,9 +290,12 @@ model ListeningPath {
   descriptionEn  String?           @map("description_en") @db.Text
   type           ListeningPathType
   image          String?
+  status         EntityStatus      @default(PUBLISHED)
   createdAt      DateTime          @default(now())
   updatedAt      DateTime          @updatedAt
   items          ListeningPathItem[]
+
+  @@index([status])
 }
 
 model ListeningPathItem {

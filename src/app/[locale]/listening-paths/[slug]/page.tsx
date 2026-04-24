@@ -9,6 +9,7 @@ import prisma from '@/lib/prisma';
  */
 export async function generateStaticParams(): Promise<Array<{ slug: string }>> {
   const paths: Array<{ slug: string }> = await prisma.listeningPath.findMany({
+    where: { status: 'PUBLISHED' },
     select: { slug: true },
   });
   return paths.map(({ slug }) => ({ slug }));
@@ -28,8 +29,8 @@ export async function generateMetadata({
   params: Params;
 }): Promise<Metadata> {
   const { locale, slug } = await params;
-  const path = await prisma.listeningPath.findUnique({
-    where: { slug },
+  const path = await prisma.listeningPath.findFirst({
+    where: { slug, status: 'PUBLISHED' },
     select: {
       titleTr: true,
       titleEn: true,
@@ -59,8 +60,8 @@ export default async function ListeningPathDetailPage({
   if (!(await isSectionEnabled('listeningPaths'))) notFound();
   const dict = getDictionary(locale);
 
-  const path = await prisma.listeningPath.findUnique({
-    where: { slug },
+  const path = await prisma.listeningPath.findFirst({
+    where: { slug, status: 'PUBLISHED' },
     include: {
       items: {
         orderBy: { order: 'asc' },

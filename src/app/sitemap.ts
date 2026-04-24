@@ -17,21 +17,30 @@ type Entry = MetadataRoute.Sitemap[number];
 // and serializable.
 const getGenreSlugs = unstable_cache(
   async () =>
-    prisma.genre.findMany({ select: { slug: true, updatedAt: true } }),
+    prisma.genre.findMany({
+      where: { status: 'PUBLISHED' },
+      select: { slug: true, updatedAt: true },
+    }),
   ['sitemap', 'genre-slugs'],
   { tags: [CACHE_TAGS.genre], revalidate: 300 },
 );
 
 const getArtistSlugs = unstable_cache(
   async () =>
-    prisma.artist.findMany({ select: { slug: true, updatedAt: true } }),
+    prisma.artist.findMany({
+      where: { status: 'PUBLISHED' },
+      select: { slug: true, updatedAt: true },
+    }),
   ['sitemap', 'artist-slugs'],
   { tags: [CACHE_TAGS.artist], revalidate: 300 },
 );
 
 const getAlbumSlugs = unstable_cache(
   async () =>
-    prisma.album.findMany({ select: { slug: true, updatedAt: true } }),
+    prisma.album.findMany({
+      where: { status: 'PUBLISHED' },
+      select: { slug: true, updatedAt: true },
+    }),
   ['sitemap', 'album-slugs'],
   { tags: [CACHE_TAGS.album], revalidate: 300 },
 );
@@ -49,6 +58,7 @@ const getArticleSlugs = unstable_cache(
 const getListeningPathSlugs = unstable_cache(
   async () =>
     prisma.listeningPath.findMany({
+      where: { status: 'PUBLISHED' },
       select: { slug: true, updatedAt: true },
     }),
   ['sitemap', 'listening-path-slugs'],
@@ -58,6 +68,7 @@ const getListeningPathSlugs = unstable_cache(
 const getArchitectSlugs = unstable_cache(
   async () =>
     prisma.architect.findMany({
+      where: { status: 'PUBLISHED' },
       select: { slug: true, updatedAt: true },
     }),
   ['sitemap', 'architect-slugs'],

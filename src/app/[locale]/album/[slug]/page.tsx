@@ -9,6 +9,7 @@ import prisma from '@/lib/prisma';
  */
 export async function generateStaticParams(): Promise<Array<{ slug: string }>> {
   const albums: Array<{ slug: string }> = await prisma.album.findMany({
+    where: { status: 'PUBLISHED' },
     select: { slug: true },
   });
   return albums.map(({ slug }) => ({ slug }));
@@ -27,8 +28,8 @@ export async function generateMetadata({
   params: Params;
 }): Promise<Metadata> {
   const { locale, slug } = await params;
-  const album = await prisma.album.findUnique({
-    where: { slug },
+  const album = await prisma.album.findFirst({
+    where: { slug, status: 'PUBLISHED' },
     select: {
       title: true,
       descriptionTr: true,
@@ -60,8 +61,8 @@ export default async function AlbumDetailPage({ params }: { params: Params }) {
   const dict = getDictionary(locale);
   const tr = locale === 'tr';
 
-  const album = await prisma.album.findUnique({
-    where: { slug },
+  const album = await prisma.album.findFirst({
+    where: { slug, status: 'PUBLISHED' },
     include: {
       artist: true,
       songs: { orderBy: [{ trackNumber: 'asc' }, { id: 'asc' }] },

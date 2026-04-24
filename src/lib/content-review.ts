@@ -123,6 +123,47 @@ export async function rejectReview(
 }
 
 /**
+ * Yeni oluşturulan entity (Artist/Album/Architect/Genre/ListeningPath)
+ * için başlangıç status'unu belirler + gerekiyorsa review kuyruğuna
+ * ekler. Çağıran sadece entity'yi `{ status }` ile oluşturmalı;
+ * kuyruk kaydı bu helper tarafından yönetilir.
+ *
+ *   - canPublish=true  → PUBLISHED, review yok
+ *   - canPublish=false → PENDING_REVIEW + ContentReview (CREATE)
+ */
+export async function resolveCreateStatus(params: {
+  section: ReviewSection;
+  userId: string;
+}): Promise<{ status: 'PUBLISHED' | 'PENDING_REVIEW'; requiresReview: boolean }> {
+  const canPublish = await canUserPublish(params.userId, params.section);
+  return canPublish
+    ? { status: 'PUBLISHED', requiresReview: false }
+    : { status: 'PENDING_REVIEW', requiresReview: true };
+}
+
+/**
+ * Entity create edildikten sonra — eğer status PENDING_REVIEW ise
+ * ContentReview kuyruğuna CREATE kaydı ekler. Transaction dışında
+ * çağrılabilir; submitForReview zaten kendi içinde atomik.
+ */
+export async function maybeCreateReviewOnCreate(params: {
+  section: ReviewSection;
+  entityId: string;
+  entityTitle: string;
+  userId: string;
+  status: 'PUBLISHED' | 'PENDING_REVIEW' | 'DRAFT';
+}) {
+  if (params.status !== 'PENDING_REVIEW') return null;
+  return submitForReview({
+    section: params.section,
+    entityId: params.entityId,
+    entityTitle: params.entityTitle,
+    changeType: 'CREATE',
+    submittedById: params.userId,
+  });
+}
+
+/**
  * Bekleyen review sayısı — sidebar badge'i ve dashboard için.
  *
  * `npm run db:push` henüz çalıştırılmamışsa ContentReview tablosu DB'de

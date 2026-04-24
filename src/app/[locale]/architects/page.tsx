@@ -26,7 +26,10 @@ export default async function ArchitectsPage({ params }: { params: Promise<{ loc
   const dict = getDictionary(locale);
 
   const architects = await prisma.architect.findMany({
-    include: { _count: { select: { artists: true } } },
+    where: { status: 'PUBLISHED' },
+    include: {
+      _count: { select: { artists: { where: { artist: { status: 'PUBLISHED' } } } } },
+    },
     orderBy: { name: 'asc' },
   });
 

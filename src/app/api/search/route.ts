@@ -14,22 +14,22 @@ export async function GET(request: NextRequest) {
 
   const [genres, artists, albums, architects, articles, paths] = await Promise.all([
     prisma.genre.findMany({
-      where: { OR: [{ nameTr: { contains: q, mode: 'insensitive' } }, { nameEn: { contains: q, mode: 'insensitive' } }] },
+      where: { status: 'PUBLISHED', OR: [{ nameTr: { contains: q, mode: 'insensitive' } }, { nameEn: { contains: q, mode: 'insensitive' } }] },
       take: 5,
       select: { slug: true, nameTr: true, nameEn: true, image: true, parentId: true },
     }),
     prisma.artist.findMany({
-      where: { OR: [{ name: { contains: q, mode: 'insensitive' } }, { bioTr: { contains: q, mode: 'insensitive' } }, { bioEn: { contains: q, mode: 'insensitive' } }] },
+      where: { status: 'PUBLISHED', OR: [{ name: { contains: q, mode: 'insensitive' } }, { bioTr: { contains: q, mode: 'insensitive' } }, { bioEn: { contains: q, mode: 'insensitive' } }] },
       take: 5,
       select: { slug: true, name: true, type: true, image: true },
     }),
     prisma.album.findMany({
-      where: { OR: [{ title: { contains: q, mode: 'insensitive' } }] },
+      where: { status: 'PUBLISHED', OR: [{ title: { contains: q, mode: 'insensitive' } }] },
       take: 5,
       select: { slug: true, title: true, coverImage: true, artist: { select: { name: true } } },
     }),
     prisma.architect.findMany({
-      where: { OR: [{ name: { contains: q, mode: 'insensitive' } }] },
+      where: { status: 'PUBLISHED', OR: [{ name: { contains: q, mode: 'insensitive' } }] },
       take: 5,
       select: { slug: true, name: true, type: true, image: true },
     }),
@@ -39,7 +39,7 @@ export async function GET(request: NextRequest) {
       select: { slug: true, titleTr: true, titleEn: true, category: true, featuredImage: true },
     }),
     prisma.listeningPath.findMany({
-      where: { OR: [{ titleTr: { contains: q, mode: 'insensitive' } }, { titleEn: { contains: q, mode: 'insensitive' } }] },
+      where: { status: 'PUBLISHED', OR: [{ titleTr: { contains: q, mode: 'insensitive' } }, { titleEn: { contains: q, mode: 'insensitive' } }] },
       take: 3,
       select: { slug: true, titleTr: true, titleEn: true, type: true, image: true },
     }),

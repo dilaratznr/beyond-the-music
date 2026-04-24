@@ -98,10 +98,11 @@ export async function POST(request: NextRequest) {
   try {
     const [genres, artists, articles] = await Promise.all([
       prisma.genre.findMany({
-        where: { parentId: null },
+        where: { parentId: null, status: 'PUBLISHED' },
         select: { nameTr: true, nameEn: true, slug: true },
       }),
       prisma.artist.findMany({
+        where: { status: 'PUBLISHED' },
         select: { name: true, type: true, slug: true },
         take: 20,
       }),

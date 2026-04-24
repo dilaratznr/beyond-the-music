@@ -4,6 +4,9 @@ import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useSession } from 'next-auth/react';
 import { useToast } from '@/components/admin/Toast';
+import Pagination from '@/components/admin/Pagination';
+
+const PER_PAGE = 15;
 
 type ReviewStatus = 'PENDING' | 'APPROVED' | 'REJECTED';
 
@@ -44,6 +47,8 @@ export default function ReviewsPage() {
   const { toast } = useToast();
 
   const [reviews, setReviews] = useState<Review[]>([]);
+  const [total, setTotal] = useState(0);
+  const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<ReviewStatus>('PENDING');
   const [reloadToken, setReloadToken] = useState(0);
@@ -54,11 +59,20 @@ export default function ReviewsPage() {
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
-    fetch(`/api/admin/reviews?status=${filter}`)
+    fetch(`/api/admin/reviews?status=${filter}&page=${page}&limit=${PER_PAGE}`)
       .then((r) => r.json())
       .then((data) => {
         if (cancelled) return;
-        setReviews(Array.isArray(data) ? data : []);
+        // API artık { items, total, page, totalPages } döndürüyor.
+        // Eski array response fallback'i de destekliyoruz (deploy anında
+        // race olursa sayfa kırılmasın).
+        if (Array.isArray(data)) {
+          setReviews(data);
+          setTotal(data.length);
+        } else {
+          setReviews(Array.isArray(data?.items) ? data.items : []);
+          setTotal(typeof data?.total === 'number' ? data.total : 0);
+        }
         setLoading(false);
       })
       .catch(() => {
@@ -67,7 +81,12 @@ export default function ReviewsPage() {
     return () => {
       cancelled = true;
     };
-  }, [filter, reloadToken]);
+  }, [filter, page, reloadToken]);
+
+  // Filtre değişince sayfayı 1'e döndür — aksi halde boş sayfada kalabilirsin.
+  useEffect(() => {
+    setPage(1);
+  }, [filter]);
 
   const refresh = useCallback(() => setReloadToken((t) => t + 1), []);
 
@@ -294,6 +313,18 @@ export default function ReviewsPage() {
             );
           })}
         </ul>
+      )}
+
+      {total > PER_PAGE && (
+        <div className="mt-6">
+          <Pagination
+            page={page}
+            totalPages={Math.max(1, Math.ceil(total / PER_PAGE))}
+            total={total}
+            perPage={PER_PAGE}
+            onPageChange={setPage}
+          />
+        </div>
       )}
     </div>
   );

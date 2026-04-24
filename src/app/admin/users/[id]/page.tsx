@@ -167,7 +167,7 @@ export default function EditUserPage() {
           </p>
         </div>
         {editingSelf && (
-          <div className="shrink-0 px-3 py-1.5 bg-amber-500/10 border border-amber-500/20 text-amber-300 text-[11px] rounded-lg">
+          <div className="shrink-0 px-3 py-1.5 bg-zinc-900/60 border border-zinc-800 text-zinc-300 text-[11px] rounded-lg">
             Kendi hesabınızı düzenliyorsunuz — rolünüzü düşüremezsiniz.
           </div>
         )}
@@ -175,8 +175,15 @@ export default function EditUserPage() {
 
       <form onSubmit={handleSubmit} className="space-y-6">
         {error && (
-          <div role="alert" className="p-3 bg-red-500/10 border border-red-500/20 text-red-300 text-sm rounded-lg">
-            {error}
+          <div
+            role="alert"
+            className="flex items-start gap-2 p-3 bg-zinc-900/60 border border-zinc-800 text-zinc-200 text-sm rounded-lg"
+          >
+            <span
+              className="mt-1.5 w-1.5 h-1.5 rounded-full bg-rose-400 flex-shrink-0"
+              aria-hidden="true"
+            />
+            <span>{error}</span>
           </div>
         )}
 
@@ -189,7 +196,7 @@ export default function EditUserPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label htmlFor="user-name" className="block text-xs font-medium text-zinc-100 mb-1.5">
-                  Ad Soyad <span className="text-red-500">*</span>
+                  Ad Soyad <span className="text-zinc-500">*</span>
                 </label>
                 <input
                   id="user-name"
@@ -203,7 +210,7 @@ export default function EditUserPage() {
               </div>
               <div>
                 <label htmlFor="user-email" className="block text-xs font-medium text-zinc-100 mb-1.5">
-                  E-posta <span className="text-red-500">*</span>
+                  E-posta <span className="text-zinc-500">*</span>
                 </label>
                 <input
                   id="user-email"
@@ -273,23 +280,26 @@ export default function EditUserPage() {
             </div>
 
             {resendResult && (
-              <div
-                className={`p-4 rounded-md border ${
-                  resendResult.emailSent
-                    ? 'bg-emerald-500/10 border-emerald-500/30'
-                    : 'bg-amber-500/10 border-amber-500/30'
-                }`}
-              >
+              <div className="p-4 rounded-md border bg-zinc-900/60 border-zinc-800">
                 {resendResult.emailSent ? (
-                  <p className="text-sm text-emerald-300">
-                    Link <span className="font-medium">{user.email}</span> adresine gönderildi.
+                  <p className="flex items-center gap-2 text-sm text-zinc-200">
+                    <span
+                      className="w-1.5 h-1.5 rounded-full bg-emerald-400 flex-shrink-0"
+                      aria-hidden="true"
+                    />
+                    Link <span className="font-medium text-zinc-100">{user.email}</span> adresine
+                    gönderildi.
                   </p>
                 ) : (
                   <>
-                    <p className="text-sm text-amber-300 font-medium mb-1">
+                    <p className="flex items-center gap-2 text-sm text-zinc-200 font-medium mb-1">
+                      <span
+                        className="w-1.5 h-1.5 rounded-full bg-amber-400 flex-shrink-0"
+                        aria-hidden="true"
+                      />
                       Email gönderilemedi — linki manuel ilet.
                     </p>
-                    <p className="text-[11px] text-amber-200/80 mb-3">
+                    <p className="text-[11px] text-zinc-500 mb-3">
                       {resendResult.emailError || 'SMTP yapılandırılmamış.'}
                     </p>
                   </>
@@ -333,7 +343,11 @@ export default function EditUserPage() {
               </p>
             </div>
             {roleChanged && (
-              <span className="shrink-0 px-2 py-1 bg-amber-500/15 text-amber-300 text-[10px] font-semibold rounded">
+              <span className="inline-flex items-center gap-1.5 shrink-0 px-2 py-1 bg-zinc-900/60 border border-zinc-800 text-zinc-300 text-[10px] font-semibold rounded uppercase tracking-wider">
+                <span
+                  className="w-1.5 h-1.5 rounded-full bg-amber-400"
+                  aria-hidden="true"
+                />
                 Rol değişecek
               </span>
             )}
@@ -362,9 +376,9 @@ export default function EditUserPage() {
             </div>
           </section>
         ) : (
-          <section className="bg-violet-500/5 border border-violet-500/20 rounded-lg p-4 text-xs text-violet-300">
-            <p className="font-semibold mb-1">Super Admin</p>
-            <p className="text-[11px] leading-relaxed">
+          <section className="bg-zinc-900/40 border border-zinc-800 rounded-lg p-4 text-xs text-zinc-300">
+            <p className="font-semibold text-zinc-100 mb-1">Super Admin</p>
+            <p className="text-[11px] leading-relaxed text-zinc-400">
               Bu kullanıcı tüm bölümlere erişime sahiptir; yetki matrisi gösterilmez.
             </p>
           </section>

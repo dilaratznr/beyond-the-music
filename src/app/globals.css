@@ -351,6 +351,25 @@ html { scroll-behavior: smooth; }
   font-family: var(--font-body);
 }
 
+/* Chrome/Safari autofill override'ı — admin scope için.
+   Browser autofill (email/şifre kaydedilmiş alanlar) input'un içine
+   açık sarı/beyaz bir arka plan basıyor ve dark theme'i bozuyor.
+   Görünen bg'yi uzun bir transition ile zinc-950'ye kilitliyoruz;
+   text rengi de zinc-100 olarak korunuyor. `transition 5000s` hack'i
+   browser'ın autofill fade animasyonunu pratikte kapatır. */
+.admin-scope input:-webkit-autofill,
+.admin-scope input:-webkit-autofill:hover,
+.admin-scope input:-webkit-autofill:focus,
+.admin-scope input:-webkit-autofill:active,
+.admin-scope textarea:-webkit-autofill,
+.admin-scope select:-webkit-autofill {
+  -webkit-box-shadow: 0 0 0 30px rgb(9 9 11) inset !important;
+  box-shadow: 0 0 0 30px rgb(9 9 11) inset !important;
+  -webkit-text-fill-color: rgb(244 244 245) !important;
+  caret-color: rgb(244 244 245);
+  transition: background-color 5000s ease-in-out 0s;
+}
+
 /* Not: Eski `@view-transition` + `::view-transition-*` fade'leri kaldırıldı —
    TopLoader (sahte progress) ile üst üste binip ~400-700ms'lik algısal
    gecikme yaratıyordu. Prefetch + generateStaticParams ile static rotalar

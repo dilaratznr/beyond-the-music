@@ -289,7 +289,8 @@ export default function UsersPage() {
                         </span>
                       )}
                       {!user.isActive && (
-                        <span className="px-1.5 py-0.5 bg-red-500/10 text-red-300 border border-red-500/20 text-[10px] rounded font-semibold">
+                        <span className="inline-flex items-center gap-1.5 px-2 py-0.5 bg-zinc-900/60 text-zinc-300 border border-zinc-800 text-[10px] rounded-full uppercase tracking-wider font-medium">
+                          <span className="w-1.5 h-1.5 rounded-full bg-zinc-500" aria-hidden="true" />
                           Pasif
                         </span>
                       )}
@@ -317,18 +318,14 @@ export default function UsersPage() {
                         <button
                           onClick={() => toggleActive(user)}
                           disabled={isMe}
-                          className={`px-2.5 py-1 text-[11px] rounded-md font-medium border transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${
-                            user.isActive
-                              ? 'bg-amber-500/10 text-amber-300 hover:bg-amber-500/15 border-amber-500/20'
-                              : 'bg-emerald-500/10 text-emerald-300 hover:bg-emerald-500/15 border-emerald-500/20'
-                          }`}
+                          className="px-2.5 py-1 text-[11px] rounded-md font-medium border bg-zinc-900 text-zinc-300 border-zinc-800 hover:border-zinc-700 hover:bg-zinc-800 hover:text-white transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                         >
                           {user.isActive ? 'Pasifleştir' : 'Aktifleştir'}
                         </button>
                         <button
                           onClick={() => deleteUser(user)}
                           disabled={isMe}
-                          className="px-2.5 py-1 bg-red-500/10 text-red-300 text-[11px] rounded-md hover:bg-red-500/15 font-medium transition-colors border border-red-500/20 disabled:opacity-40 disabled:cursor-not-allowed"
+                          className="px-2.5 py-1 bg-zinc-900 text-zinc-300 text-[11px] rounded-md hover:border-zinc-700 hover:bg-zinc-800 hover:text-white font-medium transition-colors border border-zinc-800 disabled:opacity-40 disabled:cursor-not-allowed"
                         >
                           Sil
                         </button>
@@ -355,34 +352,35 @@ export default function UsersPage() {
                       Yetki detaylarını göster ({user.permissions.length} bölüm)
                     </button>
                     {expandedUser === user.id && (
-                      <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 pb-2">
+                      <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-1.5 pb-2">
                         {PERMISSION_SECTIONS.map((sec) => {
                           const perm = user.permissions.find((p) => p.section === sec.key);
+                          // Yetkili/yetkisiz ayrımı — border yerine sadece
+                          // text opacity ile yapılıyor. Yığın halinde
+                          // renkli çerçeveler göz yoruyordu; section adı
+                          // zaten "bu kullanıcı ne yönetebiliyor" sorusuna
+                          // cevap veriyor, vurguya gerek yok.
                           return (
                             <div
                               key={sec.key}
-                              className={`px-3 py-2 rounded-md text-xs border ${
-                                perm
-                                  ? 'bg-emerald-500/5 border-emerald-500/20'
-                                  : 'bg-zinc-950/40 border-zinc-800 opacity-60'
+                              className={`flex items-center justify-between gap-2 px-3 py-2 text-xs ${
+                                perm ? 'text-zinc-200' : 'text-zinc-600'
                               }`}
                             >
-                              <div className="flex items-center justify-between">
-                                <span
-                                  className={`font-medium ${perm ? 'text-zinc-100' : 'text-zinc-500'}`}
-                                >
-                                  <span className="text-zinc-500 mr-1.5">{sec.icon}</span>
-                                  {sec.labelTr}
+                              <span className="font-medium truncate">
+                                <span className={`mr-1.5 ${perm ? 'text-zinc-500' : 'text-zinc-700'}`}>
+                                  {sec.icon}
                                 </span>
-                                {perm && (
-                                  <span className="flex gap-0.5">
-                                    {perm.canCreate && <PermBadge color="emerald">C</PermBadge>}
-                                    {perm.canEdit && <PermBadge color="blue">E</PermBadge>}
-                                    {perm.canDelete && <PermBadge color="red">D</PermBadge>}
-                                    {perm.canPublish && <PermBadge color="violet">P</PermBadge>}
-                                  </span>
-                                )}
-                              </div>
+                                {sec.labelTr}
+                              </span>
+                              {perm && (
+                                <span className="flex gap-0.5 flex-shrink-0" aria-label="Yetkiler">
+                                  {perm.canCreate && <PermBadge>C</PermBadge>}
+                                  {perm.canEdit && <PermBadge>E</PermBadge>}
+                                  {perm.canDelete && <PermBadge>D</PermBadge>}
+                                  {perm.canPublish && <PermBadge>P</PermBadge>}
+                                </span>
+                              )}
                             </div>
                           );
                         })}
@@ -399,31 +397,23 @@ export default function UsersPage() {
   );
 }
 
+// Accent renkleri kaldırıldı — editoryal tek ton. Sayı zaten büyük,
+// label zaten uppercase — vurgu için rengi gereksiz.
 function StatCard({
   label,
   value,
-  accent,
 }: {
   label: string;
   value: number;
+  /** Geriye uyumlu — artık yok sayılıyor, tek ton. */
   accent?: 'violet' | 'blue' | 'emerald' | 'red';
 }) {
-  const accentText: Record<string, string> = {
-    violet: 'text-violet-300',
-    blue: 'text-blue-300',
-    emerald: 'text-emerald-300',
-    red: 'text-red-300',
-  };
   return (
     <div className="bg-zinc-900/50 border border-zinc-800 rounded-lg px-3 py-2.5">
       <div className="text-[10px] uppercase tracking-wider text-zinc-500 font-semibold">
         {label}
       </div>
-      <div
-        className={`text-xl font-semibold mt-0.5 tracking-tight ${
-          accent ? accentText[accent] : 'text-zinc-100'
-        }`}
-      >
+      <div className="text-xl font-semibold mt-0.5 tracking-tight text-zinc-100">
         {value}
       </div>
     </div>
@@ -434,28 +424,20 @@ function FilterChip({
   active,
   onClick,
   children,
-  accent,
 }: {
   active: boolean;
   onClick: () => void;
   children: React.ReactNode;
+  /** Geriye uyumlu — accent artık yok, sadece active/inactive tonu. */
   accent?: 'violet' | 'blue' | 'emerald' | 'red';
 }) {
-  const activeCls: Record<string, string> = {
-    violet: 'bg-violet-500/15 text-violet-200 border-violet-500/40',
-    blue: 'bg-blue-500/15 text-blue-200 border-blue-500/40',
-    emerald: 'bg-emerald-500/15 text-emerald-200 border-emerald-500/40',
-    red: 'bg-red-500/15 text-red-200 border-red-500/40',
-  };
   return (
     <button
       type="button"
       onClick={onClick}
       className={`px-2.5 py-1 rounded-md text-[11px] font-medium border transition-colors ${
         active
-          ? accent
-            ? activeCls[accent]
-            : 'bg-white text-zinc-950 border-white'
+          ? 'bg-white text-zinc-950 border-white'
           : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800'
       }`}
     >
@@ -465,22 +447,17 @@ function FilterChip({
 }
 
 function PermBadge({
-  color,
   children,
 }: {
-  color: 'emerald' | 'blue' | 'red' | 'violet';
   children: React.ReactNode;
+  /** Geriye uyumlu — color artık yok, hep tek ton. */
+  color?: 'emerald' | 'blue' | 'red' | 'violet';
 }) {
-  const cls: Record<string, string> = {
-    emerald: 'bg-emerald-500/15 text-emerald-300',
-    blue: 'bg-blue-500/15 text-blue-300',
-    red: 'bg-red-500/15 text-red-300',
-    violet: 'bg-violet-500/15 text-violet-300',
-  };
+  // Tek renk, düşük kontrast — C/E/D/P harfleri kart içinde
+  // "burada bir yetki var" sinyali vermek için yeterince görünür,
+  // ama göz yormayacak kadar sessiz.
   return (
-    <span
-      className={`inline-flex items-center justify-center w-4 h-4 rounded text-[9px] font-bold ${cls[color]}`}
-    >
+    <span className="inline-flex items-center justify-center w-4 h-4 rounded-sm text-[9px] font-semibold bg-zinc-800/70 text-zinc-400 ring-1 ring-inset ring-zinc-700/40">
       {children}
     </span>
   );

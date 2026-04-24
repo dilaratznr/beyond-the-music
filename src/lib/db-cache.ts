@@ -66,9 +66,9 @@ const FIVE_MINUTES = 300;
 export const listMainGenresWithChildren = unstable_cache(
   async () =>
     prisma.genre.findMany({
-      where: { parentId: null },
+      where: { parentId: null, status: 'PUBLISHED' },
       include: {
-        children: { orderBy: { nameTr: 'asc' } },
+        children: { where: { status: 'PUBLISHED' }, orderBy: { nameTr: 'asc' } },
         _count: { select: { artists: true } },
       },
       orderBy: { order: 'asc' },
@@ -81,7 +81,7 @@ export const listMainGenresWithChildren = unstable_cache(
 export const listHomeGenres = unstable_cache(
   async () =>
     prisma.genre.findMany({
-      where: { parentId: null },
+      where: { parentId: null, status: 'PUBLISHED' },
       orderBy: { order: 'asc' },
       take: 8,
     }),
@@ -91,7 +91,7 @@ export const listHomeGenres = unstable_cache(
 
 /** Count of main genres — shown on the home's "View all" endcard. */
 export const countMainGenres = unstable_cache(
-  async () => prisma.genre.count({ where: { parentId: null } }),
+  async () => prisma.genre.count({ where: { parentId: null, status: 'PUBLISHED' } }),
   ['genres', 'count-main'],
   { tags: [CACHE_TAGS.genre], revalidate: FIVE_MINUTES },
 );
@@ -104,9 +104,10 @@ export const countMainGenres = unstable_cache(
 export const listAllArtistsWithRelations = unstable_cache(
   async () =>
     prisma.artist.findMany({
+      where: { status: 'PUBLISHED' },
       include: {
-        genres: { include: { genre: true } },
-        _count: { select: { albums: true } },
+        genres: { where: { genre: { status: 'PUBLISHED' } }, include: { genre: true } },
+        _count: { select: { albums: { where: { status: 'PUBLISHED' } } } },
       },
       orderBy: { name: 'asc' },
     }),
@@ -118,9 +119,10 @@ export const listAllArtistsWithRelations = unstable_cache(
 export const listHomeArtists = unstable_cache(
   async () =>
     prisma.artist.findMany({
+      where: { status: 'PUBLISHED' },
       take: 10,
       orderBy: { createdAt: 'desc' },
-      include: { genres: { include: { genre: true } } },
+      include: { genres: { where: { genre: { status: 'PUBLISHED' } }, include: { genre: true } } },
     }),
   ['artists', 'home-10'],
   { tags: [CACHE_TAGS.artist], revalidate: FIVE_MINUTES },
@@ -134,7 +136,7 @@ export const listHomeArtists = unstable_cache(
 export const listHomeFeaturedAlbums = unstable_cache(
   async () =>
     prisma.album.findMany({
-      where: { featuredOrder: { not: null } },
+      where: { featuredOrder: { not: null }, status: 'PUBLISHED' },
       take: 6,
       orderBy: { featuredOrder: 'asc' },
       include: { artist: { select: { name: true, slug: true } } },
@@ -151,7 +153,10 @@ export const listHomeFeaturedAlbums = unstable_cache(
 export const listAllArchitectsWithCounts = unstable_cache(
   async () =>
     prisma.architect.findMany({
-      include: { _count: { select: { artists: true } } },
+      where: { status: 'PUBLISHED' },
+      include: {
+        _count: { select: { artists: { where: { artist: { status: 'PUBLISHED' } } } } },
+      },
       orderBy: { name: 'asc' },
     }),
   ['architects', 'all-with-counts'],
@@ -217,6 +222,7 @@ export const listPublishedArticlesByCategory = unstable_cache(
 export const listAllListeningPathsWithCounts = unstable_cache(
   async () =>
     prisma.listeningPath.findMany({
+      where: { status: 'PUBLISHED' },
       include: { _count: { select: { items: true } } },
       orderBy: { createdAt: 'desc' },
     }),
@@ -227,7 +233,11 @@ export const listAllListeningPathsWithCounts = unstable_cache(
 /** 4 most-recent listening paths for the home page. */
 export const listHomeListeningPaths = unstable_cache(
   async () =>
-    prisma.listeningPath.findMany({ take: 4, orderBy: { createdAt: 'desc' } }),
+    prisma.listeningPath.findMany({
+      where: { status: 'PUBLISHED' },
+      take: 4,
+      orderBy: { createdAt: 'desc' },
+    }),
   ['listening-paths', 'home-4'],
   { tags: [CACHE_TAGS.listeningPath], revalidate: FIVE_MINUTES },
 );

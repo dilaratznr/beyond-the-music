@@ -43,6 +43,14 @@ interface Props {
   confirmLabel?: string;
   /** Loading state — onay sırasında butonu disable etmek için. */
   loading?: boolean;
+  /**
+   * true → kullanıcı entity adını bire bir yazmak zorunda (typed confirm).
+   *        Cascade etkisi olan silmeler için — yanlışlıkla büyük veri kaybını
+   *        engeller.
+   * false → sadece "Sil / İptal" modal'ı. Hızlı silmelerde de yanlışlıkla
+   *        tıklamayı engellemek için yine native confirm yerine bu modal.
+   */
+  requireTypedConfirm?: boolean;
   onConfirm: () => void;
   onCancel: () => void;
 }
@@ -55,6 +63,7 @@ export default function TypedConfirmDialog({
   description,
   confirmLabel = 'Sil',
   loading = false,
+  requireTypedConfirm = true,
   onConfirm,
   onCancel,
 }: Props) {
@@ -87,6 +96,8 @@ export default function TypedConfirmDialog({
 
   const matches = input.trim().toLowerCase() === entityName.trim().toLowerCase();
   const totalImpact = impact?.reduce((sum, i) => sum + i.count, 0) ?? 0;
+  // Typed confirm zorunlu değilse her zaman "silebilir" durumundayız.
+  const canConfirm = requireTypedConfirm ? matches : true;
 
   return (
     <div
@@ -153,31 +164,37 @@ export default function TypedConfirmDialog({
             </div>
           )}
 
-          <div>
-            <label
-              htmlFor="typed-confirm-input"
-              className="block text-[11px] font-semibold text-zinc-300 mb-1.5"
-            >
-              Onaylamak için <span className="font-mono text-zinc-100">{entityName}</span> yaz
-            </label>
-            <input
-              ref={inputRef}
-              id="typed-confirm-input"
-              type="text"
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' && matches && !loading) {
-                  e.preventDefault();
-                  onConfirm();
-                }
-              }}
-              autoComplete="off"
-              spellCheck={false}
-              placeholder={entityName}
-              className="w-full px-3 py-2 text-sm bg-zinc-900 border border-zinc-800 rounded-md text-zinc-100 placeholder:text-zinc-600 outline-none focus:border-zinc-500 focus:ring-2 focus:ring-zinc-500/20 transition-colors"
-            />
-          </div>
+          {requireTypedConfirm ? (
+            <div>
+              <label
+                htmlFor="typed-confirm-input"
+                className="block text-[11px] font-semibold text-zinc-300 mb-1.5"
+              >
+                Onaylamak için <span className="font-mono text-zinc-100">{entityName}</span> yaz
+              </label>
+              <input
+                ref={inputRef}
+                id="typed-confirm-input"
+                type="text"
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && matches && !loading) {
+                    e.preventDefault();
+                    onConfirm();
+                  }
+                }}
+                autoComplete="off"
+                spellCheck={false}
+                placeholder={entityName}
+                className="w-full px-3 py-2 text-sm bg-zinc-900 border border-zinc-800 rounded-md text-zinc-100 placeholder:text-zinc-600 outline-none focus:border-zinc-500 focus:ring-2 focus:ring-zinc-500/20 transition-colors"
+              />
+            </div>
+          ) : (
+            <p className="text-sm text-zinc-400 leading-relaxed">
+              Bu işlem geri alınamaz. Devam etmek istediğine emin misin?
+            </p>
+          )}
         </div>
 
         <div className="px-5 pb-5 flex items-center justify-end gap-2">
@@ -192,7 +209,7 @@ export default function TypedConfirmDialog({
           <button
             type="button"
             onClick={onConfirm}
-            disabled={!matches || loading}
+            disabled={!canConfirm || loading}
             // Aktif primary action — bilinçli beyaz, site genelindeki
             // "Kaydet / Yayına Al" butonlarıyla aynı görünüm. Destructive
             // anlamı ikon/uyarı metni + typed confirm ile zaten kurulmuş.

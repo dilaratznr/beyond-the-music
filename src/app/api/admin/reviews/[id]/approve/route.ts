@@ -9,11 +9,10 @@ import { approveReview } from '@/lib/content-review';
  * POST /api/admin/reviews/[id]/approve
  *   Bekleyen bir review'i onayla. Super Admin only.
  *
- *   Article için:
- *     - İçerik status'u → PUBLISHED
- *     - publishedAt → şimdi (eğer yoksa)
- *     - Review status'u → APPROVED
- *   Faz 2'de diğer section'lar için de aynı yapı genişletilecek.
+ *   Her section için transition aynı:
+ *     - Entity status → PUBLISHED (Article için publishedAt da set edilir)
+ *     - Review status → APPROVED
+ *   Entity DB'de yoksa (silinmişse) warn log + 404 döner.
  */
 export async function POST(
   _request: NextRequest,
@@ -35,32 +34,84 @@ export async function POST(
     );
   }
 
-  // Section'a göre gerçek içeriğin yayın durumunu güncelle.
-  if (review.section === 'ARTICLE') {
-    const article = await prisma.article.findUnique({
-      where: { id: review.entityId },
-      select: { id: true, status: true, publishedAt: true },
-    });
-    if (!article) {
-      console.warn(
-        `[reviews/approve] Review ${review.id}: makale ${review.entityId} bulunamadı, silinmiş olabilir`,
-      );
-      return NextResponse.json(
-        { error: 'İlgili makale artık mevcut değil' },
-        { status: 404 },
-      );
+  // Section'a göre gerçek içeriğin yayın durumunu güncelle. Her bir
+  // içerik modelinin ayrı Prisma delegate'i var — ortak bir "update
+  // status" helper'ı yazmak tip güvenliği kaybına yol açıyordu, bu
+  // yüzden switch net duruyor.
+  switch (review.section) {
+    case 'ARTICLE': {
+      const article = await prisma.article.findUnique({
+        where: { id: review.entityId },
+        select: { id: true, status: true, publishedAt: true },
+      });
+      if (!article) {
+        console.warn(
+          `[reviews/approve] Review ${review.id}: makale ${review.entityId} bulunamadı, silinmiş olabilir`,
+        );
+        return NextResponse.json(
+          { error: 'İlgili makale artık mevcut değil' },
+          { status: 404 },
+        );
+      }
+      await prisma.article.update({
+        where: { id: article.id },
+        data: {
+          status: 'PUBLISHED',
+          publishedAt: article.publishedAt ?? new Date(),
+        },
+      });
+      revalidateTag(CACHE_TAGS.article, 'max');
+      break;
     }
-    await prisma.article.update({
-      where: { id: article.id },
-      data: {
-        status: 'PUBLISHED',
-        publishedAt: article.publishedAt ?? new Date(),
-      },
-    });
-    revalidateTag(CACHE_TAGS.article, 'max');
+    case 'ARTIST': {
+      const exists = await prisma.artist.findUnique({ where: { id: review.entityId }, select: { id: true } });
+      if (!exists) return orphanResponse('sanatçı', review.id, review.entityId);
+      await prisma.artist.update({ where: { id: exists.id }, data: { status: 'PUBLISHED' } });
+      revalidateTag(CACHE_TAGS.artist, 'max');
+      break;
+    }
+    case 'ALBUM': {
+      const exists = await prisma.album.findUnique({ where: { id: review.entityId }, select: { id: true } });
+      if (!exists) return orphanResponse('albüm', review.id, review.entityId);
+      await prisma.album.update({ where: { id: exists.id }, data: { status: 'PUBLISHED' } });
+      revalidateTag(CACHE_TAGS.album, 'max');
+      break;
+    }
+    case 'ARCHITECT': {
+      const exists = await prisma.architect.findUnique({ where: { id: review.entityId }, select: { id: true } });
+      if (!exists) return orphanResponse('mimar', review.id, review.entityId);
+      await prisma.architect.update({ where: { id: exists.id }, data: { status: 'PUBLISHED' } });
+      revalidateTag(CACHE_TAGS.architect, 'max');
+      break;
+    }
+    case 'GENRE': {
+      const exists = await prisma.genre.findUnique({ where: { id: review.entityId }, select: { id: true } });
+      if (!exists) return orphanResponse('tür', review.id, review.entityId);
+      await prisma.genre.update({ where: { id: exists.id }, data: { status: 'PUBLISHED' } });
+      revalidateTag(CACHE_TAGS.genre, 'max');
+      break;
+    }
+    case 'LISTENING_PATH': {
+      const exists = await prisma.listeningPath.findUnique({ where: { id: review.entityId }, select: { id: true } });
+      if (!exists) return orphanResponse('dinleme rotası', review.id, review.entityId);
+      await prisma.listeningPath.update({ where: { id: exists.id }, data: { status: 'PUBLISHED' } });
+      revalidateTag(CACHE_TAGS.listeningPath, 'max');
+      break;
+    }
+    default:
+      console.warn(`[reviews/approve] Bilinmeyen section: ${review.section} (review ${review.id})`);
   }
-  // Faz 2: else if (review.section === 'ARTIST') { ... } vs.
 
   const updated = await approveReview(review.id, user.id);
   return NextResponse.json(updated);
+}
+
+function orphanResponse(label: string, reviewId: string, entityId: string) {
+  console.warn(
+    `[reviews/approve] Review ${reviewId}: ${label} ${entityId} bulunamadı, silinmiş olabilir`,
+  );
+  return NextResponse.json(
+    { error: `İlgili ${label} artık mevcut değil` },
+    { status: 404 },
+  );
 }

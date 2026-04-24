@@ -4,6 +4,7 @@ import prisma from '@/lib/prisma';
 import { requireSectionAccess } from '@/lib/auth-guard';
 import { CACHE_TAGS } from '@/lib/db-cache';
 import { slugify } from '@/lib/utils';
+import { resolveCreateStatus, maybeCreateReviewOnCreate } from '@/lib/content-review';
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
@@ -23,13 +24,37 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
-  const { error } = await requireSectionAccess('ALBUM', 'canCreate');
-  if (error) return error;
+  const { error, user } = await requireSectionAccess('ALBUM', 'canCreate');
+  if (error || !user) return error;
   const body = await request.json();
   const { title, artistId, releaseDate, coverImage, descriptionTr, descriptionEn } = body;
   if (!title || !artistId) return NextResponse.json({ error: 'Title and artist are required' }, { status: 400 });
+
+  const { status, requiresReview } = await resolveCreateStatus({
+    section: 'ALBUM',
+    userId: user.id,
+  });
+
   const slug = slugify(title);
-  const album = await prisma.album.create({ data: { slug, title, artistId, releaseDate: releaseDate ? new Date(releaseDate) : null, coverImage: coverImage || null, descriptionTr: descriptionTr || null, descriptionEn: descriptionEn || null } });
+  const album = await prisma.album.create({
+    data: {
+      slug, title, artistId,
+      releaseDate: releaseDate ? new Date(releaseDate) : null,
+      coverImage: coverImage || null,
+      descriptionTr: descriptionTr || null,
+      descriptionEn: descriptionEn || null,
+      status,
+    },
+  });
+
+  await maybeCreateReviewOnCreate({
+    section: 'ALBUM',
+    entityId: album.id,
+    entityTitle: album.title,
+    userId: user.id,
+    status,
+  });
+
   revalidateTag(CACHE_TAGS.album, 'max');
-  return NextResponse.json(album, { status: 201 });
+  return NextResponse.json({ ...album, requiresReview }, { status: 201 });
 }

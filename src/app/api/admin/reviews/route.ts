@@ -4,11 +4,15 @@ import { requireAuth } from '@/lib/auth-guard';
 
 /**
  * GET /api/admin/reviews
- *   Onay kuyruğundaki içeriklerin listesi. Super Admin only.
+ *   Onay kuyruğundaki içeriklerin sayfalanmış listesi. Super Admin only.
  *
- *   Query param:
+ *   Query params:
  *     ?status=PENDING | APPROVED | REJECTED   (default: PENDING)
- *     ?limit=20                                 (default: 50)
+ *     ?page=1                                   (default: 1)
+ *     ?limit=20                                 (default: 15, max: 100)
+ *
+ *   Response:
+ *     { items: Review[], total, page, totalPages }
  */
 export async function GET(request: NextRequest) {
   const { error } = await requireAuth('SUPER_ADMIN');
@@ -16,23 +20,33 @@ export async function GET(request: NextRequest) {
 
   const { searchParams } = new URL(request.url);
   const status = (searchParams.get('status') as 'PENDING' | 'APPROVED' | 'REJECTED' | null) || 'PENDING';
-  const limit = Math.min(parseInt(searchParams.get('limit') || '50'), 200);
+  const page = Math.max(1, parseInt(searchParams.get('page') || '1'));
+  const limit = Math.min(Math.max(1, parseInt(searchParams.get('limit') || '15')), 100);
 
   // db:push henüz çalışmadıysa contentReview tablosu DB'de yok;
   // panel komple kırılmasın diye sessizce boş dizi dönüyoruz.
   try {
-    const reviews = await prisma.contentReview.findMany({
-      where: { status },
-      orderBy: { submittedAt: 'desc' },
-      take: limit,
-      include: {
-        submittedBy: { select: { id: true, name: true, email: true, role: true } },
-        reviewedBy: { select: { id: true, name: true, email: true } },
-      },
+    const [items, total] = await Promise.all([
+      prisma.contentReview.findMany({
+        where: { status },
+        orderBy: { submittedAt: 'desc' },
+        skip: (page - 1) * limit,
+        take: limit,
+        include: {
+          submittedBy: { select: { id: true, name: true, email: true, role: true } },
+          reviewedBy: { select: { id: true, name: true, email: true } },
+        },
+      }),
+      prisma.contentReview.count({ where: { status } }),
+    ]);
+    return NextResponse.json({
+      items,
+      total,
+      page,
+      totalPages: Math.max(1, Math.ceil(total / limit)),
     });
-    return NextResponse.json(reviews);
   } catch (err) {
     console.warn('[reviews] fetch hatası — migration yapıldı mı?', err);
-    return NextResponse.json([]);
+    return NextResponse.json({ items: [], total: 0, page: 1, totalPages: 1 });
   }
 }

@@ -138,11 +138,13 @@ export default function Sidebar() {
 
     async function fetchCount() {
       try {
-        const r = await fetch('/api/admin/reviews?status=PENDING&limit=200');
+        // Dedicated count endpoint — listeyi çekmeye gerek yok, 200'de
+        // cap'lenmiyor, sayısal sonuç.
+        const r = await fetch('/api/admin/reviews/count?status=PENDING');
         if (!r.ok) return;
         const data = await r.json();
         if (cancelled) return;
-        setPendingReviews(Array.isArray(data) ? data.length : 0);
+        setPendingReviews(typeof data?.count === 'number' ? data.count : 0);
       } catch {
         // Sessizce geç — ağ hatası / migration eksik. Badge 0 kalsın.
       }
@@ -166,9 +168,9 @@ export default function Sidebar() {
   useEffect(() => {
     if (!isSuperAdminNow) return;
     if (!pathname.startsWith('/admin/reviews')) return;
-    fetch('/api/admin/reviews?status=PENDING&limit=200')
+    fetch('/api/admin/reviews/count?status=PENDING')
       .then((r) => r.json())
-      .then((data) => setPendingReviews(Array.isArray(data) ? data.length : 0))
+      .then((data) => setPendingReviews(typeof data?.count === 'number' ? data.count : 0))
       .catch(() => {});
   }, [pathname, isSuperAdminNow]);
 

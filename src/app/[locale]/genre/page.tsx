@@ -34,8 +34,11 @@ export default async function GenrePage({ params }: { params: Promise<{ locale: 
   const tr = locale === 'tr';
 
   const genres = await prisma.genre.findMany({
-    where: { parentId: null },
-    include: { children: { orderBy: { nameTr: 'asc' } }, _count: { select: { artists: true } } },
+    where: { parentId: null, status: 'PUBLISHED' },
+    include: {
+      children: { where: { status: 'PUBLISHED' }, orderBy: { nameTr: 'asc' } },
+      _count: { select: { artists: { where: { artist: { status: 'PUBLISHED' } } } } },
+    },
     orderBy: { order: 'asc' },
   });
 

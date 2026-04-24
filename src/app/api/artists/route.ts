@@ -4,6 +4,7 @@ import prisma from '@/lib/prisma';
 import { requireSectionAccess } from '@/lib/auth-guard';
 import { CACHE_TAGS } from '@/lib/db-cache';
 import { slugify } from '@/lib/utils';
+import { resolveCreateStatus, maybeCreateReviewOnCreate } from '@/lib/content-review';
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
@@ -34,23 +35,40 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
-  const { error } = await requireSectionAccess('ARTIST', 'canCreate');
-  if (error) return error;
+  const { error, user } = await requireSectionAccess('ARTIST', 'canCreate');
+  if (error || !user) return error;
 
   const body = await request.json();
   const { name, type, bioTr, bioEn, image, birthDate, deathDate, genreIds } = body;
 
   if (!name || !type) return NextResponse.json({ error: 'Name and type are required' }, { status: 400 });
 
+  // canPublish yetkisi yoksa → PENDING_REVIEW, Super Admin onayı
+  // beklenir. Var olan sanatçıların public query'leri `status=PUBLISHED`
+  // filtreliyor, yeni kayıt onaylanana kadar public'te gözükmez.
+  const { status, requiresReview } = await resolveCreateStatus({
+    section: 'ARTIST',
+    userId: user.id,
+  });
+
   const slug = slugify(name);
   const artist = await prisma.artist.create({
     data: {
       slug, name, type, bioTr: bioTr || null, bioEn: bioEn || null, image: image || null,
       birthDate: birthDate ? new Date(birthDate) : null, deathDate: deathDate ? new Date(deathDate) : null,
+      status,
       genres: genreIds?.length ? { create: genreIds.map((genreId: string) => ({ genreId })) } : undefined,
     },
   });
 
+  await maybeCreateReviewOnCreate({
+    section: 'ARTIST',
+    entityId: artist.id,
+    entityTitle: artist.name,
+    userId: user.id,
+    status,
+  });
+
   revalidateTag(CACHE_TAGS.artist, 'max');
-  return NextResponse.json(artist, { status: 201 });
+  return NextResponse.json({ ...artist, requiresReview }, { status: 201 });
 }

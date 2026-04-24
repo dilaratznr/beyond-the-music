@@ -4,6 +4,7 @@ import prisma from '@/lib/prisma';
 import { requireSectionAccess } from '@/lib/auth-guard';
 import { CACHE_TAGS } from '@/lib/db-cache';
 import { slugify } from '@/lib/utils';
+import { resolveCreateStatus, maybeCreateReviewOnCreate } from '@/lib/content-review';
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
@@ -19,13 +20,37 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
-  const { error } = await requireSectionAccess('LISTENING_PATH', 'canCreate');
-  if (error) return error;
+  const { error, user } = await requireSectionAccess('LISTENING_PATH', 'canCreate');
+  if (error || !user) return error;
   const body = await request.json();
   const { titleTr, titleEn, descriptionTr, descriptionEn, type, image } = body;
   if (!titleTr || !titleEn || !type) return NextResponse.json({ error: 'Title (TR/EN) and type are required' }, { status: 400 });
+
+  const { status, requiresReview } = await resolveCreateStatus({
+    section: 'LISTENING_PATH',
+    userId: user.id,
+  });
+
   const slug = slugify(titleEn);
-  const path = await prisma.listeningPath.create({ data: { slug, titleTr, titleEn, descriptionTr: descriptionTr || null, descriptionEn: descriptionEn || null, type, image: image || null } });
+  const path = await prisma.listeningPath.create({
+    data: {
+      slug, titleTr, titleEn,
+      descriptionTr: descriptionTr || null,
+      descriptionEn: descriptionEn || null,
+      type,
+      image: image || null,
+      status,
+    },
+  });
+
+  await maybeCreateReviewOnCreate({
+    section: 'LISTENING_PATH',
+    entityId: path.id,
+    entityTitle: path.titleTr,
+    userId: user.id,
+    status,
+  });
+
   revalidateTag(CACHE_TAGS.listeningPath, 'max');
-  return NextResponse.json(path, { status: 201 });
+  return NextResponse.json({ ...path, requiresReview }, { status: 201 });
 }

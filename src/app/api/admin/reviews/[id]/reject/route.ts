@@ -10,10 +10,12 @@ import { rejectReview } from '@/lib/content-review';
  *   Bekleyen bir review'i reddet. Super Admin only.
  *   Body: { note?: string } — admin'e geri bildirim olarak gösterilir.
  *
- *   Article için:
- *     - İçerik status'u → DRAFT (admin düzenleyip tekrar gönderebilir)
- *     - publishedAt → null
- *     - Review status'u → REJECTED (+ not)
+ *   Her section için:
+ *     - Entity status → DRAFT (editör düzenleyip tekrar "Onaya Gönder"
+ *       diyebilir; DRAFT zaten public'e kapalı)
+ *     - Article için publishedAt ayrıca null'a set edilir
+ *     - Review status → REJECTED (+ not)
+ *   Entity silinmişse review yine de REJECTED olarak kapatılır, log atılır.
  */
 export async function POST(
   request: NextRequest,
@@ -37,27 +39,73 @@ export async function POST(
     );
   }
 
-  if (review.section === 'ARTICLE') {
-    const article = await prisma.article.findUnique({
-      where: { id: review.entityId },
-      select: { id: true },
-    });
-    if (article) {
-      await prisma.article.update({
-        where: { id: article.id },
-        data: { status: 'DRAFT', publishedAt: null },
+  switch (review.section) {
+    case 'ARTICLE': {
+      const article = await prisma.article.findUnique({
+        where: { id: review.entityId },
+        select: { id: true },
       });
-      revalidateTag(CACHE_TAGS.article, 'max');
-    } else {
-      // Makale silinmişse review'i yine de kapat — ama görünürlük için
-      // log bırak; "reddettim ama makale yoktu" durumunu debug etmek
-      // zorlaşmasın.
-      console.warn(
-        `[reviews/reject] Review ${review.id}: makale ${review.entityId} bulunamadı, silinmiş olabilir. Review yine de REJECTED olarak kapatılıyor.`,
-      );
+      if (article) {
+        await prisma.article.update({
+          where: { id: article.id },
+          data: { status: 'DRAFT', publishedAt: null },
+        });
+        revalidateTag(CACHE_TAGS.article, 'max');
+      } else {
+        warnOrphan('makale', review.id, review.entityId);
+      }
+      break;
     }
+    case 'ARTIST': {
+      const exists = await prisma.artist.findUnique({ where: { id: review.entityId }, select: { id: true } });
+      if (exists) {
+        await prisma.artist.update({ where: { id: exists.id }, data: { status: 'DRAFT' } });
+        revalidateTag(CACHE_TAGS.artist, 'max');
+      } else warnOrphan('sanatçı', review.id, review.entityId);
+      break;
+    }
+    case 'ALBUM': {
+      const exists = await prisma.album.findUnique({ where: { id: review.entityId }, select: { id: true } });
+      if (exists) {
+        await prisma.album.update({ where: { id: exists.id }, data: { status: 'DRAFT' } });
+        revalidateTag(CACHE_TAGS.album, 'max');
+      } else warnOrphan('albüm', review.id, review.entityId);
+      break;
+    }
+    case 'ARCHITECT': {
+      const exists = await prisma.architect.findUnique({ where: { id: review.entityId }, select: { id: true } });
+      if (exists) {
+        await prisma.architect.update({ where: { id: exists.id }, data: { status: 'DRAFT' } });
+        revalidateTag(CACHE_TAGS.architect, 'max');
+      } else warnOrphan('mimar', review.id, review.entityId);
+      break;
+    }
+    case 'GENRE': {
+      const exists = await prisma.genre.findUnique({ where: { id: review.entityId }, select: { id: true } });
+      if (exists) {
+        await prisma.genre.update({ where: { id: exists.id }, data: { status: 'DRAFT' } });
+        revalidateTag(CACHE_TAGS.genre, 'max');
+      } else warnOrphan('tür', review.id, review.entityId);
+      break;
+    }
+    case 'LISTENING_PATH': {
+      const exists = await prisma.listeningPath.findUnique({ where: { id: review.entityId }, select: { id: true } });
+      if (exists) {
+        await prisma.listeningPath.update({ where: { id: exists.id }, data: { status: 'DRAFT' } });
+        revalidateTag(CACHE_TAGS.listeningPath, 'max');
+      } else warnOrphan('dinleme rotası', review.id, review.entityId);
+      break;
+    }
+    default:
+      console.warn(`[reviews/reject] Bilinmeyen section: ${review.section} (review ${review.id})`);
   }
 
   const updated = await rejectReview(review.id, user.id, note);
   return NextResponse.json(updated);
+}
+
+function warnOrphan(label: string, reviewId: string, entityId: string) {
+  console.warn(
+    `[reviews/reject] Review ${reviewId}: ${label} ${entityId} bulunamadı, silinmiş olabilir. Review yine de REJECTED olarak kapatılıyor.`,
+  );
 }

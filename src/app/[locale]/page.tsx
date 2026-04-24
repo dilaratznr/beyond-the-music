@@ -47,9 +47,9 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
   const [genres, genreTotal, featuredArticles, featuredAlbums, artists, paths, settingsRaw, heroVideos] = await Promise.all([
     // Anasayfada tür sayısı 8 ile sınırlı — daha fazlası kaydırmayı uzatıyor,
     // 'Tümünü Gör' kartı zaten sonunda.
-    prisma.genre.findMany({ where: { parentId: null }, orderBy: { order: 'asc' }, take: 8 }),
+    prisma.genre.findMany({ where: { parentId: null, status: 'PUBLISHED' }, orderBy: { order: 'asc' }, take: 8 }),
     // 'Tümünü Gör' endcard'ında gerçek tür sayısını göstermek için toplam.
-    prisma.genre.count({ where: { parentId: null } }),
+    prisma.genre.count({ where: { parentId: null, status: 'PUBLISHED' } }),
     // Hand-curated featured articles first (must be PUBLISHED — we don't want
     // drafts leaking to the homepage). If the editor hasn't curated anything,
     // we fall back to the 6 most-recent published articles below.
@@ -61,13 +61,18 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
     }),
     // Curated featured albums — only rendered if any are set.
     prisma.album.findMany({
-      where: { featuredOrder: { not: null } },
+      where: { featuredOrder: { not: null }, status: 'PUBLISHED' },
       take: 6,
       orderBy: { featuredOrder: 'asc' },
       include: { artist: { select: { name: true, slug: true } } },
     }),
-    prisma.artist.findMany({ take: 10, orderBy: { createdAt: 'desc' }, include: { genres: { include: { genre: true } } } }),
-    prisma.listeningPath.findMany({ take: 4, orderBy: { createdAt: 'desc' } }),
+    prisma.artist.findMany({
+      where: { status: 'PUBLISHED' },
+      take: 10,
+      orderBy: { createdAt: 'desc' },
+      include: { genres: { where: { genre: { status: 'PUBLISHED' } }, include: { genre: true } } },
+    }),
+    prisma.listeningPath.findMany({ where: { status: 'PUBLISHED' }, take: 4, orderBy: { createdAt: 'desc' } }),
     prisma.siteSetting.findMany(),
     prisma.heroVideo.findMany({ where: { isActive: true }, orderBy: { order: 'asc' }, select: { id: true, url: true, duration: true } }),
   ]);

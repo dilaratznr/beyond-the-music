@@ -16,8 +16,8 @@ export default async function Image({
   params: Promise<{ locale: string; slug: string }>;
 }) {
   const { locale, slug } = await params;
-  const genre = await prisma.genre.findUnique({
-    where: { slug },
+  const genre = await prisma.genre.findFirst({
+    where: { slug, status: 'PUBLISHED' },
     select: {
       nameTr: true,
       nameEn: true,

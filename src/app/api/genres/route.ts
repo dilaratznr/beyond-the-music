@@ -4,6 +4,7 @@ import prisma from '@/lib/prisma';
 import { requireSectionAccess } from '@/lib/auth-guard';
 import { CACHE_TAGS } from '@/lib/db-cache';
 import { slugify } from '@/lib/utils';
+import { resolveCreateStatus, maybeCreateReviewOnCreate } from '@/lib/content-review';
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
@@ -33,8 +34,8 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
-  const { error } = await requireSectionAccess('GENRE', 'canCreate');
-  if (error) return error;
+  const { error, user } = await requireSectionAccess('GENRE', 'canCreate');
+  if (error || !user) return error;
 
   const body = await request.json();
   const { nameTr, nameEn, descriptionTr, descriptionEn, image, parentId, order } = body;
@@ -43,12 +44,33 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Name (TR and EN) is required' }, { status: 400 });
   }
 
+  const { status, requiresReview } = await resolveCreateStatus({
+    section: 'GENRE',
+    userId: user.id,
+  });
+
   const slug = slugify(nameEn);
 
   const genre = await prisma.genre.create({
-    data: { slug, nameTr, nameEn, descriptionTr: descriptionTr || null, descriptionEn: descriptionEn || null, image: image || null, parentId: parentId || null, order: order || 0 },
+    data: {
+      slug, nameTr, nameEn,
+      descriptionTr: descriptionTr || null,
+      descriptionEn: descriptionEn || null,
+      image: image || null,
+      parentId: parentId || null,
+      order: order || 0,
+      status,
+    },
+  });
+
+  await maybeCreateReviewOnCreate({
+    section: 'GENRE',
+    entityId: genre.id,
+    entityTitle: genre.nameTr,
+    userId: user.id,
+    status,
   });
 
   revalidateTag(CACHE_TAGS.genre, 'max');
-  return NextResponse.json(genre, { status: 201 });
+  return NextResponse.json({ ...genre, requiresReview }, { status: 201 });
 }

@@ -9,6 +9,7 @@ import prisma from '@/lib/prisma';
  */
 export async function generateStaticParams(): Promise<Array<{ slug: string }>> {
   const genres: Array<{ slug: string }> = await prisma.genre.findMany({
+    where: { status: 'PUBLISHED' },
     select: { slug: true },
   });
   return genres.map(({ slug }) => ({ slug }));
@@ -28,8 +29,8 @@ export async function generateMetadata({
   params: Params;
 }): Promise<Metadata> {
   const { locale, slug } = await params;
-  const genre = await prisma.genre.findUnique({
-    where: { slug },
+  const genre = await prisma.genre.findFirst({
+    where: { slug, status: 'PUBLISHED' },
     select: {
       nameTr: true,
       nameEn: true,
@@ -56,18 +57,25 @@ export default async function GenreDetailPage({ params }: { params: Params }) {
   const dict = getDictionary(locale);
   const tr = locale === 'tr';
 
-  const genre = await prisma.genre.findUnique({
-    where: { slug },
+  const genre = await prisma.genre.findFirst({
+    where: { slug, status: 'PUBLISHED' },
     include: {
       parent: true,
-      children: { orderBy: { nameTr: 'asc' } },
+      children: { where: { status: 'PUBLISHED' }, orderBy: { nameTr: 'asc' } },
       articles: {
         where: { status: 'PUBLISHED' },
         include: { author: { select: { name: true } } },
         orderBy: { publishedAt: 'desc' },
       },
       artists: {
-        include: { artist: { include: { genres: { include: { genre: true } } } } },
+        where: { artist: { status: 'PUBLISHED' } },
+        include: {
+          artist: {
+            include: {
+              genres: { where: { genre: { status: 'PUBLISHED' } }, include: { genre: true } },
+            },
+          },
+        },
         take: 20,
       },
     },
