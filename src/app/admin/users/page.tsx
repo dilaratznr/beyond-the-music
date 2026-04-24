@@ -37,11 +37,9 @@ const SECTION_LABELS: Record<string, string> = Object.fromEntries(
 const ROLE_BADGE_CLASSNAME =
   'bg-zinc-900/60 text-zinc-300 ring-white/10';
 
-const ROLE_AVATAR: Record<string, string> = {
-  SUPER_ADMIN: 'bg-gradient-to-br from-violet-500 to-violet-700',
-  ADMIN: 'bg-gradient-to-br from-blue-500 to-blue-700',
-  EDITOR: 'bg-gradient-to-br from-emerald-500 to-emerald-700',
-};
+// Avatar'lar tek ton — rol farkı metinle ayırt ediliyor (listede "Super Admin"
+// etiketi zaten var). Renkli gradientler editoryal tutarlılığı bozuyordu.
+const ROLE_AVATAR_CLASS = 'bg-gradient-to-br from-zinc-700 to-zinc-900 ring-1 ring-white/10';
 
 function formatDate(iso: string): string {
   try {
@@ -276,9 +274,7 @@ export default function UsersPage() {
               >
                 <div className="flex flex-col md:flex-row md:items-center gap-3 md:gap-4 px-4 py-3">
                   <div
-                    className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold text-white shrink-0 ring-1 ring-zinc-700 ${
-                      ROLE_AVATAR[user.role] ?? ROLE_AVATAR.EDITOR
-                    }`}
+                    className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold text-white shrink-0 ${ROLE_AVATAR_CLASS}`}
                   >
                     {user.name.charAt(0).toUpperCase()}
                   </div>

@@ -35,30 +35,18 @@ const FILTERS = [
  * Visual treatment for each status, kept in a single map so the list row,
  * dashboard badge, and the form status select can stay consistent.
  */
+// Tüm durumlar aynı tek-ton pill'a çekildi (Dilara: "renkli pill'ler
+// sevmiyorum, her yerde"). Durumu metin ayırt ediyor; renk gerekmiyor.
+// Dot hâlâ var — canlı liste bakışında satırları kayboldurmayan
+// minimal bir durum işareti, aynı tonda.
+const STATUS_PILL_CLASSNAME =
+  'bg-zinc-900/60 text-zinc-300 border-zinc-800';
+const STATUS_DOT_CLASSNAME = 'bg-zinc-500';
 const STATUS_STYLE: Record<string, { label: string; pill: string; dot: string }> = {
-  PUBLISHED: {
-    label: 'Yayında',
-    pill: 'bg-emerald-500/10 text-emerald-300 border-emerald-500/20',
-    dot: 'bg-emerald-400',
-  },
-  SCHEDULED: {
-    label: 'Zamanlanmış',
-    pill: 'bg-sky-500/10 text-sky-300 border-sky-500/20',
-    dot: 'bg-sky-400',
-  },
-  PENDING_REVIEW: {
-    label: 'Onayda',
-    // Menekşe — yayın için bekleyen, editörün elinden çıkmış ama henüz
-    // yayında olmayan içerik. Taslaktan (amber) ve yayından (emerald)
-    // görsel olarak ayrı durması için farklı renk ailesi.
-    pill: 'bg-violet-500/10 text-violet-300 border-violet-500/20',
-    dot: 'bg-violet-400',
-  },
-  DRAFT: {
-    label: 'Taslak',
-    pill: 'bg-amber-500/10 text-amber-300 border-amber-500/20',
-    dot: 'bg-amber-400',
-  },
+  PUBLISHED: { label: 'Yayında', pill: STATUS_PILL_CLASSNAME, dot: STATUS_DOT_CLASSNAME },
+  SCHEDULED: { label: 'Zamanlanmış', pill: STATUS_PILL_CLASSNAME, dot: STATUS_DOT_CLASSNAME },
+  PENDING_REVIEW: { label: 'Onayda', pill: STATUS_PILL_CLASSNAME, dot: STATUS_DOT_CLASSNAME },
+  DRAFT: { label: 'Taslak', pill: STATUS_PILL_CLASSNAME, dot: STATUS_DOT_CLASSNAME },
 };
 
 const ALLOWED_FILTERS = new Set(['', 'PUBLISHED', 'SCHEDULED', 'PENDING_REVIEW', 'DRAFT']);
@@ -212,7 +200,7 @@ function ArticlesPageInner() {
               type="button"
               onClick={() => changeStatus('PUBLISHED')}
               disabled={bulkBusy}
-              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-semibold bg-emerald-500/15 text-emerald-200 border border-emerald-500/30 hover:bg-emerald-500/25 disabled:opacity-50 disabled:cursor-wait transition-colors"
+              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-semibold bg-white text-zinc-950 hover:bg-zinc-200 disabled:opacity-50 disabled:cursor-wait transition-colors"
             >
               Yayına Al
             </button>
@@ -220,7 +208,7 @@ function ArticlesPageInner() {
               type="button"
               onClick={() => changeStatus('DRAFT')}
               disabled={bulkBusy}
-              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-semibold bg-amber-500/15 text-amber-200 border border-amber-500/30 hover:bg-amber-500/25 disabled:opacity-50 disabled:cursor-wait transition-colors"
+              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-medium bg-zinc-900/40 text-zinc-300 border border-zinc-800 hover:border-zinc-700 hover:bg-zinc-900/70 disabled:opacity-50 disabled:cursor-wait transition-colors"
             >
               Taslağa Çek
             </button>
@@ -228,7 +216,7 @@ function ArticlesPageInner() {
         }
       />
       {bulkErr && (
-        <div className="mb-3 px-3 py-2 rounded-md border border-rose-500/30 bg-rose-500/10 text-[11px] text-rose-200">
+        <div className="mb-3 px-3 py-2 rounded-md border border-zinc-800 bg-zinc-900/40 text-[11px] text-zinc-300">
           {bulkErr}
         </div>
       )}
@@ -284,7 +272,7 @@ function ArticlesPageInner() {
                   return (
                     <tr
                       key={a.id}
-                      className={`transition-colors ${isChecked ? 'bg-amber-500/5 hover:bg-amber-500/10' : 'hover:bg-zinc-800/30'}`}
+                      className={`transition-colors ${isChecked ? 'bg-zinc-800/40 hover:bg-zinc-800/60' : 'hover:bg-zinc-800/30'}`}
                     >
                       <td className="px-3 py-2">
                         <BulkCheckbox

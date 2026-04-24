@@ -474,7 +474,7 @@ function renderAutosaveLabel(
           <path d="M21 12a9 9 0 0 0-9-9" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
         </svg>
       ),
-      className: 'bg-sky-500/10 text-sky-300 border-sky-500/30',
+      className: 'bg-zinc-900/60 text-zinc-300 border-zinc-800',
       title: 'Otomatik kaydediliyor',
     };
   }
@@ -577,7 +577,7 @@ function StatusSelector({
       </div>
       {status === 'SCHEDULED' && (
         <div className="mt-2 flex items-start gap-2">
-          <div className="flex-shrink-0 w-8 h-8 rounded-md bg-sky-500/10 text-sky-300 flex items-center justify-center text-sm mt-0.5">
+          <div className="flex-shrink-0 w-8 h-8 rounded-md bg-zinc-900 border border-zinc-800 text-zinc-400 flex items-center justify-center text-sm mt-0.5">
             ◷
           </div>
           <div className="flex-1">
@@ -587,7 +587,7 @@ function StatusSelector({
               onChange={(e) => onScheduledForChange(e.target.value)}
               min={toDatetimeLocalValue(new Date())}
               required
-              className="w-full px-3 py-1.5 bg-zinc-950 border border-sky-500/30 hover:border-sky-500/60 focus:border-sky-400 rounded-md outline-none text-zinc-100 text-sm focus:ring-sky-500/20 focus:ring-2"
+              className="w-full px-3 py-1.5 bg-zinc-950 border border-zinc-800 hover:border-zinc-700 focus:border-zinc-500 rounded-md outline-none text-zinc-100 text-sm focus:ring-zinc-500/20 focus:ring-2"
             />
             <p className="text-[10px] text-zinc-500 mt-1">
               Bu saatten itibaren site otomatik yayına alır.
@@ -596,7 +596,7 @@ function StatusSelector({
         </div>
       )}
       {status === 'PENDING_REVIEW' && (
-        <p className="mt-2 text-[11px] text-amber-300 px-3 py-2 bg-amber-500/10 border border-amber-500/20 rounded-md">
+        <p className="mt-2 text-[11px] text-zinc-300 px-3 py-2 bg-zinc-900/40 border border-zinc-800 rounded-md">
           Kaydettiğinde Super Admin&apos;in onay kuyruğuna düşer. Onaylanırsa otomatik yayına alınır.
         </p>
       )}

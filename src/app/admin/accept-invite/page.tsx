@@ -9,7 +9,7 @@ const inputCls =
   'w-full px-3.5 py-2.5 text-sm bg-zinc-950 border border-zinc-800 rounded-md text-zinc-100 placeholder:text-zinc-600 outline-none transition-colors hover:border-zinc-700 focus:border-zinc-500 focus:ring-2 focus:ring-zinc-500/20';
 
 function passwordStrength(pw: string): { score: number; label: string; color: string } {
-  if (!pw) return { score: 0, label: 'Şifre girin', color: 'bg-zinc-700' };
+  if (!pw) return { score: 0, label: 'Şifre girin', color: 'bg-zinc-800' };
   let score = 0;
   if (pw.length >= 8) score++;
   if (pw.length >= 12) score++;
@@ -17,13 +17,15 @@ function passwordStrength(pw: string): { score: number; label: string; color: st
   if (/\d/.test(pw)) score++;
   if (/[^A-Za-z0-9]/.test(pw)) score++;
   const labels = ['Çok zayıf', 'Zayıf', 'Orta', 'İyi', 'Güçlü', 'Çok güçlü'];
+  // Tek ton: dolgu arttıkça bar da dolduğu için görsel sinyal zaten var,
+  // rengi de değiştirmek gereksiz. Editoryal tutarlılık.
   const colors = [
-    'bg-red-500',
-    'bg-orange-500',
-    'bg-yellow-500',
-    'bg-lime-500',
-    'bg-emerald-500',
-    'bg-emerald-400',
+    'bg-zinc-700',
+    'bg-zinc-600',
+    'bg-zinc-500',
+    'bg-zinc-400',
+    'bg-zinc-300',
+    'bg-white',
   ];
   return { score, label: labels[score], color: colors[score] };
 }

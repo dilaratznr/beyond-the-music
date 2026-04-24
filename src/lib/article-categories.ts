@@ -24,23 +24,28 @@ export interface ArticleCategoryInfo {
   pill: string;
 }
 
+// Tüm kategoriler aynı editoryal pill stili (Dilara geri bildirimi:
+// "her yerde renkli pill istemiyorum"). Kategori farkını metin ayırt
+// ediyor; renk gerekli değil. Public tarafta ve admin'de tek ton.
+const CATEGORY_PILL = 'bg-zinc-900/40 text-zinc-300 border border-zinc-800';
+
 export const ARTICLE_CATEGORIES: ArticleCategoryInfo[] = [
-  { value: 'GENRE', labelTr: 'Tür', labelEn: 'Genre', pill: 'bg-blue-500/10 text-blue-300 border border-blue-500/20' },
-  { value: 'CULTURAL_IMPACT', labelTr: 'Kültürel Etki', labelEn: 'Cultural Impact', pill: 'bg-rose-500/10 text-rose-300 border border-rose-500/20' },
-  { value: 'SUBCULTURE', labelTr: 'Alt Kültür', labelEn: 'Subculture', pill: 'bg-violet-500/10 text-violet-300 border border-violet-500/20' },
-  { value: 'CURATED_MOVEMENT', labelTr: 'Küratöryel Akım', labelEn: 'Curated Movement', pill: 'bg-amber-500/10 text-amber-300 border border-amber-500/20' },
-  { value: 'THEORY', labelTr: 'Teori', labelEn: 'Theory', pill: 'bg-indigo-500/10 text-indigo-300 border border-indigo-500/20' },
-  { value: 'LISTENING_PATH', labelTr: 'Dinleme Rotası', labelEn: 'Listening Path', pill: 'bg-teal-500/10 text-teal-300 border border-teal-500/20' },
-  { value: 'AI_MUSIC', labelTr: 'Yapay Zeka Müziği', labelEn: 'AI Music', pill: 'bg-emerald-500/10 text-emerald-300 border border-emerald-500/20' },
-  { value: 'DEEP_CUT', labelTr: 'Deep Cut', labelEn: 'Deep Cut', pill: 'bg-fuchsia-500/10 text-fuchsia-300 border border-fuchsia-500/20' },
-  { value: 'FASHION', labelTr: 'Moda', labelEn: 'Fashion', pill: 'bg-pink-500/10 text-pink-300 border border-pink-500/20' },
+  { value: 'GENRE', labelTr: 'Tür', labelEn: 'Genre', pill: CATEGORY_PILL },
+  { value: 'CULTURAL_IMPACT', labelTr: 'Kültürel Etki', labelEn: 'Cultural Impact', pill: CATEGORY_PILL },
+  { value: 'SUBCULTURE', labelTr: 'Alt Kültür', labelEn: 'Subculture', pill: CATEGORY_PILL },
+  { value: 'CURATED_MOVEMENT', labelTr: 'Küratöryel Akım', labelEn: 'Curated Movement', pill: CATEGORY_PILL },
+  { value: 'THEORY', labelTr: 'Teori', labelEn: 'Theory', pill: CATEGORY_PILL },
+  { value: 'LISTENING_PATH', labelTr: 'Dinleme Rotası', labelEn: 'Listening Path', pill: CATEGORY_PILL },
+  { value: 'AI_MUSIC', labelTr: 'Yapay Zeka Müziği', labelEn: 'AI Music', pill: CATEGORY_PILL },
+  { value: 'DEEP_CUT', labelTr: 'Deep Cut', labelEn: 'Deep Cut', pill: CATEGORY_PILL },
+  { value: 'FASHION', labelTr: 'Moda', labelEn: 'Fashion', pill: CATEGORY_PILL },
 ];
 
 const FALLBACK: ArticleCategoryInfo = {
   value: 'GENRE',
   labelTr: '—',
   labelEn: '—',
-  pill: 'bg-zinc-800 text-zinc-300 border border-zinc-700',
+  pill: CATEGORY_PILL,
 };
 
 export function getArticleCategory(value: string | null | undefined): ArticleCategoryInfo {
