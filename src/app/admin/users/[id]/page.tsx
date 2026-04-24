@@ -37,14 +37,23 @@ export default function EditUserPage() {
   const { toast } = useToast();
 
   const [user, setUser] = useState<ApiUser | null>(null);
-  const [form, setForm] = useState<{ name: string; email: string; role: Role; password: string }>({
-    name: '', email: '', role: 'EDITOR', password: '',
+  const [form, setForm] = useState<{ name: string; email: string; role: Role }>({
+    name: '', email: '', role: 'EDITOR',
   });
-  const [showPassword, setShowPassword] = useState(false);
   const [permissions, setPermissions] = useState<Record<string, PermState>>(buildInitialPermissions());
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+
+  // Davet linkini yeniden göndermek için — resend-invite API'si hem
+  // email'i tetikler, hem de SMTP yoksa response'ta linki döndürür.
+  const [invitingId, setInvitingId] = useState(false);
+  const [resendResult, setResendResult] = useState<{
+    url: string;
+    emailSent: boolean;
+    emailError?: string;
+  } | null>(null);
+  const [resendCopied, setResendCopied] = useState(false);
 
   const isSuperAdmin = session?.user?.role === 'SUPER_ADMIN';
   const currentUserId = (session?.user as { id?: string } | undefined)?.id;
@@ -64,7 +73,7 @@ export default function EditUserPage() {
         return;
       }
       setUser(data);
-      setForm({ name: data.name, email: data.email, role: data.role, password: '' });
+      setForm({ name: data.name, email: data.email, role: data.role });
       const next = buildInitialPermissions();
       for (const p of data.permissions || []) {
         next[p.section] = {
@@ -97,13 +106,15 @@ export default function EditUserPage() {
         canPublish: v.canPublish,
       }));
 
+    // Şifre artık formda yok — super admin başka kullanıcının şifresini
+    // belirlemez. Değiştirmek isterse "Davet Linkini Yeniden Gönder"
+    // butonuyla kullanıcıya yeni şifre belirleme linki yollanır.
     const body: Record<string, unknown> = {
       name: form.name,
       email: form.email,
       role: form.role,
       permissions: form.role !== 'SUPER_ADMIN' ? permData : undefined,
     };
-    if (form.password) body.password = form.password;
 
     const res = await fetch(`/api/users/${id}`, {
       method: 'PUT',
@@ -206,32 +217,109 @@ export default function EditUserPage() {
               </div>
             </div>
 
-            <div>
-              <label htmlFor="user-password" className="block text-xs font-medium text-zinc-100 mb-1.5">
-                Yeni Şifre
-                <span className="text-zinc-500 font-normal ml-2">(boş bırakırsanız mevcut şifre korunur)</span>
-              </label>
-              <div className="relative">
-                <input
-                  id="user-password"
-                  type={showPassword ? 'text' : 'password'}
-                  value={form.password}
-                  onChange={(e) => setForm({ ...form, password: e.target.value })}
-                  className="w-full px-3 py-2.5 pr-16 text-sm bg-zinc-950 border border-zinc-800 hover:border-zinc-700 focus:border-zinc-500 rounded-lg focus:ring-2 focus:ring-zinc-500/20 outline-none text-zinc-100 placeholder:text-zinc-600"
-                  minLength={6}
-                  autoComplete="new-password"
-                  placeholder="••••••••"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword((v) => !v)}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 text-[11px] text-zinc-500 hover:text-zinc-100 px-2 py-1 rounded"
-                  aria-label={showPassword ? 'Şifreyi gizle' : 'Şifreyi göster'}
-                >
-                  {showPassword ? 'Gizle' : 'Göster'}
-                </button>
+          </div>
+        </section>
+
+        {/* Hesap erişimi — şifreyi kullanıcı kendi belirler. Super Admin
+            ancak yeni bir davet/reset linki üretebilir; kimsenin şifresini
+            elle koyamaz. */}
+        <section className="bg-zinc-900/40 rounded-lg border border-zinc-800 overflow-hidden">
+          <header className="px-5 py-3.5 border-b border-zinc-800 bg-zinc-900/60">
+            <h2 className="text-sm font-semibold text-zinc-100 tracking-tight">Hesap Erişimi</h2>
+            <p className="text-[11px] text-zinc-500 mt-0.5">
+              Şifre belirleme ve sıfırlama için davet linki gönder. Super Admin kullanıcının şifresini
+              doğrudan belirleyemez — güvenlik için herkes kendi şifresinden sorumludur.
+            </p>
+          </header>
+          <div className="p-5 space-y-4">
+            <div className="flex items-start justify-between gap-4 flex-wrap">
+              <div className="min-w-0">
+                <p className="text-sm text-zinc-200">
+                  {user.isActive
+                    ? 'Kullanıcıya 48 saat geçerli yeni bir şifre belirleme linki gönder.'
+                    : 'Hesap devre dışı olduğundan davet gönderilemez.'}
+                </p>
+                <p className="text-[11px] text-zinc-500 mt-1">
+                  Gönderildiğinde mevcut tüm aktif davet linkleri iptal olur.
+                </p>
               </div>
+              <button
+                type="button"
+                disabled={!user.isActive || invitingId}
+                onClick={async () => {
+                  setInvitingId(true);
+                  setResendResult(null);
+                  try {
+                    const res = await fetch(`/api/users/${id}/resend-invite`, { method: 'POST' });
+                    const data = await res.json();
+                    if (!res.ok) {
+                      toast(data.error || 'Davet gönderilemedi', 'error');
+                    } else {
+                      setResendResult(data.invite);
+                      toast(
+                        data.invite.emailSent
+                          ? 'Davet email olarak gönderildi'
+                          : 'Davet oluşturuldu — linki manuel ilet',
+                      );
+                    }
+                  } finally {
+                    setInvitingId(false);
+                  }
+                }}
+                className="shrink-0 px-4 py-2 bg-white text-zinc-950 text-xs font-semibold rounded-md hover:bg-zinc-200 disabled:opacity-50 transition-colors"
+              >
+                {invitingId ? 'Gönderiliyor…' : 'Davet Linki Yeniden Gönder'}
+              </button>
             </div>
+
+            {resendResult && (
+              <div
+                className={`p-4 rounded-md border ${
+                  resendResult.emailSent
+                    ? 'bg-emerald-500/10 border-emerald-500/30'
+                    : 'bg-amber-500/10 border-amber-500/30'
+                }`}
+              >
+                {resendResult.emailSent ? (
+                  <p className="text-sm text-emerald-300">
+                    Link <span className="font-medium">{user.email}</span> adresine gönderildi.
+                  </p>
+                ) : (
+                  <>
+                    <p className="text-sm text-amber-300 font-medium mb-1">
+                      Email gönderilemedi — linki manuel ilet.
+                    </p>
+                    <p className="text-[11px] text-amber-200/80 mb-3">
+                      {resendResult.emailError || 'SMTP yapılandırılmamış.'}
+                    </p>
+                  </>
+                )}
+                <div className="flex items-stretch gap-2">
+                  <input
+                    type="text"
+                    readOnly
+                    value={resendResult.url}
+                    onFocus={(e) => e.currentTarget.select()}
+                    className="flex-1 px-3 py-2 text-xs font-mono bg-zinc-950 border border-zinc-800 rounded-md text-zinc-100 outline-none"
+                  />
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      try {
+                        await navigator.clipboard.writeText(resendResult.url);
+                        setResendCopied(true);
+                        setTimeout(() => setResendCopied(false), 2000);
+                      } catch {
+                        toast('Link kopyalanamadı', 'error');
+                      }
+                    }}
+                    className="px-3 py-2 bg-white text-zinc-950 text-xs font-semibold rounded-md hover:bg-zinc-200 transition-colors whitespace-nowrap"
+                  >
+                    {resendCopied ? 'Kopyalandı' : 'Kopyala'}
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         </section>
 

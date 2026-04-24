@@ -3,7 +3,6 @@ import { revalidateTag } from 'next/cache';
 import prisma from '@/lib/prisma';
 import { requireAuth } from '@/lib/auth-guard';
 import { CACHE_TAGS } from '@/lib/db-cache';
-import bcrypt from 'bcryptjs';
 
 export async function GET(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { error } = await requireAuth('SUPER_ADMIN');
@@ -25,16 +24,16 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
 
   const { id } = await params;
   const body = await request.json();
-  const { name, email, role, isActive, password, permissions } = body;
+  // Password artık bu endpoint'ten kabul edilmiyor — Super Admin
+  // başkasının şifresini belirleyemez. Yeni şifre için "Davet Linki
+  // Yeniden Gönder" akışı kullanılır (/api/users/[id]/resend-invite).
+  const { name, email, role, isActive, permissions } = body;
 
   const updateData: Record<string, unknown> = {};
   if (name) updateData.name = name;
   if (email) updateData.email = email;
   if (role) updateData.role = role;
   if (typeof isActive === 'boolean') updateData.isActive = isActive;
-  if (password && password.length >= 6) {
-    updateData.password = await bcrypt.hash(password, 12);
-  }
 
   const user = await prisma.user.update({
     where: { id },

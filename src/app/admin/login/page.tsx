@@ -58,6 +58,16 @@ async function loginAction(formData: FormData) {
     redirect('/admin/login?error=invalid');
   }
 
+  // Davet edilmiş ama henüz şifre belirlememiş kullanıcı → bilgilendir.
+  // "invalid" dönersek kullanıcı ne olduğunu anlamaz; "invite-pending"
+  // ile davet email'ine/linkine bakmasını söyleriz.
+  if (user.mustSetPassword) {
+    redirect('/admin/login?error=invite-pending');
+  }
+  if (!user.isActive) {
+    redirect('/admin/login?error=disabled');
+  }
+
   const ok = await bcrypt.compare(password, user.password);
   if (!ok) {
     redirect('/admin/login?error=invalid');
@@ -103,6 +113,10 @@ function errorMessage(code?: string): string | null {
       return 'E-posta veya şifre hatalı.';
     case 'config':
       return 'Sunucu yapılandırması eksik (NEXTAUTH_SECRET). Yöneticiye bildirin.';
+    case 'invite-pending':
+      return 'Bu hesabın şifresi henüz belirlenmedi. E-posta ile gönderilen davet linkini kullan ya da yöneticine yeniden davet talep et.';
+    case 'disabled':
+      return 'Bu hesap devre dışı bırakılmış. Erişim için yöneticine başvur.';
     default:
       return null;
   }

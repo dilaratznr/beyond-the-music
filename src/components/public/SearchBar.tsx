@@ -68,14 +68,36 @@ export default function SearchBar({ locale }: { locale: string }) {
       return () => clearTimeout(t);
     }
 
+    // Hızlı yazarken yarışan fetch'leri iptal ediyoruz — önceki istek hala
+    // uçuşurken yenisi gelirse, eskisini AbortController ile öldürüyoruz.
+    // Debounce 400ms: kullanıcı yazarken her harfte ağ isteği oluşmuyor,
+    // yazma bittikten sonra bir istek atılıyor.
     clearTimeout(debounceRef.current);
+    const controller = new AbortController();
+
     debounceRef.current = setTimeout(async () => {
       setLoading(true);
-      const res = await fetch(`/api/search?q=${encodeURIComponent(query)}&locale=${locale}`);
-      const data = await res.json();
-      setResults(data.results || []);
-      setLoading(false);
-    }, 250);
+      try {
+        const res = await fetch(
+          `/api/search?q=${encodeURIComponent(query)}&locale=${locale}`,
+          { signal: controller.signal },
+        );
+        const data = await res.json();
+        setResults(data.results || []);
+      } catch (err) {
+        // AbortError — yeni bir fetch başladı, sonucu düşebiliriz
+        if ((err as Error).name !== 'AbortError') {
+          console.error('[search] fetch error:', err);
+        }
+      } finally {
+        if (!controller.signal.aborted) setLoading(false);
+      }
+    }, 400);
+
+    return () => {
+      clearTimeout(debounceRef.current);
+      controller.abort();
+    };
   }, [query, locale]);
 
   function getHref(r: Result) {
@@ -109,14 +131,19 @@ export default function SearchBar({ locale }: { locale: string }) {
             <label htmlFor="site-search-input" className="sr-only">
               {locale === 'tr' ? 'Site içi arama' : 'Site search'}
             </label>
+            {/* type="text" — type="search" olsa tarayıcı kendi `×`'ini
+                basıyor, custom clear ile yan yana 2 çarpı görünüyordu.
+                Clear butonunu biz kontrol ediyoruz, native'e gerek yok. */}
             <input
               id="site-search-input"
               ref={inputRef}
-              type="search"
+              type="text"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               aria-autocomplete="list"
               aria-controls="site-search-results"
+              autoComplete="off"
+              spellCheck={false}
               placeholder={locale === 'tr' ? 'Sanatçı, tür, makale…' : 'Search the archive…'}
               className="w-52 md:w-80 pl-8 pr-8 py-2 bg-white/[0.04] border border-white/10 rounded-full text-white text-[13px] placeholder-zinc-500 placeholder:italic focus:outline-none focus:border-white/30 focus:bg-white/[0.08] transition-all"
             />

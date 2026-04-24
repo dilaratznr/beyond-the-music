@@ -12,17 +12,23 @@ import { InlineLoading } from '@/components/admin/Loading';
 
 type Role = 'SUPER_ADMIN' | 'ADMIN' | 'EDITOR';
 
-function passwordStrength(pw: string): { score: number; label: string; color: string } {
-  if (!pw) return { score: 0, label: 'Şifre girin', color: 'bg-zinc-200' };
-  let score = 0;
-  if (pw.length >= 8) score++;
-  if (pw.length >= 12) score++;
-  if (/[A-Z]/.test(pw) && /[a-z]/.test(pw)) score++;
-  if (/\d/.test(pw)) score++;
-  if (/[^A-Za-z0-9]/.test(pw)) score++;
-  const labels = ['Çok zayıf', 'Zayıf', 'Orta', 'İyi', 'Güçlü', 'Çok güçlü'];
-  const colors = ['bg-red-400', 'bg-orange-400', 'bg-yellow-400', 'bg-lime-400', 'bg-emerald-500', 'bg-emerald-600'];
-  return { score, label: labels[score], color: colors[score] };
+/**
+ * Davet akışı (Dilara geri bildirimi: "super admin'in admin şifresini
+ * belirlemesi profesyonel değil"). Yeni kullanıcı oluştururken şifre
+ * alanı yok — backend random placeholder set ediyor ve mustSetPassword
+ * bayrağıyla login'i blokluyor. Oluşturma başarılı olunca backend
+ * davet URL'ini dönüyor; email gönderildiyse sadece onay gösteriyoruz,
+ * gönderilmediyse linki modal'da copy-paste ile Super Admin'e sunuyoruz.
+ */
+
+interface InviteResponse {
+  user: { id: string; email: string; name: string };
+  invite: {
+    url: string;
+    expiresAt: string;
+    emailSent: boolean;
+    emailError?: string;
+  };
 }
 
 export default function NewUserPage() {
@@ -30,21 +36,20 @@ export default function NewUserPage() {
   const { data: session, status } = useSession();
   const { toast } = useToast();
 
-  const [form, setForm] = useState<{ name: string; email: string; password: string; role: Role }>({
-    name: '', email: '', password: '', role: 'EDITOR',
+  const [form, setForm] = useState<{ name: string; email: string; role: Role }>({
+    name: '', email: '', role: 'EDITOR',
   });
-  const [showPassword, setShowPassword] = useState(false);
   const [permissions, setPermissions] = useState<Record<string, PermState>>(buildInitialPermissions());
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [invite, setInvite] = useState<InviteResponse | null>(null);
+  const [copied, setCopied] = useState(false);
 
   const isSuperAdmin = session?.user?.role === 'SUPER_ADMIN';
   useEffect(() => {
     if (status === 'loading') return;
     if (!isSuperAdmin) router.replace('/admin/dashboard');
   }, [status, isSuperAdmin, router]);
-
-  const strength = passwordStrength(form.password);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -73,13 +78,117 @@ export default function NewUserPage() {
       setError(data.error || 'Kullanıcı oluşturulamadı');
       toast(data.error || 'Hata', 'error');
     } else {
-      toast('Kullanıcı oluşturuldu');
-      router.push('/admin/users');
+      setInvite(data as InviteResponse);
+      toast(
+        (data as InviteResponse).invite.emailSent
+          ? 'Kullanıcı oluşturuldu, davet email olarak gönderildi'
+          : 'Kullanıcı oluşturuldu — daveti manuel iletmen gerekiyor',
+      );
+    }
+  }
+
+  async function copyInviteUrl() {
+    if (!invite) return;
+    try {
+      await navigator.clipboard.writeText(invite.invite.url);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      toast('Link kopyalanamadı, elle seç', 'error');
     }
   }
 
   if (status === 'loading' || !isSuperAdmin) {
     return <InlineLoading />;
+  }
+
+  // Başarı sonrası davet sonuç ekranı
+  if (invite) {
+    return (
+      <div className="max-w-2xl">
+        <nav className="flex items-center gap-2 text-xs text-zinc-500 mb-3">
+          <Link href="/admin/users" className="hover:text-zinc-100 transition-colors">
+            Kullanıcılar
+          </Link>
+          <span className="text-zinc-700">/</span>
+          <span className="text-zinc-300 font-medium">Davet Gönderildi</span>
+        </nav>
+
+        <div className="mb-6">
+          <h1 className="text-xl font-semibold text-zinc-100 tracking-tight">
+            {invite.invite.emailSent ? 'Davet Email Gönderildi' : 'Davet Oluşturuldu'}
+          </h1>
+          <p className="text-[13px] text-zinc-500 mt-1">
+            <span className="text-zinc-300 font-medium">{invite.user.name}</span> ·{' '}
+            <span className="font-mono">{invite.user.email}</span>
+          </p>
+        </div>
+
+        {invite.invite.emailSent ? (
+          <div className="p-4 bg-emerald-500/10 border border-emerald-500/30 rounded-lg mb-4">
+            <p className="text-sm text-emerald-300">
+              Davet linki <span className="font-medium">{invite.user.email}</span> adresine
+              gönderildi. Link 48 saat geçerlidir.
+            </p>
+          </div>
+        ) : (
+          <div className="p-4 bg-amber-500/10 border border-amber-500/30 rounded-lg mb-4 space-y-2">
+            <p className="text-sm text-amber-300 font-medium">
+              Email gönderilemedi — SMTP yapılandırılmamış.
+            </p>
+            <p className="text-xs text-amber-200/80 leading-relaxed">
+              Aşağıdaki linki kopyalayıp kullanıcıya manuel ilet. Link 48 saat geçerli.
+              Prod&apos;da SMTP kurarsan bu adım otomatikleşir.
+            </p>
+          </div>
+        )}
+
+        <div className="bg-zinc-900/40 border border-zinc-800 rounded-lg p-4 space-y-2">
+          <label className="text-[10px] uppercase tracking-wider font-semibold text-zinc-500">
+            Davet Linki
+          </label>
+          <div className="flex items-stretch gap-2">
+            <input
+              type="text"
+              readOnly
+              value={invite.invite.url}
+              onFocus={(e) => e.currentTarget.select()}
+              className="flex-1 px-3 py-2 text-xs font-mono bg-zinc-950 border border-zinc-800 rounded-md text-zinc-100 outline-none"
+            />
+            <button
+              type="button"
+              onClick={copyInviteUrl}
+              className="px-3 py-2 bg-white text-zinc-950 text-xs font-semibold rounded-md hover:bg-zinc-200 transition-colors whitespace-nowrap"
+            >
+              {copied ? 'Kopyalandı' : 'Kopyala'}
+            </button>
+          </div>
+          <p className="text-[10px] text-zinc-500">
+            Kullanıcı bu linke tıklayınca kendi şifresini belirler ve hesabı aktifleşir.
+          </p>
+        </div>
+
+        <div className="flex items-center justify-end gap-3 pt-6">
+          <button
+            type="button"
+            onClick={() => {
+              setInvite(null);
+              setForm({ name: '', email: '', role: 'EDITOR' });
+              setPermissions(buildInitialPermissions());
+            }}
+            className="px-4 py-2.5 text-sm text-zinc-300 hover:text-zinc-100 font-medium transition-colors"
+          >
+            Başka Kullanıcı Oluştur
+          </button>
+          <Link
+            href="/admin/users"
+            className="px-5 py-2.5 bg-white text-zinc-950 rounded-lg text-sm font-medium hover:bg-zinc-200 transition-colors shadow-sm"
+          >
+            Kullanıcı Listesine Dön
+          </Link>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -96,7 +205,8 @@ export default function NewUserPage() {
       <div className="mb-6">
         <h1 className="text-xl font-semibold text-zinc-100 tracking-tight">Yeni Kullanıcı</h1>
         <p className="text-[13px] text-zinc-500 mt-0.5">
-          Yeni bir admin veya editör hesabı oluşturun ve bölüm bazlı yetki verin.
+          Yeni bir admin veya editör hesabı oluşturun ve bölüm bazlı yetki verin. Kullanıcı
+          kendi şifresini davet linkinden belirleyecek.
         </p>
       </div>
 
@@ -112,7 +222,7 @@ export default function NewUserPage() {
           <header className="px-5 py-3.5 border-b border-zinc-800 bg-zinc-900/60">
             <h2 className="text-sm font-semibold text-zinc-100 tracking-tight">Temel Bilgiler</h2>
             <p className="text-[11px] text-zinc-500 mt-0.5">
-              Giriş için gerekli bilgiler. E-posta benzersiz olmalı.
+              E-posta benzersiz olmalı. Bu adrese 48 saat geçerli davet linki gönderilir.
             </p>
           </header>
           <div className="p-5 space-y-4">
@@ -146,40 +256,22 @@ export default function NewUserPage() {
                 />
               </div>
             </div>
-            <div>
-              <label htmlFor="user-password" className="block text-xs font-medium text-zinc-100 mb-1.5">
-                Şifre <span className="text-red-500">*</span>
-                <span className="text-zinc-500 font-normal ml-2">(en az 8 karakter önerilir)</span>
-              </label>
-              <div className="relative">
-                <input
-                  id="user-password"
-                  type={showPassword ? 'text' : 'password'}
-                  value={form.password}
-                  onChange={(e) => setForm({ ...form, password: e.target.value })}
-                  className="w-full px-3 py-2.5 pr-16 text-sm bg-zinc-950 border border-zinc-800 hover:border-zinc-700 focus:border-zinc-500 rounded-lg focus:ring-2 focus:ring-zinc-500/20 outline-none text-zinc-100 placeholder:text-zinc-600"
-                  required
-                  minLength={6}
-                  autoComplete="new-password"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword((v) => !v)}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 text-[11px] text-zinc-500 hover:text-zinc-100 px-2 py-1 rounded"
-                  aria-label={showPassword ? 'Şifreyi gizle' : 'Şifreyi göster'}
-                >
-                  {showPassword ? 'Gizle' : 'Göster'}
-                </button>
-              </div>
-              {/* Strength meter */}
-              <div className="mt-2 flex items-center gap-2">
-                <div className="flex-1 h-1.5 bg-zinc-800 rounded-full overflow-hidden">
-                  <div
-                    className={`h-full transition-all ${strength.color}`}
-                    style={{ width: `${(strength.score / 5) * 100}%` }}
-                  />
-                </div>
-                <span className="text-[10px] text-zinc-500 min-w-[70px] text-right">{strength.label}</span>
+
+            {/* Şifre yok artık — açıklayıcı bilgi kutusu */}
+            <div className="flex items-start gap-3 p-3 bg-zinc-950 border border-zinc-800 rounded-md">
+              <span className="flex-shrink-0 w-6 h-6 rounded bg-zinc-800 text-zinc-400 flex items-center justify-center text-[11px] font-semibold mt-0.5">
+                ✓
+              </span>
+              <div className="text-[11px] text-zinc-400 leading-relaxed">
+                <p className="text-zinc-200 font-semibold mb-0.5">
+                  Şifreyi kullanıcı kendisi belirler
+                </p>
+                <p>
+                  Bu e-postaya <strong className="text-zinc-300">48 saat geçerli</strong> bir
+                  davet linki gönderilir. Kullanıcı linke tıklayıp kendi şifresini belirleyince
+                  hesabı aktifleşir. SMTP ayarlanmamışsa link sana gösterilir ve manuel
+                  iletirsin.
+                </p>
               </div>
             </div>
           </div>
@@ -236,7 +328,7 @@ export default function NewUserPage() {
             disabled={loading}
             className="px-5 py-2.5 bg-white text-zinc-950 rounded-lg text-sm font-medium hover:bg-zinc-200 disabled:opacity-50 transition-colors shadow-sm"
           >
-            {loading ? 'Oluşturuluyor…' : 'Kullanıcı Oluştur'}
+            {loading ? 'Davet gönderiliyor…' : 'Davet Gönder'}
           </button>
         </div>
       </form>

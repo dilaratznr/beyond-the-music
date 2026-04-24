@@ -73,11 +73,18 @@ enum MediaType {
 model User {
   id          String           @id @default(cuid())
   email       String           @unique
+  /// Bcrypt hash. Davet akışında Super Admin kullanıcı oluştururken
+  /// şifre vermiyor — yerine rastgele bir placeholder hash kaydediyoruz
+  /// ve `mustSetPassword=true` ile login'i bloke ediyoruz. Kullanıcı
+  /// davet linkinden kendi şifresini belirliyor.
   password    String
   name        String
   role        Role             @default(EDITOR)
   avatar      String?
   isActive    Boolean          @default(true)
+  /// true ise NextAuth authorize() login'e izin vermez. Davet kabul
+  /// edilince false'a çekilir.
+  mustSetPassword Boolean      @default(false) @map("must_set_password")
   createdAt   DateTime         @default(now())
   updatedAt   DateTime         @updatedAt
   articles    Article[]
@@ -87,6 +94,29 @@ model User {
   // ("reviewedReviews") görür. İkisi ayrı relation name ile.
   submittedReviews ContentReview[] @relation("ReviewSubmitter")
   reviewedReviews  ContentReview[] @relation("ReviewReviewer")
+  // Davet akışı ilişkileri
+  invitations      UserInvitation[] @relation("InvitationTarget")
+  invitationsSent  UserInvitation[] @relation("InvitationSender")
+}
+
+/// Super Admin tarafından yeni hesap oluşturulduğunda üretilen davet
+/// token'ı. PasswordResetToken ile aynı pattern: tokenHash saklanır,
+/// raw token asla DB'de tutulmaz, expires + usedAt ile tek seferlik.
+/// Aynı kullanıcıya birden fazla davet gönderilebilir (resend) — her
+/// yeni davet öncekilerini "usedAt=now" ile geçersiz kılar.
+model UserInvitation {
+  id            String   @id @default(cuid())
+  tokenHash     String   @unique @map("token_hash")
+  userId        String   @map("user_id")
+  user          User     @relation("InvitationTarget", fields: [userId], references: [id], onDelete: Cascade)
+  invitedById   String   @map("invited_by_id")
+  invitedBy     User     @relation("InvitationSender", fields: [invitedById], references: [id])
+  expiresAt     DateTime @map("expires_at")
+  usedAt        DateTime? @map("used_at")
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  @@index([userId])
+  @@index([expiresAt])
 }
 
 model UserPermission {

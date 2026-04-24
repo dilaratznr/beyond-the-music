@@ -24,6 +24,20 @@ export const authOptions: AuthOptions = {
           return null;
         }
 
+        // Davet akışı bekleyen hesap — şifre hiçbir zaman set edilmedi,
+        // placeholder hash'le doldurulmuş. Bcrypt compare bile doğruyu
+        // söyleyemeyecek kadar güçsüz bir güvenlik olurdu (teorik olarak
+        // random hash ile çakışma sıfır, ama yine de açıkça blokluyoruz).
+        if (user.mustSetPassword) {
+          // NextAuth Credentials provider hata mesajı kullanıcıya iletmeye
+          // izin verir — login sayfası özel bir uyarı gösterebilir.
+          throw new Error('INVITE_PENDING');
+        }
+
+        if (!user.isActive) {
+          throw new Error('ACCOUNT_DISABLED');
+        }
+
         const isValid = await bcrypt.compare(credentials.password, user.password);
 
         if (!isValid) {

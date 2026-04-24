@@ -308,7 +308,7 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
       <section className="scene py-20 bg-[#111113] text-white">
         <div className="scene-inner max-w-[1480px] mx-auto px-6 lg:px-10 xl:px-14">
           <div className="text-center mb-14 gsap-fade-up">
-            <p className="text-[10px] uppercase tracking-[0.4em] text-zinc-400 font-bold mb-2">Discover</p>
+            <p className="text-[10px] uppercase tracking-[0.4em] text-zinc-400 font-bold mb-2">{tr ? 'Keşfet' : 'Discover'}</p>
             <h2 className="text-3xl md:text-5xl font-black font-editorial tracking-[-0.03em] gsap-title-reveal">{tr ? 'Keşfet' : 'Explore'}</h2>
           </div>
           <div className="gsap-stagger grid md:grid-cols-3 gap-4">

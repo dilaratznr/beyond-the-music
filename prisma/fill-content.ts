@@ -469,7 +469,9 @@ async function main() {
     descriptionTr: "Black Sabbath'tan Metallica'ya, Iron Maiden'dan Slayer'a — heavy metalin temel taşlarına bir yolculuk.",
     descriptionEn: "From Black Sabbath to Metallica, Iron Maiden to Slayer — a journey through heavy metal's cornerstones.",
     type: 'INTRO',
-    image: 'https://images.unsplash.com/photo-1551847812-f815b31ee158?w=800&q=80',
+    // Elektro gitar silüeti — Unsplash'ın en stabil "rock/metal" görselleri
+    // arasında. Eski ID (1551847812) zaman zaman 404 dönüyordu.
+    image: 'https://images.unsplash.com/photo-1459749411175-04bf5292ceea?w=1200&q=80',
   });
 
   await upsertListeningPath({
