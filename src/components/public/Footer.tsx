@@ -17,8 +17,8 @@ export default function Footer({ locale, dict }: FooterProps) {
             </div>
             <p className="text-sm leading-relaxed max-w-md">
               {locale === 'tr'
-                ? 'Müziğin ötesindeki kültürü keşfeden küratöryel platform. Bir arşiv. Bir atlas. Bir kürasyon.'
-                : 'A curatorial platform exploring the culture beyond music. An archive. An atlas. A curation.'}
+                ? 'Müziğin ötesindeki kültürü keşfeden platform. Bir arşiv. Bir atlas. Bir kürasyon.'
+                : 'A platform exploring the culture beyond music. An archive. An atlas. A curation.'}
             </p>
           </div>
           <div>

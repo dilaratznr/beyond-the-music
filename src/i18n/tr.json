@@ -10,7 +10,7 @@
   },
   "home": {
     "hero_title": "BEYOND THE MUSIC",
-    "hero_subtitle": "Küratöryel Müzik Platformu",
+    "hero_subtitle": "Müzik Platformu",
     "hero_desc1": "Müziğin ötesindeki kültürü keşfet.",
     "hero_desc2": "Türler, sanatçılar, hikayeler.",
     "hero_desc3": "Bir arşiv. Bir atlas. Bir kürasyon.",
@@ -60,7 +60,7 @@
   },
   "listeningPaths": {
     "title": "Dinleme Rotaları",
-    "description": "Kronoloji yerine deneyim odaklı küratöryel dinleme yolculukları",
+    "description": "Kronoloji yerine deneyim odaklı dinleme yolculukları",
     "emotion": "Duygu odaklı diziler",
     "era": "Dönem keşifleri",
     "city": "Şehir ses rotaları",

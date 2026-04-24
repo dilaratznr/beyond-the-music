@@ -40,7 +40,7 @@ export default async function ListeningPathsPage({ params }: { params: Promise<{
   return (
     <div className="bg-[#0a0a0b] text-white min-h-screen">
       <PageHero
-        eyebrow={tr ? 'Küratöryel Yolculuklar' : 'Curated Journeys'}
+        eyebrow={tr ? 'Dinleme Yolculukları' : 'Listening Journeys'}
         title={dict.listeningPaths.title}
         subtitle={dict.listeningPaths.description}
         meta={
@@ -103,7 +103,7 @@ export default async function ListeningPathsPage({ params }: { params: Promise<{
         ) : (
           <EmptyState
             title={tr ? 'Henüz dinleme rotası yok.' : 'No listening paths yet.'}
-            hint={tr ? 'Küratöryel yolculuklar — yakında' : 'Curated journeys — soon'}
+            hint={tr ? 'Dinleme yolculukları — yakında' : 'Listening journeys — soon'}
           />
         )}
       </div>

@@ -197,8 +197,8 @@ async function main() {
   const settings = [
     { key: 'hero_title_tr', value: 'BEYOND THE MUSIC' },
     { key: 'hero_title_en', value: 'BEYOND THE MUSIC' },
-    { key: 'hero_subtitle_tr', value: 'Küratöryel Müzik Platformu' },
-    { key: 'hero_subtitle_en', value: 'Curatorial Music Platform' },
+    { key: 'hero_subtitle_tr', value: 'Müzik Platformu' },
+    { key: 'hero_subtitle_en', value: 'Music Platform' },
     { key: 'hero_desc_tr', value: 'Müziğin ötesindeki kültürü keşfet.\nTürler, sanatçılar, hikayeler.\nBir arşiv. Bir atlas. Bir kürasyon.' },
     { key: 'hero_desc_en', value: 'Discover the culture beyond music.\nGenres, artists, stories.\nAn archive. An atlas. A curation.' },
     { key: 'hero_poster_url', value: 'https://images.unsplash.com/photo-1459749411175-04bf5292ceea?w=1920&q=80' },

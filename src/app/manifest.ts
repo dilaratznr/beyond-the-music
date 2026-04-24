@@ -15,10 +15,10 @@ import type { MetadataRoute } from 'next';
  */
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: 'Beyond The Music — Küratöryel Müzik Platformu',
+    name: 'Beyond The Music — Müzik Platformu',
     short_name: 'Beyond The Music',
     description:
-      'Müziğin ötesindeki kültürü keşfeden küratöryel platform. Türler, sanatçılar, mimarlar, teori ve dinleme rotaları.',
+      'Müziğin ötesindeki kültürü keşfeden platform. Türler, sanatçılar, mimarlar, teori ve dinleme rotaları.',
     start_url: '/',
     display: 'standalone',
     background_color: '#0a0a0b',

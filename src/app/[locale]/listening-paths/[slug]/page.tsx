@@ -144,7 +144,11 @@ export default async function ListeningPathDetailPage({
             <span className="mx-1">/</span>
             <span className="text-white font-medium">{title}</span>
           </div>
-          <span className="inline-block px-2.5 py-0.5 bg-emerald-500/15 text-emerald-400 text-[10px] font-bold uppercase tracking-widest rounded-full mb-3">
+          {/* Önceden bg-emerald-500/15 + text-emerald-400 idi — Dilara:
+              "yesil cok ai duruyor". Nötr editoryel pill'e çevrildi,
+              sitenin geri kalanındaki pill dili ile (meta/tag'lerle)
+              aynı ton: beyaz üzerine saydam, ince kenarlık. */}
+          <span className="inline-block px-2.5 py-0.5 bg-white/[0.06] border border-white/15 text-zinc-200 text-[10px] font-bold uppercase tracking-widest rounded-full mb-3">
             {typeLabels[path.type] || path.type}
           </span>
           <h1 className="text-3xl md:text-5xl font-bold text-white mb-4">
@@ -197,9 +201,9 @@ export default async function ListeningPathDetailPage({
               }
 
               const content = (
-                <div className="flex gap-4 items-start p-4 bg-zinc-900/60 rounded-xl border border-white/5 hover:border-emerald-500/30 transition-colors">
+                <div className="flex gap-4 items-start p-4 bg-zinc-900/60 rounded-xl border border-white/5 hover:border-white/20 transition-colors">
                   <div className="flex-shrink-0 w-10 text-center">
-                    <span className="text-xl font-bold text-emerald-500/70">
+                    <span className="text-xl font-bold text-zinc-500">
                       {String(idx + 1).padStart(2, '0')}
                     </span>
                   </div>
@@ -235,7 +239,7 @@ export default async function ListeningPathDetailPage({
                             href={item.song.spotifyUrl}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="text-xs text-emerald-400 hover:underline"
+                            className="text-xs text-zinc-300 hover:text-white hover:underline"
                             onClick={(e) => e.stopPropagation()}
                           >
                             Spotify →

@@ -55,7 +55,7 @@ export default function AuthLayout({
           </h2>
           <p className="text-sm text-zinc-400 leading-relaxed">
             {subtitle ??
-              'Türler, sanatçılar, makaleler ve dinleme rotaları — küratöryel platformun arka odası. Sadece yetkili kullanıcılar erişebilir.'}
+              'Türler, sanatçılar, makaleler ve dinleme rotaları — platformun arka odası. Sadece yetkili kullanıcılar erişebilir.'}
           </p>
         </div>
 

@@ -6,11 +6,11 @@ const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://beyondthemusic.app
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: {
-    default: "Beyond The Music — Küratöryel Müzik Platformu",
+    default: "Beyond The Music — Müzik Platformu",
     template: "%s | Beyond The Music",
   },
   description:
-    "Müziğin ötesindeki kültürü keşfeden küratöryel platform. Türler, sanatçılar, mimarlar, teori ve dinleme rotaları.",
+    "Müziğin ötesindeki kültürü keşfeden platform. Türler, sanatçılar, mimarlar, teori ve dinleme rotaları.",
   keywords: [
     "müzik",
     "kültür",
@@ -42,16 +42,16 @@ export const metadata: Metadata = {
     locale: "tr_TR",
     alternateLocale: "en_US",
     siteName: "Beyond The Music",
-    title: "Beyond The Music — Küratöryel Müzik Platformu",
+    title: "Beyond The Music — Müzik Platformu",
     description:
-      "Müziğin ötesindeki kültürü keşfeden küratöryel platform.",
+      "Müziğin ötesindeki kültürü keşfeden platform.",
     url: SITE_URL,
   },
   twitter: {
     card: "summary_large_image",
     title: "Beyond The Music",
     description:
-      "Müziğin ötesindeki kültürü keşfeden küratöryel platform.",
+      "Müziğin ötesindeki kültürü keşfeden platform.",
   },
   robots: {
     index: true,

@@ -7,6 +7,25 @@ import { notFound } from 'next/navigation';
 import { isSectionEnabled } from '@/lib/site-sections';
 import PageHero from '@/components/public/PageHero';
 import EmptyState from '@/components/public/EmptyState';
+import CardImage from '@/components/public/CardImage';
+
+// Kart arka plan paleti — görseli olmayan makaleler için stabil, slug
+// hash'iyle seçilen gradient. Her kart benzersiz bir "üretilmiş" görünüm
+// alıyor; düz boş alan yerine editoryel his.
+const FALLBACK_PALETTES = [
+  'from-zinc-800 via-zinc-900 to-zinc-950',
+  'from-indigo-900/60 via-zinc-900 to-zinc-950',
+  'from-rose-900/50 via-zinc-900 to-zinc-950',
+  'from-emerald-900/50 via-zinc-900 to-zinc-950',
+  'from-amber-900/45 via-zinc-900 to-zinc-950',
+  'from-cyan-900/50 via-zinc-900 to-zinc-950',
+  'from-purple-900/50 via-zinc-900 to-zinc-950',
+];
+function paletteForSlug(slug: string): string {
+  let h = 0;
+  for (let i = 0; i < slug.length; i++) h = (h * 31 + slug.charCodeAt(i)) >>> 0;
+  return FALLBACK_PALETTES[h % FALLBACK_PALETTES.length];
+}
 
 export default async function TheoryPage({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params;
@@ -46,20 +65,29 @@ export default async function TheoryPage({ params }: { params: Promise<{ locale:
       <div className="max-w-[1480px] mx-auto px-6 lg:px-10 xl:px-14 py-12 md:py-16">
         {articles.length > 0 ? (
           <div className="gsap-stagger grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {articles.map((a) => (
-              <Link key={a.id} href={`/${locale}/article/${a.slug}`}
-                className="group relative block rounded-xl overflow-hidden bg-white/[0.02] border border-white/5 hover:bg-white/[0.05] transition-colors">
-                {a.featuredImage && (
-                  <div className="overflow-hidden">
-                    <img src={a.featuredImage} alt="" className="w-full h-40 object-cover opacity-60 group-hover:opacity-80 transition-opacity duration-500" />
+            {articles.map((a) => {
+              const title = tr ? a.titleTr : a.titleEn;
+              return (
+                <Link key={a.id} href={`/${locale}/article/${a.slug}`}
+                  className="group relative block rounded-xl overflow-hidden bg-white/[0.02] border border-white/5 hover:bg-white/[0.05] transition-colors">
+                  {/* Görsel eksikse artık boş alan değil, CardImage fallback
+                      (gradient + watermark harf) — Dilara "bazi seylerde
+                      gorsel yok, onlara da gorsel koysun" geri bildirimi. */}
+                  <div className="relative w-full h-40 overflow-hidden bg-zinc-900">
+                    <CardImage
+                      src={a.featuredImage}
+                      letter={title?.charAt(0) ?? '♪'}
+                      gradientClass={paletteForSlug(a.slug)}
+                      imgClassName="opacity-60 group-hover:opacity-80 transition-opacity duration-500"
+                    />
                   </div>
-                )}
-                <div className="p-5">
-                  <h3 className="text-sm font-bold group-hover:underline">{tr ? a.titleTr : a.titleEn}</h3>
-                  <p className="text-[10px] text-zinc-500 mt-2">{a.author.name}</p>
-                </div>
-              </Link>
-            ))}
+                  <div className="p-5">
+                    <h3 className="text-sm font-bold group-hover:underline">{title}</h3>
+                    <p className="text-[10px] text-zinc-500 mt-2">{a.author.name}</p>
+                  </div>
+                </Link>
+              );
+            })}
           </div>
         ) : (
           <EmptyState

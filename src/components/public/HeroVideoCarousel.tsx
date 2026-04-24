@@ -4,9 +4,28 @@ import { useState, useEffect, useRef } from 'react';
 
 interface Video { id: string; url: string; duration: number; }
 
+/**
+ * Hero video carousel.
+ *
+ * Dilara geri bildirimi (2026-04-23): "site acilirken bi gorsel geliyo
+ * 1 sn lik orda bug var" — açılışta fallback/poster imajı ~1 saniye
+ * flash edip sonra video alıyordu. Sebep: <video poster={...}> ile
+ * Unsplash'tan gelen default poster, video ilk frame'i decode edene
+ * kadar ekranda duruyordu. Bu görseli hiç kullanıcı istemedi (admin
+ * video ekledi), sadece loading state'iydi → flash gibi görünüyor.
+ *
+ * Çözüm:
+ *   1. Video varken `poster` GEÇILMIYOR → beyaz/görsel flash yok,
+ *      container'ın altındaki siyah arka plan (page bg) görünür.
+ *   2. `preload="auto"` + ilk video için `fetchpriority=high` → ilk
+ *      frame ~200ms içinde paint, siyah ekran süresi minimum.
+ *   3. Fallback <img> yolu (hiç video yoksa) aynen kaldı — admin video
+ *      eklemediyse kullanıcının görmesi gereken şey bu görsel zaten.
+ */
 export default function HeroVideoCarousel({ videos, fallbackImage }: { videos: Video[]; fallbackImage: string }) {
   const [current, setCurrent] = useState(0);
   const [fading, setFading] = useState(false);
+  const [videoReady, setVideoReady] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
   const timerRef = useRef<NodeJS.Timeout>(undefined);
 
@@ -32,6 +51,7 @@ export default function HeroVideoCarousel({ videos, fallbackImage }: { videos: V
 
   // Reset video when current changes
   useEffect(() => {
+    setVideoReady(false);
     if (videoRef.current) {
       videoRef.current.load();
       videoRef.current.play().catch(() => {});
@@ -46,12 +66,18 @@ export default function HeroVideoCarousel({ videos, fallbackImage }: { videos: V
 
   return (
     <>
+      {/* Video ilk frame'e gelene kadar düz siyah — böylece poster
+          flash'ı (Unsplash default'u) görünmüyor. Aynı sahnenin arka
+          plan rengiyle hizalı, hiçbir "yüklendi mi?" hissi yaratmıyor. */}
+      <div className="absolute inset-0 bg-[#0a0a0b]" aria-hidden="true" />
       <video
         ref={videoRef}
         autoPlay muted loop={activeVideos.length === 1} playsInline
+        preload="auto"
+        onCanPlay={() => setVideoReady(true)}
+        onLoadedData={() => setVideoReady(true)}
         className="w-full h-full object-cover transition-opacity duration-500"
-        style={{ opacity: fading ? 0 : 1 }}
-        poster={fallbackImage}
+        style={{ opacity: fading ? 0 : videoReady ? 1 : 0 }}
       >
         <source src={src} type="video/mp4" />
       </video>

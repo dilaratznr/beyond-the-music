@@ -197,8 +197,8 @@ export default function SettingsPage() {
             lang={lang}
             settings={settings}
             update={update}
-            placeholderTr="örn. Küratöryel Müzik Platformu"
-            placeholderEn="e.g. Curatorial Music Platform"
+            placeholderTr="örn. Müzik Platformu"
+            placeholderEn="e.g. Music Platform"
             help="Başlığın üstünde küçük, büyük harfli bir satır olarak görünür."
           />
 
@@ -611,7 +611,7 @@ function TypographyPicker({
             className="text-[11px] uppercase tracking-[0.2em] text-zinc-500"
             style={{ fontFamily: getFontFamilyCss(bodyValue) }}
           >
-            Küratöryel Müzik Platformu
+            Müzik Platformu
           </p>
           <h3
             className="text-3xl md:text-4xl font-bold leading-none"
@@ -624,7 +624,7 @@ function TypographyPicker({
             style={{ fontFamily: getFontFamilyCss(bodyValue) }}
           >
             Müziğin ötesindeki kültürü keşfet. Türler, sanatçılar, hikayeler ve müziğin arkasındaki
-            mimarlar — tek bir küratöryel akışta.
+            mimarlar — tek bir akışta.
           </p>
           <div className="flex gap-2 pt-2">
             <span

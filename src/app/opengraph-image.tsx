@@ -14,14 +14,14 @@ import { renderOgCard, OG_SIZE, OG_CONTENT_TYPE } from '@/lib/og-card';
 
 export const size = OG_SIZE;
 export const contentType = OG_CONTENT_TYPE;
-export const alt = 'Beyond The Music — Küratöryel Müzik Platformu';
+export const alt = 'Beyond The Music — Müzik Platformu';
 
 export default function Image() {
   return new ImageResponse(
     renderOgCard({
-      eyebrow: 'Curated Music Platform',
+      eyebrow: 'Music Platform',
       title: 'Beyond The Music',
-      subtitle: 'Müziğin ötesindeki kültürü keşfeden küratöryel platform.',
+      subtitle: 'Müziğin ötesindeki kültürü keşfeden platform.',
     }),
     size,
   );

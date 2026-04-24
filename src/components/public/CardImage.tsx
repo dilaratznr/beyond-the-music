@@ -33,6 +33,25 @@ interface CardImageProps {
    *  dolduruyoruz. */
 }
 
+// Fallback'in radial spot pozisyonu harfi hash'lemekle belirleniyor —
+// her kart aynı harfte aynı görüntüyü alıyor, ama A/B/C farklı köşeden
+// ışık alıyor. Sonuç: 26 farklı "üretilmiş" kapak hissi, düz bir
+// letter-on-gradient yerine.
+const SPOT_POSITIONS = [
+  '20% 25%',
+  '78% 20%',
+  '30% 78%',
+  '72% 72%',
+  '50% 30%',
+  '50% 75%',
+  '22% 55%',
+  '80% 50%',
+];
+function spotForLetter(letter: string): string {
+  const code = letter.toUpperCase().charCodeAt(0) || 0;
+  return SPOT_POSITIONS[code % SPOT_POSITIONS.length];
+}
+
 export function CardImage({
   src,
   letter,
@@ -42,12 +61,36 @@ export function CardImage({
 }: CardImageProps) {
   const [failed, setFailed] = useState(false);
   const showImage = !!src && !failed;
+  const spot = spotForLetter(letter || '♪');
 
   return (
     <>
       {/* Fallback — her zaman render, görsel üstüne biniyor. Görsel
-          yüklenemezse ortaya çıkıyor. */}
-      <div className={`absolute inset-0 bg-gradient-to-br ${gradientClass}`} aria-hidden="true">
+          yüklenemezse (null src, 404, kırık URL) ortaya çıkıyor.
+          Dilara "bazi seylerde gorsel yok, onlara da gorsel koysun ai
+          koyar" geri bildirimine karşılık düz bir gradient+harf yerine
+          3 katmanlı üretilmiş-kapak hissi veriyoruz:
+            1) Ana gradient (slug hash'iyle renk seçilmiş)
+            2) Harfe göre değişen radial spotlight (sanki ışık düşmüş gibi)
+            3) Hafif çapraz tarama — editoryel doku, düz alan hissini
+               kırıyor. */}
+      <div
+        className={`absolute inset-0 bg-gradient-to-br ${gradientClass}`}
+        aria-hidden="true"
+      >
+        <div
+          className="absolute inset-0"
+          style={{
+            backgroundImage: `radial-gradient(circle at ${spot}, rgba(255,255,255,0.12), transparent 55%)`,
+          }}
+        />
+        <div
+          className="absolute inset-0 opacity-[0.04]"
+          style={{
+            backgroundImage:
+              'repeating-linear-gradient(45deg, transparent 0 22px, rgba(255,255,255,1) 22px 23px)',
+          }}
+        />
         <span
           className="absolute inset-0 flex items-center justify-center font-editorial font-black text-white/15 select-none leading-none"
           style={{ fontSize: 'clamp(3rem, 10vw, 6rem)' }}

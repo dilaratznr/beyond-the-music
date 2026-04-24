@@ -88,8 +88,12 @@ export default function HorizontalScroll({ children, className = '' }: Props) {
           ortasında pin'leniyordu, header yukarıda kalıp ikisinin arası ~1
           viewport kadar boş duruyordu (Dilara geri bildirimi: "yanlarda +
           ortada çok boşluk var"). Şimdi sticky zone'un üst %40'ında
-          hizalı — başlık satırı + kartlar bitişik okunuyor, ölü alan kalktı. */}
-      <div className="sticky top-0 h-screen overflow-hidden flex items-start pt-[10vh]">
+          hizalı — başlık satırı + kartlar bitişik okunuyor, ölü alan kalktı.
+          2. iterasyon (Dilara: "türler ve sanatçılar arası çok boşluk
+          var"): pt-[10vh] → pt-[4vh]. Kartlar neredeyse viewport'un en
+          üstünde, altta kalan boş bölge minimuma indi; horizontal pin
+          bittiğinde sıradaki section çok daha yakın görünüyor. */}
+      <div className="sticky top-0 h-screen overflow-hidden flex items-start pt-[4vh]">
         <div
           ref={scrollRef}
           className="flex gap-4 md:gap-5 px-6 lg:px-10 xl:px-14 will-change-transform"

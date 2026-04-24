@@ -14,8 +14,8 @@ export async function generateStaticParams() {
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params;
   return {
-    title: locale === 'tr' ? 'Beyond The Music - Küratöryel Müzik Platformu' : 'Beyond The Music - Curated Music Platform',
-    description: locale === 'tr' ? 'Müziğin ötesindeki kültürü keşfeden küratöryel platform' : 'A curatorial platform exploring the culture beyond music',
+    title: locale === 'tr' ? 'Beyond The Music - Müzik Platformu' : 'Beyond The Music - Music Platform',
+    description: locale === 'tr' ? 'Müziğin ötesindeki kültürü keşfeden platform' : 'A platform exploring the culture beyond music',
   };
 }
 

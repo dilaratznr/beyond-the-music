@@ -185,8 +185,13 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
         </HorizontalScroll>
       </section>
 
-      {/* ▸▸▸ SCENE 4: ARTISTS - zoom-in sahne ▸▸▸ */}
-      <section className="scene py-20 bg-[#111113] text-white">
+      {/* ▸▸▸ SCENE 4: ARTISTS - zoom-in sahne ▸▸▸
+          Üst padding py-20 → pt-6/md:pt-10 (Dilara: "türler ve
+          sanatçılar arası çok boşluk var"). Horizontal scroll pin'i
+          zaten sticky çıktığında büyük bir viewport kalıyor, üstüne
+          80px pt-20 gelmesi boşluk hissini ikiye katlıyordu. Alt padding
+          aynı kaldı — sonraki section'a yumuşak geçiş için. */}
+      <section className="scene pt-6 md:pt-10 pb-20 bg-[#111113] text-white">
         <div className="scene-inner max-w-[1480px] mx-auto px-6 lg:px-10 xl:px-14">
           <div className="flex items-end justify-between mb-10 gsap-fade-up">
             <div>
@@ -330,7 +335,10 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
       <section className="scene py-20 bg-[#0a0a0b]">
         <div className="scene-inner max-w-[1480px] mx-auto px-6 lg:px-10 xl:px-14">
           <div className="gsap-fade-up mb-12">
-            <p className="text-[10px] uppercase tracking-[0.3em] text-emerald-500/50 font-bold">Curated Journeys</p>
+            {/* Eyebrow'un yeşili de bütün sitedeki pill yeşiliyle aynı
+                AI-ish hissini veriyordu (Dilara geri bildirimi). Nötr
+                zinc'e çekildi — diğer section eyebrow'larıyla tutarlı. */}
+            <p className="text-[10px] uppercase tracking-[0.3em] text-zinc-500 font-bold">{tr ? 'Dinleme Yolculukları' : 'Listening Journeys'}</p>
             <h2 className="text-3xl md:text-4xl font-black font-editorial mt-1 tracking-[-0.03em] gsap-title-reveal">{dict.listeningPaths.title}</h2>
           </div>
           <div className="gsap-stagger flex gap-4 overflow-x-auto pb-4" style={{ scrollbarWidth: 'none' }}>
@@ -338,7 +346,7 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
               const title = tr ? p.titleTr : p.titleEn;
               // Görsel yoksa her kart farklı renkli bir gradient + büyük harf alsın
               const palettes = [
-                'from-emerald-900/40 via-teal-950 to-black',
+                'from-zinc-800/70 via-zinc-950 to-black',
                 'from-rose-900/40 via-zinc-950 to-black',
                 'from-indigo-900/40 via-zinc-950 to-black',
                 'from-amber-900/40 via-zinc-950 to-black',
@@ -356,7 +364,9 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
                     <img src={p.image} alt="" loading="lazy" decoding="async" className="absolute inset-0 w-full h-full object-cover opacity-40 group-hover:opacity-60 transition-opacity duration-500" />
                   ) : (
                     <>
-                      <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(16,185,129,0.15),transparent_60%)]" />
+                      {/* Fallback spotlight: önceden emerald tint idi, artık
+                          nötr beyaz — yeşil vurgu site genelinden çıkarıldı. */}
+                      <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(255,255,255,0.08),transparent_60%)]" />
                       <div className="absolute inset-0 opacity-30" style={{ backgroundImage: 'repeating-linear-gradient(60deg, transparent, transparent 30px, rgba(255,255,255,0.02) 30px, rgba(255,255,255,0.02) 60px)' }} />
                       <span className="absolute top-6 right-6 font-editorial font-black text-white/5 leading-none" style={{ fontSize: 'clamp(5rem, 10vw, 9rem)' }}>
                         {title?.charAt(0) ?? '♪'}
@@ -365,7 +375,7 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
                   )}
                   <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent" />
                   <div className="absolute bottom-0 left-0 right-0 p-5 z-10">
-                    <span className="inline-block px-2 py-0.5 bg-emerald-500/20 text-emerald-400 text-[8px] font-bold uppercase tracking-widest rounded-full mb-2">{p.type}</span>
+                    <span className="inline-block px-2 py-0.5 bg-white/[0.08] border border-white/15 text-zinc-200 text-[8px] font-bold uppercase tracking-widest rounded-full mb-2">{p.type}</span>
                     <h3 className="text-sm font-bold leading-tight">{title}</h3>
                     <p className="text-white/30 text-[10px] mt-1.5 line-clamp-2">{tr ? p.descriptionTr : p.descriptionEn}</p>
                   </div>
