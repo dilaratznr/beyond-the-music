@@ -16,7 +16,14 @@ import CommandPalette from './CommandPalette';
  * Inputs and surfaces inside the main region layer on top of this with
  * zinc-900/zinc-800 borders.
  */
-const PUBLIC_ADMIN_PREFIXES = ['/admin/login', '/admin/forgot-password', '/admin/reset-password'];
+const PUBLIC_ADMIN_PREFIXES = [
+  '/admin/login',
+  '/admin/forgot-password',
+  '/admin/reset-password',
+  // Davet linkini açan kişi henüz login değil ve sidebar'a ihtiyacı yok —
+  // Aktivasyon ekranı tek başına AuthLayout içinde görünsün.
+  '/admin/accept-invite',
+];
 
 export default function AdminShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname() ?? '';
