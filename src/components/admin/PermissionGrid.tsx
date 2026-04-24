@@ -141,7 +141,7 @@ export default function PermissionGrid({
               key={section.key}
               className={`rounded-md border transition-colors ${
                 perm.enabled
-                  ? 'border-emerald-500/30 bg-emerald-500/5'
+                  ? 'border-zinc-700 bg-zinc-900/70'
                   : 'border-zinc-800 bg-zinc-900/40 hover:border-zinc-700'
               }`}
             >
@@ -161,17 +161,14 @@ export default function PermissionGrid({
                   <span className="text-[10px] text-zinc-500">{section.labelEn}</span>
                 </label>
 
-                {/* Action toggles */}
+                {/* Action toggles — sade checkbox. Header kolonu zaten
+                    "Oluştur / Düzenle / Sil / Yayınla" yazıyor, butonun
+                    içinde harf tekrarına gerek yok. Tek ton (zinc), içi
+                    işaretliyse dolu. Mobilde kelime olarak fallback. */}
                 <div className="flex md:contents gap-1.5 mt-2 md:mt-0 ml-7 md:ml-0">
                   {PERMISSION_ACTIONS.map((a) => {
                     const lbl = actionLabel(a);
                     const on = perm[a];
-                    const activeCls =
-                      a === 'canDelete'
-                        ? 'bg-red-500/10 text-red-300 border-red-500/30'
-                        : a === 'canPublish'
-                          ? 'bg-violet-500/10 text-violet-300 border-violet-500/30'
-                          : 'bg-emerald-500/10 text-emerald-300 border-emerald-500/30';
                     return (
                       <button
                         key={a}
@@ -180,15 +177,38 @@ export default function PermissionGrid({
                         disabled={disabled || !perm.enabled}
                         aria-pressed={on}
                         aria-label={`${section.labelTr} — ${lbl.tr}`}
-                        className={`h-7 md:h-7 md:w-full flex-1 md:flex-none inline-flex items-center justify-center gap-1 border rounded-md text-[10px] font-bold uppercase tracking-wide transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${
+                        className={`h-7 md:h-7 md:w-full flex-1 md:flex-none inline-flex items-center justify-center gap-1.5 rounded-md transition-colors disabled:opacity-30 disabled:cursor-not-allowed ${
                           on && perm.enabled
-                            ? activeCls
-                            : 'bg-zinc-950 border-zinc-800 text-zinc-500 hover:text-zinc-300 hover:border-zinc-700'
+                            ? 'bg-white/10 hover:bg-white/15 text-zinc-100'
+                            : 'bg-zinc-950 hover:bg-zinc-900 text-zinc-600'
                         }`}
                         title={`${lbl.tr} (${lbl.en})`}
                       >
-                        <span className="md:hidden">{lbl.tr}</span>
-                        <span className="hidden md:inline">{lbl.short}</span>
+                        {/* Mobilde kelime — hiç kolon header'ı yok çünkü
+                            md:hidden grid oluşmuyor. */}
+                        <span className="md:hidden text-[11px] font-medium">
+                          {lbl.tr}
+                        </span>
+                        {/* Desktop'ta checkbox işareti — header zaten
+                            "Oluştur/Düzenle/…" yazıyor, harf tekrarı yok. */}
+                        <span className="hidden md:inline" aria-hidden="true">
+                          {on && perm.enabled ? (
+                            <svg
+                              width="12"
+                              height="12"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="3"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                            >
+                              <polyline points="20 6 9 17 4 12" />
+                            </svg>
+                          ) : (
+                            <span className="block w-3 h-3 rounded-sm border border-zinc-700" />
+                          )}
+                        </span>
                       </button>
                     );
                   })}
@@ -199,20 +219,10 @@ export default function PermissionGrid({
         })}
       </div>
 
-      <div className="flex flex-wrap gap-3 pt-2 text-[10px] text-zinc-500">
-        <span className="inline-flex items-center gap-1.5">
-          <span className="inline-block w-2 h-2 bg-emerald-500/60 rounded" /> Oluştur (C)
-        </span>
-        <span className="inline-flex items-center gap-1.5">
-          <span className="inline-block w-2 h-2 bg-emerald-500/60 rounded" /> Düzenle (E)
-        </span>
-        <span className="inline-flex items-center gap-1.5">
-          <span className="inline-block w-2 h-2 bg-red-500/60 rounded" /> Sil (D)
-        </span>
-        <span className="inline-flex items-center gap-1.5">
-          <span className="inline-block w-2 h-2 bg-violet-500/60 rounded" /> Yayınla (P)
-        </span>
-      </div>
+      {/* Legend kaldırıldı — C/E/D/P harf kısaltmaları artık
+          kullanılmıyor. Header kolonunda tam kelimeler ("Oluştur",
+          "Düzenle", "Sil", "Yayınla") görünüyor; checkbox işareti
+          de ne işaretli olduğunu açıkça gösteriyor. */}
     </div>
   );
 }
