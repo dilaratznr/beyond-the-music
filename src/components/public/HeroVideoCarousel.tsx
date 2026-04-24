@@ -7,25 +7,30 @@ interface Video { id: string; url: string; duration: number; }
 /**
  * Hero video carousel.
  *
- * Dilara geri bildirimi (2026-04-23): "site acilirken bi gorsel geliyo
- * 1 sn lik orda bug var" — açılışta fallback/poster imajı ~1 saniye
- * flash edip sonra video alıyordu. Sebep: <video poster={...}> ile
- * Unsplash'tan gelen default poster, video ilk frame'i decode edene
- * kadar ekranda duruyordu. Bu görseli hiç kullanıcı istemedi (admin
- * video ekledi), sadece loading state'iydi → flash gibi görünüyor.
+ * Dilara geri bildirim evrimi:
+ *   1. (2026-04-23) "site acilirken bi gorsel geliyo 1 sn lik orda bug
+ *      var" — <video poster={...}> Unsplash default'unu ~1s flash
+ *      ediyordu. Çözüm: poster'ı kaldır, altta siyah bg bırak, video
+ *      geldiğinde üste biniyor.
+ *   2. (2026-04-24) "video takiliyor anasayfadaki bir sey olmus
+ *      bozulmus" — önceki iterasyonda `videoReady` state + opacity
+ *      toggling + `preload="auto"` koymuştum; state güncellemeleri
+ *      video oynatma pipeline'ına müdahale ediyor, re-render'lar
+ *      playhead'i resetliyor ve stutter hissi yaratıyordu. Kaldırıldı.
  *
- * Çözüm:
- *   1. Video varken `poster` GEÇILMIYOR → beyaz/görsel flash yok,
- *      container'ın altındaki siyah arka plan (page bg) görünür.
- *   2. `preload="auto"` + ilk video için `fetchpriority=high` → ilk
- *      frame ~200ms içinde paint, siyah ekran süresi minimum.
- *   3. Fallback <img> yolu (hiç video yoksa) aynen kaldı — admin video
- *      eklemediyse kullanıcının görmesi gereken şey bu görsel zaten.
+ * Şimdiki minimal kural:
+ *   - poster YOK → flash yok
+ *   - altta bg-[#0a0a0b] div → video hazır olmadan önce görünen şey
+ *     sahne rengiyle aynı, kullanıcı fark etmiyor
+ *   - opacity sadece carousel geçişinde fade için (fading state) —
+ *     loading ile ilgili JS yok, browser'ın kendi video akışına
+ *     müdahale etmiyoruz
+ *   - preload default (metadata) — `auto` bant genişliğini aç gözlü
+ *     tüketip stutter'a yol açıyordu.
  */
 export default function HeroVideoCarousel({ videos, fallbackImage }: { videos: Video[]; fallbackImage: string }) {
   const [current, setCurrent] = useState(0);
   const [fading, setFading] = useState(false);
-  const [videoReady, setVideoReady] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
   const timerRef = useRef<NodeJS.Timeout>(undefined);
 
@@ -49,9 +54,10 @@ export default function HeroVideoCarousel({ videos, fallbackImage }: { videos: V
     return () => clearTimeout(timerRef.current);
   }, [current, activeVideos.length]);
 
-  // Reset video when current changes
+  // Carousel current değiştiğinde video kaynağı değiştiği için yeniden
+  // load + play çağrılıyor. Tek video varsa current zaten değişmez, bu
+  // effect sadece mount'ta çalışır → play kick-start.
   useEffect(() => {
-    setVideoReady(false);
     if (videoRef.current) {
       videoRef.current.load();
       videoRef.current.play().catch(() => {});
@@ -66,18 +72,14 @@ export default function HeroVideoCarousel({ videos, fallbackImage }: { videos: V
 
   return (
     <>
-      {/* Video ilk frame'e gelene kadar düz siyah — böylece poster
-          flash'ı (Unsplash default'u) görünmüyor. Aynı sahnenin arka
-          plan rengiyle hizalı, hiçbir "yüklendi mi?" hissi yaratmıyor. */}
+      {/* Video yüklenmeden önce görünen siyah arka plan — sahne rengiyle
+          aynı olduğu için "yüklendi mi?" hissi vermiyor. */}
       <div className="absolute inset-0 bg-[#0a0a0b]" aria-hidden="true" />
       <video
         ref={videoRef}
         autoPlay muted loop={activeVideos.length === 1} playsInline
-        preload="auto"
-        onCanPlay={() => setVideoReady(true)}
-        onLoadedData={() => setVideoReady(true)}
-        className="w-full h-full object-cover transition-opacity duration-500"
-        style={{ opacity: fading ? 0 : videoReady ? 1 : 0 }}
+        className="absolute inset-0 w-full h-full object-cover transition-opacity duration-500"
+        style={{ opacity: fading ? 0 : 1 }}
       >
         <source src={src} type="video/mp4" />
       </video>
