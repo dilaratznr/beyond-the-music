@@ -6,12 +6,14 @@ import Pagination from '@/components/admin/Pagination';
 import DeleteButton from '@/components/admin/DeleteButton';
 import { IconExternal } from '@/components/admin/Icons';
 import { TableSkeleton } from '@/components/admin/Loading';
+import StatusPill from '@/components/admin/StatusPill';
 
 interface LP {
   id: string;
   titleTr: string;
   type: string;
   slug: string;
+  status: string;
   _count: { items: number };
 }
 const PER_PAGE = 15;
@@ -102,7 +104,14 @@ export default function ListeningPathsPage() {
                 )}
                 {paths.map((p) => (
                   <tr key={p.id} className="hover:bg-zinc-800/30 transition-colors">
-                    <td className="px-4 py-2 font-medium text-zinc-100">{p.titleTr}</td>
+                    <td className="px-4 py-2 font-medium text-zinc-100">
+                      <div className="flex items-center gap-2">
+                        {p.titleTr}
+                        {p.status && p.status !== 'PUBLISHED' && (
+                          <StatusPill status={p.status} compact />
+                        )}
+                      </div>
+                    </td>
                     <td className="px-4 py-2">
                       <span className={TYPE_PILL_CLASSNAME}>
                         {TYPE_LABEL[p.type] || p.type}

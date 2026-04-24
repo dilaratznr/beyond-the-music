@@ -10,6 +10,7 @@ import ImageUploader from '@/components/admin/ImageUploader';
 import { ARTICLE_CATEGORIES } from '@/lib/article-categories';
 import { FormSkeleton } from '@/components/admin/Loading';
 import { toDatetimeLocalValue } from '@/lib/datetime-local';
+import { useConfirm } from '@/components/admin/useConfirm';
 
 const RichEditor = dynamic(() => import('@/components/admin/RichEditor'), { ssr: false });
 
@@ -26,6 +27,7 @@ export default function EditArticlePage({ params }: { params: Promise<{ id: stri
   const { id } = use(params);
   const router = useRouter();
   const { toast } = useToast();
+  const { confirm, dialog: confirmDialog } = useConfirm();
 
   const [activeTab, setActiveTab] = useState<'tr' | 'en'>('tr');
   const [form, setForm] = useState({
@@ -208,14 +210,18 @@ export default function EditArticlePage({ params }: { params: Promise<{ id: stri
     e.preventDefault();
 
     if (initialStatus !== 'PUBLISHED' && form.status === 'PUBLISHED') {
-      const ok = window.confirm(
-        `"${form.titleTr}" makalesini yayına almak istediğinizden emin misiniz? Makale siteye anında yansıyacak.`,
-      );
+      const ok = await confirm({
+        title: 'Yayına al',
+        description: `"${form.titleTr}" makalesi siteye anında yansıyacak.`,
+        confirmLabel: 'Yayına Al',
+      });
       if (!ok) return;
     } else if (initialStatus === 'PUBLISHED' && form.status === 'DRAFT') {
-      const ok = window.confirm(
-        `"${form.titleTr}" yayından kaldırılıp taslağa çekilecek. Devam edilsin mi?`,
-      );
+      const ok = await confirm({
+        title: 'Taslağa çek',
+        description: `"${form.titleTr}" yayından kaldırılacak.`,
+        confirmLabel: 'Taslağa Çek',
+      });
       if (!ok) return;
     }
 
@@ -282,6 +288,7 @@ export default function EditArticlePage({ params }: { params: Promise<{ id: stri
 
   return (
     <div className="max-w-4xl">
+      {confirmDialog}
       <div className="flex items-center justify-between mb-6 gap-3 flex-wrap">
         <div className="flex items-center gap-3 flex-wrap">
           <h1 className="text-xl font-semibold text-zinc-100 tracking-tight">Makale Düzenle</h1>

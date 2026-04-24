@@ -8,6 +8,7 @@ import { useToast } from '@/components/admin/Toast';
 import ImageUploader from '@/components/admin/ImageUploader';
 import { ARTICLE_CATEGORIES } from '@/lib/article-categories';
 import { toDatetimeLocalValue } from '@/lib/datetime-local';
+import { useConfirm } from '@/components/admin/useConfirm';
 
 const RichEditor = dynamic(() => import('@/components/admin/RichEditor'), { ssr: false });
 
@@ -45,6 +46,7 @@ export default function NewArticlePage() {
   const [loading, setLoading] = useState(false);
   const router = useRouter();
   const { toast } = useToast();
+  const { confirm, dialog: confirmDialog } = useConfirm();
 
   useEffect(() => {
     fetch('/api/genres?all=true').then((r) => r.json()).then(setGenres);
@@ -76,16 +78,20 @@ export default function NewArticlePage() {
     e.preventDefault();
 
     if (form.status === 'PUBLISHED' && canPublish) {
-      const ok = window.confirm(
-        `"${form.titleTr}" makalesini yayına almak istediğinizden emin misiniz? Makale siteye anında yansıyacak.`,
-      );
+      const ok = await confirm({
+        title: 'Yayına al',
+        description: `"${form.titleTr}" makalesi siteye anında yansıyacak.`,
+        confirmLabel: 'Yayına Al',
+      });
       if (!ok) return;
     }
 
     if (form.status === 'PENDING_REVIEW') {
-      const ok = window.confirm(
-        `"${form.titleTr}" makalesi onay için Super Admin'e gönderilecek. Devam edilsin mi?`,
-      );
+      const ok = await confirm({
+        title: 'Onaya gönder',
+        description: `"${form.titleTr}" makalesi Super Admin'e gönderilecek.`,
+        confirmLabel: 'Onaya Gönder',
+      });
       if (!ok) return;
     }
 
@@ -138,6 +144,7 @@ export default function NewArticlePage() {
 
   return (
     <div className="max-w-4xl">
+      {confirmDialog}
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-xl font-semibold text-zinc-100 tracking-tight">Yeni Makale</h1>
         <Link href="/admin/articles" className="text-zinc-500 hover:text-zinc-100 text-sm">

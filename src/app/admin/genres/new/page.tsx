@@ -15,6 +15,7 @@ import {
   FormError,
 } from '@/components/admin/FormField';
 import { translatePairs } from '@/lib/translate-client';
+import { useCanPublish } from '@/components/admin/useCanPublish';
 
 interface ParentOption {
   id: string;
@@ -37,6 +38,7 @@ export default function NewGenrePage() {
   const [translating, setTranslating] = useState(false);
   const router = useRouter();
   const { toast } = useToast();
+  const canPublish = useCanPublish('GENRE');
 
   useEffect(() => {
     let cancelled = false;
@@ -226,8 +228,8 @@ export default function NewGenrePage() {
 
         <FormActions
           cancelHref="/admin/genres"
-          submitLabel="Tür Oluştur"
-          submittingLabel={translating ? 'Çevriliyor…' : 'Oluşturuluyor…'}
+          submitLabel={canPublish === false ? 'Onaya Gönder' : 'Tür Oluştur'}
+          submittingLabel={translating ? 'Çevriliyor…' : canPublish === false ? 'Gönderiliyor…' : 'Oluşturuluyor…'}
           submitting={submitting}
           disabled={!form.nameTr}
         />

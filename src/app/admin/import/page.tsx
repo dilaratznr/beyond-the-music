@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { IconUpload, IconArtist, IconAlbum, IconSong, IconExternal } from '@/components/admin/Icons';
+import { useConfirm } from '@/components/admin/useConfirm';
 
 interface ArtistOption {
   id: string;
@@ -68,6 +69,7 @@ export default function ImportPage() {
   const [preview, setPreview] = useState<Preview | null>(null);
   const [committed, setCommitted] = useState<Preview['summary'] | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
+  const { confirm, dialog: confirmDialog } = useConfirm();
 
   useEffect(() => {
     fetch('/api/artists?page=1&limit=500')
@@ -126,12 +128,12 @@ export default function ImportPage() {
 
   async function commit() {
     if (!preview) return;
-    if (
-      !window.confirm(
-        `${preview.summary.albumsToCreate} albüm ve ${preview.summary.songsToCreate} şarkı oluşturulacak. Devam edilsin mi?`,
-      )
-    )
-      return;
+    const ok = await confirm({
+      title: 'İçe aktar',
+      description: `${preview.summary.albumsToCreate} albüm + ${preview.summary.songsToCreate} şarkı oluşturulacak.`,
+      confirmLabel: 'İçe aktar',
+    });
+    if (!ok) return;
     setBusy(true);
     setError(null);
     try {
@@ -170,6 +172,7 @@ export default function ImportPage() {
 
   return (
     <div className="max-w-5xl">
+      {confirmDialog}
       <div className="mb-5">
         <h1 className="text-xl font-semibold text-zinc-100 tracking-tight flex items-center gap-2">
           <IconUpload size={18} className="text-zinc-400" />

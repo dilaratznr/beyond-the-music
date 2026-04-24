@@ -4,6 +4,7 @@ import prisma from '@/lib/prisma';
 import { requireSectionAccess } from '@/lib/auth-guard';
 import { CACHE_TAGS } from '@/lib/db-cache';
 import { slugify } from '@/lib/utils';
+import { resolveEditStatus } from '@/lib/content-review';
 
 export async function GET(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -25,14 +26,28 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
 }
 
 export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const { error } = await requireSectionAccess('LISTENING_PATH', 'canEdit');
-  if (error) return error;
+  const { error, user } = await requireSectionAccess('LISTENING_PATH', 'canEdit');
+  if (error || !user) return error;
 
   const { id } = await params;
   const body = await request.json();
   const { titleTr, titleEn, descriptionTr, descriptionEn, type, image } = body;
 
-  const data: Record<string, unknown> = {};
+  const existing = await prisma.listeningPath.findUnique({
+    where: { id },
+    select: { titleTr: true, status: true },
+  });
+  if (!existing) return NextResponse.json({ error: 'Listening path not found' }, { status: 404 });
+
+  const { status: nextStatus, requiresReview } = await resolveEditStatus({
+    section: 'LISTENING_PATH',
+    userId: user.id,
+    entityId: id,
+    entityTitle: titleTr ?? existing.titleTr,
+    currentStatus: existing.status as 'DRAFT' | 'PENDING_REVIEW' | 'PUBLISHED',
+  });
+
+  const data: Record<string, unknown> = { status: nextStatus };
   if (titleTr !== undefined) data.titleTr = titleTr;
   if (titleEn !== undefined) {
     data.titleEn = titleEn;
@@ -45,7 +60,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
 
   const path = await prisma.listeningPath.update({ where: { id }, data });
   revalidateTag(CACHE_TAGS.listeningPath, 'max');
-  return NextResponse.json(path);
+  return NextResponse.json({ ...path, requiresReview });
 }
 
 export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {

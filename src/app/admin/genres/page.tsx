@@ -7,6 +7,7 @@ import { IconChevronDown, IconExternal, IconPlus } from '@/components/admin/Icon
 import { Skeleton } from '@/components/admin/Loading';
 import { useClientLocale } from '@/components/admin/useClientLocale';
 import { useSearchShortcut } from '@/components/admin/useSearchShortcut';
+import StatusPill from '@/components/admin/StatusPill';
 
 interface Genre {
   id: string;
@@ -15,6 +16,7 @@ interface Genre {
   nameEn: string;
   image: string | null;
   parentId: string | null;
+  status: string;
   _count: { artists: number; articles: number };
 }
 
@@ -253,6 +255,9 @@ function GenreCard({
           <div className="flex items-baseline gap-2 flex-wrap">
             <span className="text-sm font-medium text-zinc-100 truncate">{main.nameTr}</span>
             <span className="text-[10px] text-zinc-500 truncate">{main.nameEn}</span>
+            {main.status && main.status !== 'PUBLISHED' && (
+              <StatusPill status={main.status} compact />
+            )}
           </div>
           <p className="text-[11px] text-zinc-500 mt-1 flex items-center gap-1.5 flex-wrap">
             <span>{main._count.artists} sanatçı</span>
@@ -341,7 +346,12 @@ function SubRow({
         </div>
       )}
       <div className="flex-1 min-w-0">
-        <div className="text-[12px] font-medium text-zinc-200 truncate">{sub.nameTr}</div>
+        <div className="flex items-center gap-2">
+          <div className="text-[12px] font-medium text-zinc-200 truncate">{sub.nameTr}</div>
+          {sub.status && sub.status !== 'PUBLISHED' && (
+            <StatusPill status={sub.status} compact />
+          )}
+        </div>
         <div className="text-[10px] text-zinc-500 truncate">
           {sub.nameEn} · {sub._count.artists} san · {sub._count.articles} mak
         </div>

@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import Pagination from '@/components/admin/Pagination';
 import DeleteButton from '@/components/admin/DeleteButton';
+import StatusPill from '@/components/admin/StatusPill';
 
 interface Architect {
   id: string;
@@ -11,6 +12,7 @@ interface Architect {
   type: string;
   slug: string;
   image: string | null;
+  status: string;
   _count: { artists: number };
 }
 const PER_PAGE = 15;
@@ -143,9 +145,14 @@ export default function ArchitectsPage() {
                 </Link>
                 <div className="p-3">
                   <Link href={`/admin/architects/${a.id}`} className="block min-w-0">
-                    <h3 className="text-[13px] font-semibold text-zinc-100 tracking-tight truncate group-hover:text-white transition-colors">
-                      {a.name}
-                    </h3>
+                    <div className="flex items-center gap-2">
+                      <h3 className="text-[13px] font-semibold text-zinc-100 tracking-tight truncate group-hover:text-white transition-colors">
+                        {a.name}
+                      </h3>
+                      {a.status && a.status !== 'PUBLISHED' && (
+                        <StatusPill status={a.status} compact />
+                      )}
+                    </div>
                     <div className="mt-1.5">
                       <span className={`inline-flex items-center ${TYPE_PILL_CLASSNAME}`}>
                         {TYPE_LABEL[a.type] || a.type}

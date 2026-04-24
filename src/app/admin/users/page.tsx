@@ -7,6 +7,7 @@ import { useSession } from 'next-auth/react';
 import { useToast } from '@/components/admin/Toast';
 import { PERMISSION_SECTIONS, ROLE_INFO } from '@/lib/user-admin-constants';
 import { InlineLoading, TableSkeleton } from '@/components/admin/Loading';
+import { useConfirm } from '@/components/admin/useConfirm';
 
 interface Permission {
   section: string;
@@ -63,6 +64,7 @@ export default function UsersPage() {
   const [roleFilter, setRoleFilter] = useState<RoleFilter>('all');
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
   const { toast } = useToast();
+  const { confirm, dialog: confirmDialog } = useConfirm();
 
   const isSuperAdmin = session?.user?.role === 'SUPER_ADMIN';
   const currentUserId = (session?.user as { id?: string } | undefined)?.id;
@@ -129,12 +131,12 @@ export default function UsersPage() {
       toast('Kendi hesabınızı silemezsiniz', 'error');
       return;
     }
-    if (
-      !confirm(
-        `"${user.name}" adlı kullanıcıyı silmek istediğinize emin misiniz? Bu işlem geri alınamaz.`,
-      )
-    )
-      return;
+    const ok = await confirm({
+      title: 'Kullanıcı sil',
+      description: `"${user.name}" kalıcı olarak silinecek.`,
+      confirmLabel: 'Sil',
+    });
+    if (!ok) return;
     const res = await fetch(`/api/users/${user.id}`, { method: 'DELETE' });
     if (res.ok) {
       setUsers((prev) => prev.filter((u) => u.id !== user.id));
@@ -158,6 +160,7 @@ export default function UsersPage() {
 
   return (
     <div>
+      {confirmDialog}
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4 mb-5">
         <div>

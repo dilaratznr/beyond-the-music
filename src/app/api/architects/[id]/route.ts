@@ -4,6 +4,7 @@ import prisma from '@/lib/prisma';
 import { requireSectionAccess } from '@/lib/auth-guard';
 import { CACHE_TAGS } from '@/lib/db-cache';
 import { slugify } from '@/lib/utils';
+import { resolveEditStatus } from '@/lib/content-review';
 
 export async function GET(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -18,14 +19,28 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
 }
 
 export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const { error } = await requireSectionAccess('ARCHITECT', 'canEdit');
-  if (error) return error;
+  const { error, user } = await requireSectionAccess('ARCHITECT', 'canEdit');
+  if (error || !user) return error;
 
   const { id } = await params;
   const body = await request.json();
   const { name, type, bioTr, bioEn, image } = body;
 
-  const data: Record<string, unknown> = {};
+  const existing = await prisma.architect.findUnique({
+    where: { id },
+    select: { name: true, status: true },
+  });
+  if (!existing) return NextResponse.json({ error: 'Architect not found' }, { status: 404 });
+
+  const { status: nextStatus, requiresReview } = await resolveEditStatus({
+    section: 'ARCHITECT',
+    userId: user.id,
+    entityId: id,
+    entityTitle: name ?? existing.name,
+    currentStatus: existing.status as 'DRAFT' | 'PENDING_REVIEW' | 'PUBLISHED',
+  });
+
+  const data: Record<string, unknown> = { status: nextStatus };
   if (name !== undefined) {
     data.name = name;
     data.slug = slugify(name);
@@ -37,7 +52,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
 
   const architect = await prisma.architect.update({ where: { id }, data });
   revalidateTag(CACHE_TAGS.architect, 'max');
-  return NextResponse.json(architect);
+  return NextResponse.json({ ...architect, requiresReview });
 }
 
 export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {

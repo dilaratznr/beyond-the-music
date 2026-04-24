@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { useToast } from '@/components/admin/Toast';
 import ImageUploader from '@/components/admin/ImageUploader';
 import { TableSkeleton } from '@/components/admin/Loading';
+import { useConfirm } from '@/components/admin/useConfirm';
 
 interface HeroVideo {
   id: string;
@@ -28,6 +29,7 @@ export default function HeroVideosPage() {
   const [posterUrl, setPosterUrl] = useState('');
   const [posterSaving, setPosterSaving] = useState(false);
   const { toast } = useToast();
+  const { confirm, dialog: confirmDialog } = useConfirm();
 
   useEffect(() => {
     let cancelled = false;
@@ -123,7 +125,12 @@ export default function HeroVideosPage() {
   }
 
   async function deleteVideo(id: string) {
-    if (!confirm('Bu videoyu silmek istediğinize emin misiniz?')) return;
+    const ok = await confirm({
+      title: 'Video sil',
+      description: 'Bu hero videosu kaldırılacak.',
+      confirmLabel: 'Sil',
+    });
+    if (!ok) return;
     await fetch(`/api/hero-videos?id=${id}`, { method: 'DELETE' });
     toast('Video silindi');
     loadVideos();
@@ -134,6 +141,7 @@ export default function HeroVideosPage() {
 
   return (
     <div className="max-w-3xl">
+      {confirmDialog}
       <div className="flex items-center justify-between mb-5">
         <div>
           <h1 className="text-xl font-semibold text-zinc-100 tracking-tight">Hero Videoları</h1>

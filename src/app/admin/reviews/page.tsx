@@ -38,7 +38,11 @@ const SECTION_LABELS: Record<string, string> = {
 
 const SECTION_HREF: Record<string, (id: string) => string> = {
   ARTICLE: (id) => `/admin/articles/${id}`,
-  // Faz 2'de diğer section'lar için edit route'ları eklenecek
+  ARTIST: (id) => `/admin/artists/${id}`,
+  ALBUM: (id) => `/admin/albums/${id}`,
+  GENRE: (id) => `/admin/genres/${id}`,
+  ARCHITECT: (id) => `/admin/architects/${id}`,
+  LISTENING_PATH: (id) => `/admin/listening-paths/${id}`,
 };
 
 export default function ReviewsPage() {

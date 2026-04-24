@@ -15,6 +15,7 @@ import {
   FormError,
 } from '@/components/admin/FormField';
 import { translatePairs } from '@/lib/translate-client';
+import { useCanPublish } from '@/components/admin/useCanPublish';
 
 interface GenreOption {
   id: string;
@@ -43,6 +44,7 @@ export default function NewArtistPage() {
   const [translating, setTranslating] = useState(false);
   const router = useRouter();
   const { toast } = useToast();
+  const canPublish = useCanPublish('ARTIST');
 
   useEffect(() => {
     let cancelled = false;
@@ -127,6 +129,20 @@ export default function NewArtistPage() {
 
       <form onSubmit={handleSubmit} className="space-y-4">
         {error && <FormError>{error}</FormError>}
+
+        {canPublish === false && (
+          <div className="flex items-start gap-2 p-3 bg-zinc-900/60 border border-zinc-800 rounded-lg">
+            <span
+              className="mt-1.5 w-1.5 h-1.5 rounded-full bg-amber-400 flex-shrink-0"
+              aria-hidden="true"
+            />
+            <p className="text-[12px] text-zinc-300 leading-relaxed">
+              <span className="text-zinc-100 font-medium">Onaya gönderilecek.</span>{' '}
+              Yayın yetkin olmadığı için bu sanatçı kaydedildiğinde Super Admin onayını
+              bekler. Onaylandığında siteye düşer.
+            </p>
+          </div>
+        )}
 
         <div className="grid lg:grid-cols-[1fr_260px] gap-5">
           {/* Left: main fields */}
@@ -231,8 +247,8 @@ export default function NewArtistPage() {
 
         <FormActions
           cancelHref="/admin/artists"
-          submitLabel="Sanatçı Oluştur"
-          submittingLabel={translating ? 'Çevriliyor…' : 'Oluşturuluyor…'}
+          submitLabel={canPublish === false ? 'Onaya Gönder' : 'Sanatçı Oluştur'}
+          submittingLabel={translating ? 'Çevriliyor…' : canPublish === false ? 'Gönderiliyor…' : 'Oluşturuluyor…'}
           submitting={submitting}
           disabled={!form.name}
         />

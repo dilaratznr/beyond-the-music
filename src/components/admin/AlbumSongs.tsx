@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useToast } from '@/components/admin/Toast';
+import { useConfirm } from '@/components/admin/useConfirm';
 
 /**
  * Inline song manager shown on the album edit page.
@@ -38,6 +39,7 @@ export default function AlbumSongs({
   const [adding, setAdding] = useState(false);
   const [draft, setDraft] = useState({ title: '', trackNumber: '', duration: '' });
   const { toast } = useToast();
+  const { confirm, dialog: confirmDialog } = useConfirm();
 
   useEffect(() => {
     // We don't reset loading on reload — stale data stays visible until the
@@ -85,9 +87,12 @@ export default function AlbumSongs({
 
   const removeSong = useCallback(
     async (song: Song) => {
-      if (!window.confirm(`"${song.title}" şarkısını silmek istediğinizden emin misiniz?`)) {
-        return;
-      }
+      const ok = await confirm({
+        title: 'Şarkı sil',
+        description: `"${song.title}"`,
+        confirmLabel: 'Sil',
+      });
+      if (!ok) return;
       const res = await fetch(`/api/songs/${song.id}`, { method: 'DELETE' });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
@@ -97,7 +102,7 @@ export default function AlbumSongs({
       toast('Silindi');
       onChanged();
     },
-    [onChanged, toast],
+    [confirm, onChanged, toast],
   );
 
   const suggestedTrack =
@@ -107,6 +112,7 @@ export default function AlbumSongs({
 
   return (
     <div className="space-y-4">
+      {confirmDialog}
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-sm font-semibold text-zinc-100 tracking-tight">Şarkılar</h2>

@@ -10,6 +10,7 @@ import { IconExternal } from '@/components/admin/Icons';
 import { TableSkeleton } from '@/components/admin/Loading';
 import BulkActionBar, { BulkCheckbox } from '@/components/admin/BulkActionBar';
 import { useBulkSelection } from '@/lib/bulk-selection';
+import { useConfirm } from '@/components/admin/useConfirm';
 
 interface Article {
   id: string;
@@ -116,6 +117,7 @@ function ArticlesPageInner() {
   // filters / pages doesn't silently carry selections forward.
   const pageIds = useMemo(() => articles.map((a) => a.id), [articles]);
   const sel = useBulkSelection(pageIds);
+  const { confirm, dialog: confirmDialog } = useConfirm();
 
   const onBulkCleared = useCallback(() => {
     sel.clear();
@@ -124,8 +126,14 @@ function ArticlesPageInner() {
 
   async function changeStatus(next: 'PUBLISHED' | 'DRAFT') {
     if (sel.count === 0 || bulkBusy) return;
+    const title = next === 'PUBLISHED' ? 'Yayına al' : 'Taslağa çek';
     const verb = next === 'PUBLISHED' ? 'yayına alınacak' : 'taslağa çekilecek';
-    if (!window.confirm(`${sel.count} makale ${verb}. Devam edilsin mi?`)) return;
+    const ok = await confirm({
+      title,
+      description: `${sel.count} makale ${verb}.`,
+      confirmLabel: next === 'PUBLISHED' ? 'Yayına Al' : 'Taslağa Çek',
+    });
+    if (!ok) return;
     setBulkBusy(true);
     setBulkErr(null);
     try {
@@ -149,6 +157,7 @@ function ArticlesPageInner() {
 
   return (
     <div>
+      {confirmDialog}
       <div className="flex items-center justify-between mb-5">
         <div>
           <h1 className="text-xl font-semibold text-zinc-100 tracking-tight">Makaleler</h1>

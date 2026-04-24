@@ -15,6 +15,7 @@ import {
   FormError,
 } from '@/components/admin/FormField';
 import { translatePairs } from '@/lib/translate-client';
+import { useCanPublish } from '@/components/admin/useCanPublish';
 
 const TYPES = [
   { v: 'PRODUCER', l: 'Prodüktör' },
@@ -37,6 +38,7 @@ export default function NewArchitectPage() {
   const [translating, setTranslating] = useState(false);
   const router = useRouter();
   const { toast } = useToast();
+  const canPublish = useCanPublish('ARCHITECT');
 
   const update = useCallback(<K extends keyof typeof form>(key: K, value: (typeof form)[K]) => {
     setForm((f) => ({ ...f, [key]: value }));
@@ -168,8 +170,8 @@ export default function NewArchitectPage() {
 
         <FormActions
           cancelHref="/admin/architects"
-          submitLabel="Mimar Oluştur"
-          submittingLabel={translating ? 'Çevriliyor…' : 'Oluşturuluyor…'}
+          submitLabel={canPublish === false ? 'Onaya Gönder' : 'Mimar Oluştur'}
+          submittingLabel={translating ? 'Çevriliyor…' : canPublish === false ? 'Gönderiliyor…' : 'Oluşturuluyor…'}
           submitting={submitting}
           disabled={!form.name}
         />

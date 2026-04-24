@@ -131,10 +131,17 @@ export default function TypedConfirmDialog({
               <h2 id="typed-confirm-title" className="text-[15px] font-semibold text-zinc-100 tracking-tight">
                 {title}
               </h2>
-              <p className="text-[12px] text-zinc-400 mt-1">
-                <span className="text-zinc-200 font-medium">{entityName}</span>
-                {description ? ` · ${description}` : ''}
-              </p>
+              {/* Subtitle opsiyonel — entityName ve/veya description yoksa
+                  boş nokta / asılı karakter göstermemek için koşullu render. */}
+              {(entityName || description) && (
+                <p className="text-[12px] text-zinc-400 mt-1">
+                  {entityName && (
+                    <span className="text-zinc-200 font-medium">{entityName}</span>
+                  )}
+                  {entityName && description ? ' · ' : ''}
+                  {description}
+                </p>
+              )}
             </div>
           </div>
         </div>

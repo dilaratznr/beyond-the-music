@@ -4,6 +4,7 @@ import prisma from '@/lib/prisma';
 import { requireSectionAccess } from '@/lib/auth-guard';
 import { CACHE_TAGS } from '@/lib/db-cache';
 import { slugify } from '@/lib/utils';
+import { resolveEditStatus } from '@/lib/content-review';
 
 export async function GET(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -19,14 +20,28 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
 }
 
 export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const { error } = await requireSectionAccess('ALBUM', 'canEdit');
-  if (error) return error;
+  const { error, user } = await requireSectionAccess('ALBUM', 'canEdit');
+  if (error || !user) return error;
 
   const { id } = await params;
   const body = await request.json();
   const { title, artistId, releaseDate, coverImage, descriptionTr, descriptionEn } = body;
 
-  const data: Record<string, unknown> = {};
+  const existing = await prisma.album.findUnique({
+    where: { id },
+    select: { title: true, status: true },
+  });
+  if (!existing) return NextResponse.json({ error: 'Album not found' }, { status: 404 });
+
+  const { status: nextStatus, requiresReview } = await resolveEditStatus({
+    section: 'ALBUM',
+    userId: user.id,
+    entityId: id,
+    entityTitle: title ?? existing.title,
+    currentStatus: existing.status as 'DRAFT' | 'PENDING_REVIEW' | 'PUBLISHED',
+  });
+
+  const data: Record<string, unknown> = { status: nextStatus };
   if (title !== undefined) {
     data.title = title;
     data.slug = slugify(title);
@@ -40,7 +55,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
   const album = await prisma.album.update({ where: { id }, data });
   revalidateTag(CACHE_TAGS.album, 'max');
   revalidateTag(CACHE_TAGS.song, 'max');
-  return NextResponse.json(album);
+  return NextResponse.json({ ...album, requiresReview });
 }
 
 export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {

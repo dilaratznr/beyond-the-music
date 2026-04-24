@@ -164,6 +164,54 @@ export async function maybeCreateReviewOnCreate(params: {
 }
 
 /**
+ * Var olan bir entity üzerinde düzenleme — canPublish'e göre bir
+ * sonraki status'u döndürür ve gerekiyorsa review kuyruğuna EDIT
+ * kaydı ekler.
+ *
+ *   - canPublish=true  → her zaman PUBLISHED, review yok
+ *   - canPublish=false:
+ *       - currentStatus=DRAFT          → DRAFT (yayına almaz)
+ *       - currentStatus=PENDING_REVIEW → PENDING_REVIEW (review yeniler)
+ *       - currentStatus=PUBLISHED      → PENDING_REVIEW (yayından düşer)
+ *
+ * Caller entity'yi `{ status: nextStatus }` ile güncellemeli; review
+ * kaydı bu helper tarafından yönetilir. `changeType: CREATE/EDIT` farkı
+ * review listesinde görünür.
+ */
+export async function resolveEditStatus(params: {
+  section: ReviewSection;
+  userId: string;
+  entityId: string;
+  entityTitle: string;
+  currentStatus: 'DRAFT' | 'PENDING_REVIEW' | 'PUBLISHED';
+}): Promise<{ status: 'DRAFT' | 'PENDING_REVIEW' | 'PUBLISHED'; requiresReview: boolean }> {
+  const canPublish = await canUserPublish(params.userId, params.section);
+  if (canPublish) {
+    // Yetkili kullanıcı → status zaten ne ise öyle kalır (PUBLISHED
+    // kayıt publish kalır, DRAFT taslak kalır). Bilinçli bir status
+    // değişikliği istiyorlarsa form ayrı bir alan gönderir; bu helper
+    // sadece onay kapısıyla ilgili.
+    return { status: params.currentStatus, requiresReview: false };
+  }
+
+  // canPublish yok — DRAFT düzenlenirse DRAFT kalır (kullanıcı taslak
+  // üstünde çalışıyor). PUBLISHED/PENDING değiştirilirse PENDING'e düşer
+  // + review kuyruğuna EDIT kaydı.
+  if (params.currentStatus === 'DRAFT') {
+    return { status: 'DRAFT', requiresReview: false };
+  }
+
+  await submitForReview({
+    section: params.section,
+    entityId: params.entityId,
+    entityTitle: params.entityTitle,
+    changeType: 'EDIT',
+    submittedById: params.userId,
+  });
+  return { status: 'PENDING_REVIEW', requiresReview: true };
+}
+
+/**
  * Bekleyen review sayısı — sidebar badge'i ve dashboard için.
  *
  * `npm run db:push` henüz çalıştırılmamışsa ContentReview tablosu DB'de

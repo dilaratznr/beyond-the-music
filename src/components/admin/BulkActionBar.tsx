@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, type ReactNode } from 'react';
+import { useConfirm } from './useConfirm';
 
 /**
  * Sticky toolbar that appears at the top of a list page when at least one
@@ -9,8 +10,10 @@ import { useState, type ReactNode } from 'react';
  * bulk-delete endpoint. The caller supplies the endpoint and the selected
  * IDs; we handle confirmation, pending state, and errors in one place.
  *
- * Visual: zinc-900 bar with a subtle amber accent so it reads as a
- * transient toolbar rather than part of the normal chrome.
+ * Editoryal ton: nötr zinc bar + sadece aktif seçimde small dot vurgusu.
+ * Amber gradient bloklar "amator goruyor" — ton'u sadeleştirildi, silme
+ * butonu da kendi destructive ton'undan çıkarıldı (onay modal'i zaten
+ * destructive niyeti taşıyor).
  */
 export default function BulkActionBar({
   count,
@@ -29,13 +32,16 @@ export default function BulkActionBar({
 }) {
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+  const { confirm, dialog } = useConfirm();
 
   async function onBulkDelete() {
     if (busy || count === 0) return;
-    const confirmed = window.confirm(
-      `${count} ${itemLabel} silinecek. Bu işlem geri alınamaz. Devam edilsin mi?`,
-    );
-    if (!confirmed) return;
+    const ok = await confirm({
+      title: `${count} ${itemLabel} sil`,
+      description: 'Bu işlem geri alınamaz.',
+      confirmLabel: 'Sil',
+    });
+    if (!ok) return;
     setBusy(true);
     setErr(null);
     try {
@@ -59,34 +65,39 @@ export default function BulkActionBar({
   if (count === 0) return null;
 
   return (
-    <div className="sticky top-0 z-10 mb-3 flex flex-wrap items-center gap-3 px-3 py-2 rounded-md border border-amber-500/30 bg-amber-500/10 backdrop-blur-sm">
-      <span className="text-[12px] text-amber-100 font-medium">
-        <span className="font-mono font-bold">{count}</span> {itemLabel} seçildi
-      </span>
-      <div className="flex-1 flex items-center justify-end flex-wrap gap-1.5">
-        {extra}
-        <button
-          type="button"
-          onClick={onBulkDelete}
-          disabled={busy}
-          className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-semibold bg-rose-500/15 text-rose-200 border border-rose-500/30 hover:bg-rose-500/25 disabled:opacity-50 disabled:cursor-wait transition-colors"
-        >
-          {busy ? 'Siliniyor…' : `Sil (${count})`}
-        </button>
-        <button
-          type="button"
-          onClick={onCleared}
-          className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-[11px] font-medium bg-zinc-900/60 text-zinc-300 border border-zinc-700 hover:bg-zinc-800 transition-colors"
-        >
-          İptal
-        </button>
-      </div>
-      {err && (
-        <div className="w-full text-[11px] text-rose-300">
-          Hata: {err}
+    <>
+      {dialog}
+      <div className="sticky top-0 z-10 mb-3 flex flex-wrap items-center gap-3 px-3 py-2 rounded-md border border-zinc-700 bg-zinc-900/80 backdrop-blur-sm">
+        <span className="inline-flex items-center gap-2 text-[12px] text-zinc-200 font-medium">
+          <span className="w-1.5 h-1.5 rounded-full bg-amber-400" aria-hidden="true" />
+          <span className="font-mono font-bold">{count}</span> {itemLabel} seçildi
+        </span>
+        <div className="flex-1 flex items-center justify-end flex-wrap gap-1.5">
+          {extra}
+          <button
+            type="button"
+            onClick={onBulkDelete}
+            disabled={busy}
+            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-semibold bg-zinc-900 text-zinc-300 border border-zinc-700 hover:text-white hover:bg-zinc-800 disabled:opacity-50 disabled:cursor-wait transition-colors"
+          >
+            {busy ? 'Siliniyor…' : `Sil (${count})`}
+          </button>
+          <button
+            type="button"
+            onClick={onCleared}
+            className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-[11px] font-medium text-zinc-400 hover:text-zinc-100 transition-colors"
+          >
+            İptal
+          </button>
         </div>
-      )}
-    </div>
+        {err && (
+          <div className="w-full text-[11px] text-zinc-300 flex items-center gap-2">
+            <span className="w-1.5 h-1.5 rounded-full bg-rose-400" aria-hidden="true" />
+            {err}
+          </div>
+        )}
+      </div>
+    </>
   );
 }
 

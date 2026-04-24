@@ -15,6 +15,7 @@ import {
   FormError,
 } from '@/components/admin/FormField';
 import { translatePairs } from '@/lib/translate-client';
+import { useCanPublish } from '@/components/admin/useCanPublish';
 
 interface ArtistOption {
   id: string;
@@ -36,6 +37,7 @@ export default function NewAlbumPage() {
   const [translating, setTranslating] = useState(false);
   const router = useRouter();
   const { toast } = useToast();
+  const canPublish = useCanPublish('ALBUM');
 
   useEffect(() => {
     let cancelled = false;
@@ -203,8 +205,8 @@ export default function NewAlbumPage() {
 
         <FormActions
           cancelHref="/admin/albums"
-          submitLabel="Albüm Oluştur"
-          submittingLabel={translating ? 'Çevriliyor…' : 'Oluşturuluyor…'}
+          submitLabel={canPublish === false ? 'Onaya Gönder' : 'Albüm Oluştur'}
+          submittingLabel={translating ? 'Çevriliyor…' : canPublish === false ? 'Gönderiliyor…' : 'Oluşturuluyor…'}
           submitting={submitting}
           disabled={!form.title || !form.artistId}
         />

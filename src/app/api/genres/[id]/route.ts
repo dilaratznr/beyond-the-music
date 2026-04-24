@@ -4,6 +4,7 @@ import prisma from '@/lib/prisma';
 import { requireSectionAccess } from '@/lib/auth-guard';
 import { CACHE_TAGS } from '@/lib/db-cache';
 import { slugify } from '@/lib/utils';
+import { resolveEditStatus } from '@/lib/content-review';
 
 export async function GET(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -20,14 +21,28 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
 }
 
 export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const { error } = await requireSectionAccess('GENRE', 'canEdit');
-  if (error) return error;
+  const { error, user } = await requireSectionAccess('GENRE', 'canEdit');
+  if (error || !user) return error;
 
   const { id } = await params;
   const body = await request.json();
   const { nameTr, nameEn, descriptionTr, descriptionEn, image, parentId, order } = body;
 
-  const data: Record<string, unknown> = {};
+  const existing = await prisma.genre.findUnique({
+    where: { id },
+    select: { nameTr: true, status: true },
+  });
+  if (!existing) return NextResponse.json({ error: 'Genre not found' }, { status: 404 });
+
+  const { status: nextStatus, requiresReview } = await resolveEditStatus({
+    section: 'GENRE',
+    userId: user.id,
+    entityId: id,
+    entityTitle: nameTr ?? existing.nameTr,
+    currentStatus: existing.status as 'DRAFT' | 'PENDING_REVIEW' | 'PUBLISHED',
+  });
+
+  const data: Record<string, unknown> = { status: nextStatus };
   if (nameTr !== undefined) data.nameTr = nameTr;
   if (nameEn !== undefined) {
     data.nameEn = nameEn;
@@ -47,7 +62,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
 
   const genre = await prisma.genre.update({ where: { id }, data });
   revalidateTag(CACHE_TAGS.genre, 'max');
-  return NextResponse.json(genre);
+  return NextResponse.json({ ...genre, requiresReview });
 }
 
 export async function DELETE(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {

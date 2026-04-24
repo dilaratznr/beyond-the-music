@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useToast } from '@/components/admin/Toast';
+import { useConfirm } from '@/components/admin/useConfirm';
 
 /**
  * Item manager for a listening path. Lets editors add/remove/reorder/annotate
@@ -70,6 +71,7 @@ export default function ListeningPathItems({ pathId }: { pathId: string }) {
   const [albums, setAlbums] = useState<AlbumOption[]>([]);
   const [artists, setArtists] = useState<ArtistOption[]>([]);
   const { toast } = useToast();
+  const { confirm, dialog: confirmDialog } = useConfirm();
 
   // Load items — stale list stays visible on reload while new data loads.
   useEffect(() => {
@@ -160,7 +162,12 @@ export default function ListeningPathItems({ pathId }: { pathId: string }) {
   const removeItem = useCallback(
     async (item: PathItem) => {
       const { label } = describeItem(item);
-      if (!window.confirm(`"${label}" rotadan çıkarılsın mı?`)) return;
+      const ok = await confirm({
+        title: 'Rotadan çıkar',
+        description: `"${label}"`,
+        confirmLabel: 'Çıkar',
+      });
+      if (!ok) return;
       const res = await fetch(`/api/listening-paths/${pathId}/items/${item.id}`, {
         method: 'DELETE',
       });
@@ -172,7 +179,7 @@ export default function ListeningPathItems({ pathId }: { pathId: string }) {
       toast('Çıkarıldı');
       reload();
     },
-    [pathId, reload, toast],
+    [confirm, pathId, reload, toast],
   );
 
   const moveItem = useCallback(
@@ -233,6 +240,7 @@ export default function ListeningPathItems({ pathId }: { pathId: string }) {
 
   return (
     <div className="space-y-4">
+      {confirmDialog}
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-sm font-semibold text-zinc-100 tracking-tight">Rota Öğeleri</h2>

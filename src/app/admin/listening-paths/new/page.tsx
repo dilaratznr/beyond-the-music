@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/components/admin/Toast';
 import ImageUploader from '@/components/admin/ImageUploader';
+import { useCanPublish } from '@/components/admin/useCanPublish';
 
 const TYPES = [
   { v: 'EMOTION', l: 'Duygu' },
@@ -27,6 +28,7 @@ export default function NewListeningPathPage() {
   const [loading, setLoading] = useState(false);
   const router = useRouter();
   const { toast } = useToast();
+  const canPublish = useCanPublish('LISTENING_PATH');
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -91,7 +93,13 @@ export default function NewListeningPathPage() {
         </div>
         <button type="submit" disabled={loading}
           className="w-full py-2.5 bg-white text-zinc-950 rounded-lg font-medium hover:bg-zinc-200 disabled:opacity-50">
-          {loading ? 'Kaydediliyor…' : 'Rota Oluştur'}
+          {loading
+            ? canPublish === false
+              ? 'Gönderiliyor…'
+              : 'Kaydediliyor…'
+            : canPublish === false
+              ? 'Onaya Gönder'
+              : 'Rota Oluştur'}
         </button>
       </form>
     </div>
