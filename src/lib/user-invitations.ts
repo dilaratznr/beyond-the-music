@@ -5,7 +5,7 @@ import prisma from './prisma';
  * Davet token'ları. PasswordResetToken ile birebir aynı pattern:
  *   - `crypto.randomBytes(32)` → base64url raw token (kullanıcıya gider)
  *   - SHA-256 hash DB'de saklanır — raw token asla DB'ye yazılmaz
- *   - 48 saat geçerlilik
+ *   - Belirli süre geçerli (INVITE_TTL_HOURS, default 48 saat)
  *   - tek kullanımlık (usedAt set olunca geçersiz)
  *
  * Email gönderimi SMTP env'leri yapılandırılmışsa nodemailer üzerinden
@@ -15,7 +15,10 @@ import prisma from './prisma';
  */
 
 const TOKEN_BYTES = 32;
-const TOKEN_TTL_MS = 48 * 60 * 60 * 1000; // 48 saat
+// Davet token'ının geçerlilik süresi. Burayı değiştirirsen hem TTL
+// hem email metnindeki "X saat geçerli" ifadeleri otomatik güncellenir.
+export const INVITE_TTL_HOURS = 48;
+const TOKEN_TTL_MS = INVITE_TTL_HOURS * 60 * 60 * 1000;
 
 export function hashToken(raw: string): string {
   return crypto.createHash('sha256').update(raw).digest('hex');
@@ -133,7 +136,7 @@ ${params.invitedByName} seni Beyond The Music yönetim paneline davet etti.
 
 ${params.inviteUrl}
 
-Link 48 saat geçerlidir.
+Link ${INVITE_TTL_HOURS} saat geçerlidir.
 
 Eğer bu daveti beklemiyorsan bu e-postayı yok sayabilirsin.`,
       html: `
@@ -151,7 +154,7 @@ Eğer bu daveti beklemiyorsan bu e-postayı yok sayabilirsin.`,
             </a>
           </p>
           <p style="font-size: 13px; color: #71717a; line-height: 1.6;">
-            Bu link <strong>48 saat</strong> geçerlidir. Eğer bu daveti beklemiyorsan e-postayı yok sayabilirsin.
+            Bu link <strong>${INVITE_TTL_HOURS} saat</strong> geçerlidir. Eğer bu daveti beklemiyorsan e-postayı yok sayabilirsin.
           </p>
           <p style="font-size: 12px; color: #a1a1aa; margin-top: 24px; word-break: break-all;">
             Buton çalışmıyorsa bu linki kopyala: ${params.inviteUrl}

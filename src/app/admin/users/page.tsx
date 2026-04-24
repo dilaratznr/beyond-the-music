@@ -33,11 +33,9 @@ const SECTION_LABELS: Record<string, string> = Object.fromEntries(
   PERMISSION_SECTIONS.map((s) => [s.key, s.labelTr]),
 );
 
-const ROLE_BADGE: Record<string, string> = {
-  SUPER_ADMIN: 'bg-violet-500/10 text-violet-300 ring-violet-500/20',
-  ADMIN: 'bg-blue-500/10 text-blue-300 ring-blue-500/20',
-  EDITOR: 'bg-emerald-500/10 text-emerald-300 ring-emerald-500/20',
-};
+// Rol renkleri kaldırıldı (editoryal tutarlılık). Tek ton badge.
+const ROLE_BADGE_CLASSNAME =
+  'bg-zinc-900/60 text-zinc-300 ring-white/10';
 
 const ROLE_AVATAR: Record<string, string> = {
   SUPER_ADMIN: 'bg-gradient-to-br from-violet-500 to-violet-700',
@@ -268,7 +266,7 @@ export default function UsersPage() {
       ) : (
         <div className="space-y-2">
           {filtered.map((user) => {
-            const badgeCls = ROLE_BADGE[user.role] ?? ROLE_BADGE.EDITOR;
+            const badgeCls = ROLE_BADGE_CLASSNAME;
             const isMe = user.id === currentUserId;
             const roleInfo = ROLE_INFO[user.role];
             return (

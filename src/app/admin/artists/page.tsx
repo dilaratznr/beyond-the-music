@@ -24,11 +24,10 @@ const TYPE_LABEL: Record<string, string> = {
   COMPOSER: 'Besteci',
 };
 
-const TYPE_PILL: Record<string, string> = {
-  SOLO: 'bg-violet-500/10 text-violet-300 ring-violet-500/20',
-  GROUP: 'bg-emerald-500/10 text-emerald-300 ring-emerald-500/20',
-  COMPOSER: 'bg-amber-500/10 text-amber-300 ring-amber-500/20',
-};
+// Type renkleri kaldırıldı (editoryal tutarlılık — bkz. listening-paths).
+// Tek ton: koyu yarı saydam + ince ring, uppercase tracking.
+const TYPE_PILL_CLASSNAME =
+  'absolute top-2 left-2 px-2 py-0.5 backdrop-blur-md bg-black/50 text-[10px] uppercase tracking-[0.15em] font-medium rounded-full ring-1 ring-inset ring-white/15 text-white/80';
 
 export default function ArtistsPage() {
   const [artists, setArtists] = useState<Artist[]>([]);
@@ -129,12 +128,8 @@ export default function ArtistsPage() {
                     aria-hidden="true"
                     className="absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-black/80 via-black/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"
                   />
-                  {/* type pill top-left */}
-                  <span
-                    className={`absolute top-2 left-2 px-1.5 py-0.5 backdrop-blur-sm text-[10px] font-semibold rounded ring-1 ring-inset ${
-                      TYPE_PILL[a.type] || 'bg-zinc-800 text-zinc-300 ring-zinc-700'
-                    }`}
-                  >
+                  {/* type pill top-left — tek ton editoryal */}
+                  <span className={TYPE_PILL_CLASSNAME}>
                     {TYPE_LABEL[a.type] || a.type}
                   </span>
                   {/* counts top-right */}

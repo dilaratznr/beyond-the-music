@@ -46,6 +46,11 @@ export async function findPendingReview(section: ReviewSection, entityId: string
 /**
  * Yeni bir review kaydı oluştur. Aynı entity için zaten PENDING bir
  * kayıt varsa onu günceller (entityTitle / changeType yenilenir).
+ *
+ * Transaction içinde yapıyoruz — aksi halde iki eş zamanlı "Onaya
+ * Gönder" tıkı çift PENDING satır yaratabilir (findFirst + create
+ * atomik değil). Transaction tx.contentReview kullanır; yarı yolda
+ * birisi araya girerse rollback olur.
  */
 export async function submitForReview(params: {
   section: ReviewSection;
@@ -54,27 +59,31 @@ export async function submitForReview(params: {
   changeType: ChangeType;
   submittedById: string;
 }) {
-  const existing = await findPendingReview(params.section, params.entityId);
-  if (existing) {
-    return prisma.contentReview.update({
-      where: { id: existing.id },
+  return prisma.$transaction(async (tx) => {
+    const existing = await tx.contentReview.findFirst({
+      where: { section: params.section, entityId: params.entityId, status: 'PENDING' },
+    });
+    if (existing) {
+      return tx.contentReview.update({
+        where: { id: existing.id },
+        data: {
+          entityTitle: params.entityTitle,
+          changeType: params.changeType,
+          submittedById: params.submittedById,
+          submittedAt: new Date(),
+        },
+      });
+    }
+    return tx.contentReview.create({
       data: {
+        section: params.section,
+        entityId: params.entityId,
         entityTitle: params.entityTitle,
         changeType: params.changeType,
         submittedById: params.submittedById,
-        submittedAt: new Date(),
+        status: 'PENDING',
       },
     });
-  }
-  return prisma.contentReview.create({
-    data: {
-      section: params.section,
-      entityId: params.entityId,
-      entityTitle: params.entityTitle,
-      changeType: params.changeType,
-      submittedById: params.submittedById,
-      status: 'PENDING',
-    },
   });
 }
 

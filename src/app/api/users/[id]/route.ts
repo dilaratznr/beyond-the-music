@@ -19,8 +19,8 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
 }
 
 export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const { error } = await requireAuth('SUPER_ADMIN');
-  if (error) return error;
+  const { error, user: actor } = await requireAuth('SUPER_ADMIN');
+  if (error || !actor) return error;
 
   const { id } = await params;
   const body = await request.json();
@@ -28,6 +28,24 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
   // başkasının şifresini belirleyemez. Yeni şifre için "Davet Linki
   // Yeniden Gönder" akışı kullanılır (/api/users/[id]/resend-invite).
   const { name, email, role, isActive, permissions } = body;
+
+  // Self-lockout koruması: Super Admin kendi rolünü düşüremez ve
+  // kendini pasife çekemez (aksi halde sistemi yönetemez hale gelir).
+  // Başka Super Admin'ler başkasını değiştirebilir — sadece self-edit
+  // bloke.
+  const editingSelf = actor.id === id;
+  if (editingSelf && role && role !== 'SUPER_ADMIN') {
+    return NextResponse.json(
+      { error: 'Kendi Super Admin rolünüzü düşüremezsiniz' },
+      { status: 400 },
+    );
+  }
+  if (editingSelf && isActive === false) {
+    return NextResponse.json(
+      { error: 'Kendi hesabınızı pasife çekemezsiniz' },
+      { status: 400 },
+    );
+  }
 
   const updateData: Record<string, unknown> = {};
   if (name) updateData.name = name;

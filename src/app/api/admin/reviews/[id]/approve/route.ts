@@ -42,6 +42,9 @@ export async function POST(
       select: { id: true, status: true, publishedAt: true },
     });
     if (!article) {
+      console.warn(
+        `[reviews/approve] Review ${review.id}: makale ${review.entityId} bulunamadı, silinmiş olabilir`,
+      );
       return NextResponse.json(
         { error: 'İlgili makale artık mevcut değil' },
         { status: 404 },

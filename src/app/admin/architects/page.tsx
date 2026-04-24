@@ -23,13 +23,10 @@ const TYPE_LABEL: Record<string, string> = {
   RECORD_LABEL: 'Plak Şirketi',
 };
 
-const TYPE_PILL: Record<string, string> = {
-  PRODUCER: 'bg-violet-500/10 text-violet-300 ring-violet-500/20',
-  STUDIO: 'bg-teal-500/10 text-teal-300 ring-teal-500/20',
-  MANAGER: 'bg-amber-500/10 text-amber-300 ring-amber-500/20',
-  ARRANGER: 'bg-emerald-500/10 text-emerald-300 ring-emerald-500/20',
-  RECORD_LABEL: 'bg-rose-500/10 text-rose-300 ring-rose-500/20',
-};
+// Type renkleri kaldırıldı (editoryal tutarlılık). Tek ton + uppercase
+// tracking. Bkz. listening-paths ve artists sayfasıyla aynı pattern.
+const TYPE_PILL_CLASSNAME =
+  'px-2 py-0.5 backdrop-blur-md bg-black/50 text-[10px] uppercase tracking-[0.15em] font-medium rounded-full ring-1 ring-inset ring-white/15 text-white/80';
 
 export default function ArchitectsPage() {
   const [items, setItems] = useState<Architect[]>([]);
@@ -150,11 +147,7 @@ export default function ArchitectsPage() {
                       {a.name}
                     </h3>
                     <div className="mt-1.5">
-                      <span
-                        className={`inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-semibold ring-1 ring-inset ${
-                          TYPE_PILL[a.type] || 'bg-zinc-800 text-zinc-300 ring-zinc-700'
-                        }`}
-                      >
+                      <span className={`inline-flex items-center ${TYPE_PILL_CLASSNAME}`}>
                         {TYPE_LABEL[a.type] || a.type}
                       </span>
                     </div>

@@ -25,14 +25,12 @@ const TYPE_LABEL: Record<string, string> = {
   DEEP: 'Derin',
 };
 
-const TYPE_PILL: Record<string, string> = {
-  EMOTION: 'bg-rose-500/10 text-rose-300 border-rose-500/20',
-  ERA: 'bg-amber-500/10 text-amber-300 border-amber-500/20',
-  CITY: 'bg-teal-500/10 text-teal-300 border-teal-500/20',
-  CONTRAST: 'bg-violet-500/10 text-violet-300 border-violet-500/20',
-  INTRO: 'bg-emerald-500/10 text-emerald-300 border-emerald-500/20',
-  DEEP: 'bg-indigo-500/10 text-indigo-300 border-indigo-500/20',
-};
+// Type renkleri kaldırıldı (Dilara geri bildirimi: "çok AI duruyor").
+// Her type için ayrı renkli pill dergi/editoryal tona uymuyordu.
+// Artık tek ton, ince border, uppercase tracking — kategori rengiyle
+// değil metniyle okunuyor.
+const TYPE_PILL_CLASSNAME =
+  'inline-flex items-center px-2 py-0.5 rounded-full border border-zinc-700 bg-zinc-900/40 text-[10px] uppercase tracking-[0.15em] font-medium text-zinc-400';
 
 export default function ListeningPathsPage() {
   const [paths, setPaths] = useState<LP[]>([]);
@@ -106,11 +104,7 @@ export default function ListeningPathsPage() {
                   <tr key={p.id} className="hover:bg-zinc-800/30 transition-colors">
                     <td className="px-4 py-2 font-medium text-zinc-100">{p.titleTr}</td>
                     <td className="px-4 py-2">
-                      <span
-                        className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold border ${
-                          TYPE_PILL[p.type] || 'bg-zinc-800 text-zinc-300 border-zinc-700'
-                        }`}
-                      >
+                      <span className={TYPE_PILL_CLASSNAME}>
                         {TYPE_LABEL[p.type] || p.type}
                       </span>
                     </td>

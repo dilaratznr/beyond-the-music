@@ -48,8 +48,14 @@ export async function POST(
         data: { status: 'DRAFT', publishedAt: null },
       });
       revalidateTag(CACHE_TAGS.article, 'max');
+    } else {
+      // Makale silinmişse review'i yine de kapat — ama görünürlük için
+      // log bırak; "reddettim ama makale yoktu" durumunu debug etmek
+      // zorlaşmasın.
+      console.warn(
+        `[reviews/reject] Review ${review.id}: makale ${review.entityId} bulunamadı, silinmiş olabilir. Review yine de REJECTED olarak kapatılıyor.`,
+      );
     }
-    // Makale silinmişse sessizce review'i kapat, hata verme
   }
 
   const updated = await rejectReview(review.id, user.id, note);
