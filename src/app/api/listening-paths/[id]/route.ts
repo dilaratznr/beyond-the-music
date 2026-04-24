@@ -48,11 +48,29 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
   return NextResponse.json(path);
 }
 
-export async function DELETE(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { error } = await requireSectionAccess('LISTENING_PATH', 'canDelete');
   if (error) return error;
 
   const { id } = await params;
+  const { searchParams } = new URL(request.url);
+  const force = searchParams.get('force') === 'true';
+
+  // Path silindiğinde ListeningPathItem'lar cascade ile kaybolur.
+  const itemCount = await prisma.listeningPathItem.count({ where: { pathId: id } });
+
+  if (!force && itemCount > 0) {
+    return NextResponse.json(
+      {
+        error: 'Path has items',
+        requiresConfirmation: true,
+        impact: { items: itemCount },
+        message: `Bu rotada ${itemCount} öğe var. Rota silindiğinde öğeler de kaybolur.`,
+      },
+      { status: 409 },
+    );
+  }
+
   await prisma.listeningPath.delete({ where: { id } });
   revalidateTag(CACHE_TAGS.listeningPath, 'max');
   return NextResponse.json({ success: true });

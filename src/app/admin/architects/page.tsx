@@ -162,6 +162,8 @@ export default function ArchitectsPage() {
                     <DeleteButton
                       endpoint={`/api/architects/${a.id}`}
                       confirmMessage={`"${a.name}" mimarını silmek istediğinizden emin misiniz?`}
+                      entityName={a.name}
+                      entityKind="Mimar"
                       onDeleted={reload}
                     />
                   </div>

@@ -55,11 +55,35 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
   return NextResponse.json(artist);
 }
 
-export async function DELETE(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { error } = await requireSectionAccess('ARTIST', 'canDelete');
   if (error) return error;
 
   const { id } = await params;
+  const { searchParams } = new URL(request.url);
+  const force = searchParams.get('force') === 'true';
+
+  // İlişkili kayıt sayıları — cascade etkisi. Artist silinince Album'ler
+  // cascade ile gider, onların Song'ları da. 50 albüm + 500 şarkı yanlışlıkla
+  // kaybolmasın diye ilk çağrıda sayıları döndürüp kullanıcıdan açık onay
+  // istiyoruz (?force=true).
+  const [albumCount, songCount] = await Promise.all([
+    prisma.album.count({ where: { artistId: id } }),
+    prisma.song.count({ where: { album: { artistId: id } } }),
+  ]);
+
+  if (!force && albumCount + songCount > 0) {
+    return NextResponse.json(
+      {
+        error: 'Artist in use',
+        requiresConfirmation: true,
+        impact: { albums: albumCount, songs: songCount },
+        message: `Bu sanatçının ${albumCount} albümü ve ${songCount} şarkısı var. Sanatçı silindiğinde hepsi birlikte kaybolur.`,
+      },
+      { status: 409 },
+    );
+  }
+
   await prisma.artist.delete({ where: { id } });
   revalidateTag(CACHE_TAGS.artist, 'max');
   return NextResponse.json({ success: true });

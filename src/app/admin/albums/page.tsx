@@ -221,7 +221,9 @@ export default function AlbumsPage() {
                       </Link>
                       <DeleteButton
                         endpoint={`/api/albums/${a.id}`}
-                        confirmMessage={`"${a.title}" albümünü silmek istediğinizden emin misiniz? Şarkıları da silinecek.`}
+                        confirmMessage={`"${a.title}" albümünü silmek istediğinizden emin misiniz?`}
+                        entityName={a.title}
+                        entityKind="Albüm"
                         onDeleted={reload}
                       />
                     </div>

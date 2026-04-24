@@ -40,11 +40,33 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
   return NextResponse.json(architect);
 }
 
-export async function DELETE(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { error } = await requireSectionAccess('ARCHITECT', 'canDelete');
   if (error) return error;
 
   const { id } = await params;
+  const { searchParams } = new URL(request.url);
+  const force = searchParams.get('force') === 'true';
+
+  // Architect silindiğinde ArchitectArtist pivot tablosu cascade ile gider
+  // — sanatçılar kalır ama bu mimarla bağlantıları kopar. Kullanıcıya
+  // etkiyi gösterelim.
+  const linkedArtists = await prisma.architectArtist.count({
+    where: { architectId: id },
+  });
+
+  if (!force && linkedArtists > 0) {
+    return NextResponse.json(
+      {
+        error: 'Architect in use',
+        requiresConfirmation: true,
+        impact: { artists: linkedArtists },
+        message: `Bu mimar ${linkedArtists} sanatçıyla bağlantılı. Silinirse bağlantılar kopar (sanatçılar kalır).`,
+      },
+      { status: 409 },
+    );
+  }
+
   await prisma.architect.delete({ where: { id } });
   revalidateTag(CACHE_TAGS.architect, 'max');
   return NextResponse.json({ success: true });

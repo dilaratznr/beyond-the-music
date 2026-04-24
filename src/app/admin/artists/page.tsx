@@ -194,7 +194,9 @@ export default function ArtistsPage() {
                       </Link>
                       <DeleteButton
                         endpoint={`/api/artists/${a.id}`}
-                        confirmMessage={`"${a.name}" sanatçısını silmek istediğinizden emin misiniz? Albümleri ve şarkıları da silinecek.`}
+                        confirmMessage={`"${a.name}" sanatçısını silmek istediğinizden emin misiniz?`}
+                        entityName={a.name}
+                        entityKind="Sanatçı"
                         onDeleted={reload}
                       />
                     </div>

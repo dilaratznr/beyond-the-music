@@ -43,11 +43,30 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
   return NextResponse.json(album);
 }
 
-export async function DELETE(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { error } = await requireSectionAccess('ALBUM', 'canDelete');
   if (error) return error;
 
   const { id } = await params;
+  const { searchParams } = new URL(request.url);
+  const force = searchParams.get('force') === 'true';
+
+  // Album cascade edildiğinde Song'lar da gider — ?force=true'suz ilk
+  // çağrıda şarkı sayısını bildir ki kullanıcı neyi sileceğini görsün.
+  const songCount = await prisma.song.count({ where: { albumId: id } });
+
+  if (!force && songCount > 0) {
+    return NextResponse.json(
+      {
+        error: 'Album has songs',
+        requiresConfirmation: true,
+        impact: { songs: songCount },
+        message: `Bu albümde ${songCount} şarkı var. Albüm silindiğinde şarkıları da kaybolur.`,
+      },
+      { status: 409 },
+    );
+  }
+
   await prisma.album.delete({ where: { id } });
   revalidateTag(CACHE_TAGS.album, 'max');
   revalidateTag(CACHE_TAGS.song, 'max');

@@ -91,6 +91,23 @@ export async function DELETE(_request: NextRequest, { params }: { params: Promis
     return NextResponse.json({ error: 'Cannot delete yourself' }, { status: 400 });
   }
 
+  // Article.author onDelete yönlendirmesi yok → Prisma foreign key
+  // hatası döner. Kullanıcıya anlamlı bir mesaj verelim: kaç makale var,
+  // önce onları başka bir yazara transfer etmesi lazım. Cascade
+  // istemiyoruz — kullanıcının yazdığı makaleler yazarsız kalmamalı.
+  const articleCount = await prisma.article.count({ where: { authorId: id } });
+  if (articleCount > 0) {
+    return NextResponse.json(
+      {
+        error: 'User has articles',
+        requiresConfirmation: false,
+        impact: { articles: articleCount },
+        message: `Bu kullanıcının ${articleCount} makalesi var. Silmeden önce makaleleri başka bir yazara devret ya da makaleleri sil.`,
+      },
+      { status: 409 },
+    );
+  }
+
   await prisma.user.delete({ where: { id } });
   revalidateTag(CACHE_TAGS.user, 'max');
   return NextResponse.json({ success: true });

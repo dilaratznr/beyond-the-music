@@ -129,6 +129,8 @@ export default function ListeningPathsPage() {
                         <DeleteButton
                           endpoint={`/api/listening-paths/${p.id}`}
                           confirmMessage={`"${p.titleTr}" rotasını silmek istediğinizden emin misiniz?`}
+                          entityName={p.titleTr}
+                          entityKind="Rota"
                           onDeleted={reload}
                         />
                       </div>
