@@ -165,6 +165,15 @@ Eğer bu daveti beklemiyorsan bu e-postayı yok sayabilirsin.`,
     return { emailSent: true };
   } catch (err) {
     console.error('[invite-email] gönderim hatası:', err);
-    return { emailSent: false, error: 'Email gönderilemedi' };
+    // Gerçek hata mesajını response'a koyuyoruz — bu endpoint sadece
+    // SUPER_ADMIN tarafından çağrılıyor, leak değil. Debugging için
+    // kritik (auth-failed / from-not-verified / sandbox-mode vb.).
+    const detail =
+      err instanceof Error
+        ? err.message
+        : typeof err === 'string'
+          ? err
+          : 'unknown error';
+    return { emailSent: false, error: `Email gönderilemedi: ${detail}` };
   }
 }
