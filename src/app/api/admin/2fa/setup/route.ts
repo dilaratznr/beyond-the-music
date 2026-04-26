@@ -23,7 +23,7 @@ export async function POST() {
 
   const existing = await prisma.user.findUnique({
     where: { id: userId },
-    select: { email: true, twoFactorEnabledAt: true },
+    select: { username: true, email: true, twoFactorEnabledAt: true },
   });
   if (!existing) {
     return NextResponse.json({ error: 'User not found' }, { status: 404 });
@@ -35,7 +35,10 @@ export async function POST() {
     );
   }
 
-  const setup = generateTwoFactorSetup(existing.email);
+  // Authenticator app'te hesabı tanıtmak için: email varsa email, yoksa username.
+  // (TOTP standart: issuer:account-label formatında gözükür.)
+  const accountLabel = existing.email ?? existing.username;
+  const setup = generateTwoFactorSetup(accountLabel);
 
   await prisma.user.update({
     where: { id: userId },
