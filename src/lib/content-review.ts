@@ -212,6 +212,76 @@ export async function resolveEditStatus(params: {
 }
 
 /**
+ * Song/ArtistGenre gibi alt kayıtlar — kendi status'u olmayan ama parent
+ * entity'nin yayın durumunu etkileyen operasyonlar için.
+ *
+ * Örnek: editör canPublish=false iken yayındaki bir Album'e şarkı
+ * ekliyor. Song'un kendi status'u yok, ama parent Album PUBLISHED.
+ * Bu durumda:
+ *   - Album status → PENDING_REVIEW (public'ten düşer)
+ *   - ContentReview kuyruğuna ALBUM/EDIT kaydı
+ *
+ * Eğer Album zaten DRAFT/PENDING_REVIEW ise hiçbir şey yapmaz
+ * (zaten public'te değil, editör rahat çalışabilir).
+ *
+ * canPublish=true ise no-op.
+ */
+export async function maybeFlipAlbumOnSongChange(params: {
+  albumId: string;
+  userId: string;
+}): Promise<{ flipped: boolean }> {
+  const canPublish = await canUserPublish(params.userId, 'ALBUM');
+  if (canPublish) return { flipped: false };
+
+  const album = await prisma.album.findUnique({
+    where: { id: params.albumId },
+    select: { id: true, title: true, status: true },
+  });
+  if (!album || album.status !== 'PUBLISHED') return { flipped: false };
+
+  await prisma.album.update({
+    where: { id: album.id },
+    data: { status: 'PENDING_REVIEW' },
+  });
+  await submitForReview({
+    section: 'ALBUM',
+    entityId: album.id,
+    entityTitle: album.title,
+    changeType: 'EDIT',
+    submittedById: params.userId,
+  });
+  return { flipped: true };
+}
+
+/**
+ * Bir entity için en son reddedilen review'i döndürür — edit sayfasında
+ * "Neden reddedildi?" notu göstermek için. Tablo henüz yoksa sessizce
+ * null döner (migration yapılmamış DB'de panel kırılmasın).
+ */
+export async function getLastRejection(
+  section: ReviewSection,
+  entityId: string,
+): Promise<{
+  reviewNote: string | null;
+  reviewedAt: Date | null;
+  reviewedBy: { name: string } | null;
+} | null> {
+  try {
+    return await prisma.contentReview.findFirst({
+      where: { section, entityId, status: 'REJECTED' },
+      orderBy: { reviewedAt: 'desc' },
+      select: {
+        reviewNote: true,
+        reviewedAt: true,
+        reviewedBy: { select: { name: true } },
+      },
+    });
+  } catch {
+    return null;
+  }
+}
+
+/**
  * Bekleyen review sayısı — sidebar badge'i ve dashboard için.
  *
  * `npm run db:push` henüz çalıştırılmamışsa ContentReview tablosu DB'de

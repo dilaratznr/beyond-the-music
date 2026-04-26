@@ -1,7 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
+import { publicApiRateLimit } from '@/lib/rate-limit';
 
 export async function GET(request: NextRequest) {
+  // Search 6 ayrı `findMany` + `contains` ile — DB için pahalı sorgu.
+  // Normal kullanıcı saniyede 1 yazıyorsa 30/min yeter; üzeri scrape'tir.
+  const limited = publicApiRateLimit(request, 'search', 30, 60_000);
+  if (limited) return limited;
+
   const { searchParams } = new URL(request.url);
   const q = searchParams.get('q')?.trim();
   const locale = searchParams.get('locale') || 'tr';

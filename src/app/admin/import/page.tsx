@@ -2,8 +2,11 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
+import { useSession } from 'next-auth/react';
+import { useRouter } from 'next/navigation';
 import { IconUpload, IconArtist, IconAlbum, IconSong, IconExternal } from '@/components/admin/Icons';
 import { useConfirm } from '@/components/admin/useConfirm';
+import { InlineLoading } from '@/components/admin/Loading';
 
 interface ArtistOption {
   id: string;
@@ -60,6 +63,10 @@ Hep Sonradan,2003,,2,Söz,4:10,false,,`;
  *    each list page itself); this screen is just the import side.
  */
 export default function ImportPage() {
+  const { data: session, status } = useSession();
+  const router = useRouter();
+  const isSuperAdmin = session?.user?.role === 'SUPER_ADMIN';
+
   const [artists, setArtists] = useState<ArtistOption[]>([]);
   const [artistId, setArtistId] = useState('');
   const [csv, setCsv] = useState('');
@@ -71,7 +78,16 @@ export default function ImportPage() {
   const fileRef = useRef<HTMLInputElement>(null);
   const { confirm, dialog: confirmDialog } = useConfirm();
 
+  // CSV import toplu yazma operasyonu — editörün canPublish bypass'ına
+  // fırsat vermemek için super-admin-only. Non-super-admin dashboard'a
+  // redirect.
   useEffect(() => {
+    if (status === 'loading') return;
+    if (!isSuperAdmin) router.replace('/admin/dashboard');
+  }, [status, isSuperAdmin, router]);
+
+  useEffect(() => {
+    if (!isSuperAdmin) return;
     fetch('/api/artists?page=1&limit=500')
       .then((r) => r.json())
       .then((d) => {
@@ -81,7 +97,7 @@ export default function ImportPage() {
       .catch(() => {
         setError('Sanatçı listesi yüklenemedi.');
       });
-  }, []);
+  }, [isSuperAdmin]);
 
   const onFile = useCallback(async (file: File) => {
     const text = await file.text();
@@ -169,6 +185,10 @@ export default function ImportPage() {
     () => artists.find((a) => a.id === artistId)?.name ?? '',
     [artists, artistId],
   );
+
+  if (status === 'loading' || !isSuperAdmin) {
+    return <InlineLoading />;
+  }
 
   return (
     <div className="max-w-5xl">

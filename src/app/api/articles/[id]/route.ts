@@ -6,6 +6,9 @@ import { CACHE_TAGS } from '@/lib/db-cache';
 import { slugify } from '@/lib/utils';
 import { parseScheduledFor } from '@/lib/datetime-local';
 import { canUserPublish, submitForReview } from '@/lib/content-review';
+import { sanitizeRichText } from '@/lib/sanitize-html';
+import { validateImageUrl } from '@/lib/url-validation';
+import { audit, extractContext } from '@/lib/audit-log';
 
 export async function GET(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -72,10 +75,20 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
     data.titleEn = titleEn;
     data.slug = slugify(titleEn);
   }
-  if (contentTr !== undefined) data.contentTr = contentTr || null;
-  if (contentEn !== undefined) data.contentEn = contentEn || null;
+  // Bkz. POST handler — rich-text içerik DB'ye yazılmadan önce sanitize.
+  if (contentTr !== undefined) data.contentTr = sanitizeRichText(contentTr);
+  if (contentEn !== undefined) data.contentEn = sanitizeRichText(contentEn);
   if (category !== undefined) data.category = category;
-  if (featuredImage !== undefined) data.featuredImage = featuredImage || null;
+  if (featuredImage !== undefined) {
+    const imgValidation = validateImageUrl(featuredImage);
+    if (!imgValidation.ok) {
+      return NextResponse.json(
+        { error: `featuredImage: ${imgValidation.error}` },
+        { status: 400 },
+      );
+    }
+    data.featuredImage = featuredImage || null;
+  }
   if (relatedGenreId !== undefined) data.relatedGenreId = relatedGenreId || null;
   if (relatedArtistId !== undefined) data.relatedArtistId = relatedArtistId || null;
 
@@ -157,12 +170,26 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
   return NextResponse.json(article);
 }
 
-export async function DELETE(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const { error } = await requireSectionAccess('ARTICLE', 'canDelete');
-  if (error) return error;
+export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { error, user } = await requireSectionAccess('ARTICLE', 'canDelete');
+  if (error || !user) return error;
 
+  const ctx = extractContext(request);
   const { id } = await params;
+  const target = await prisma.article.findUnique({
+    where: { id },
+    select: { titleTr: true, titleEn: true },
+  });
   await prisma.article.delete({ where: { id } });
+  await audit({
+    event: 'ARTICLE_DELETED',
+    actorId: user.id,
+    targetId: id,
+    targetType: 'ARTICLE',
+    ip: ctx.ip,
+    userAgent: ctx.userAgent,
+    detail: target?.titleTr ?? target?.titleEn ?? null,
+  });
   revalidateTag(CACHE_TAGS.article, 'max');
   return NextResponse.json({ success: true });
 }

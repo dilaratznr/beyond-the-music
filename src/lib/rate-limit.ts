@@ -64,3 +64,34 @@ export function getClientIp(req: Request): string {
   if (real) return real.trim();
   return 'unknown';
 }
+
+/**
+ * Public-facing GET endpoint'lerine tek satırla rate-limit takmak için
+ * yardımcı. Limit'in üstüne çıkıldığında 429 + `Retry-After` döner;
+ * altında null dönüp normal akışa devam ettirir.
+ *
+ * Varsayılan: IP başına dakikada 60 istek — normal kullanıcı browse'unu
+ * etkilemeyecek kadar yumuşak ama scrape/DDoS botlarının pratik hızını
+ * kırıyor. Endpoint başına özelleştirmek için limit/windowMs ver.
+ */
+import { NextResponse } from 'next/server';
+
+export function publicApiRateLimit(
+  req: Request,
+  routeKey: string,
+  limit = 60,
+  windowMs = 60_000,
+): NextResponse | null {
+  const ip = getClientIp(req);
+  const result = rateLimit(`public:${routeKey}:${ip}`, limit, windowMs);
+  if (result.success) return null;
+  return NextResponse.json(
+    { error: 'Too many requests' },
+    {
+      status: 429,
+      headers: {
+        'Retry-After': String(Math.ceil(result.resetInMs / 1000)),
+      },
+    },
+  );
+}

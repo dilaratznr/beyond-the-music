@@ -5,8 +5,12 @@ import { requireSectionAccess } from '@/lib/auth-guard';
 import { CACHE_TAGS } from '@/lib/db-cache';
 import { slugify } from '@/lib/utils';
 import { resolveCreateStatus, maybeCreateReviewOnCreate } from '@/lib/content-review';
+import { publicApiRateLimit } from '@/lib/rate-limit';
 
 export async function GET(request: NextRequest) {
+  const limited = publicApiRateLimit(request, 'albums');
+  if (limited) return limited;
+
   const { searchParams } = new URL(request.url);
   const page = parseInt(searchParams.get('page') || '1');
   const limit = parseInt(searchParams.get('limit') || '20');

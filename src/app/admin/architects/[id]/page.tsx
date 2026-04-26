@@ -17,6 +17,8 @@ import {
   FormError,
 } from '@/components/admin/FormField';
 import { translatePairs } from '@/lib/translate-client';
+import { useCanPublish } from '@/components/admin/useCanPublish';
+import ReviewNotice from '@/components/admin/ReviewNotice';
 
 const TYPES = [
   { v: 'PRODUCER', l: 'Prodüktör' },
@@ -42,6 +44,12 @@ export default function EditArchitectPage({ params }: { params: Promise<{ id: st
   const [saving, setSaving] = useState(false);
   const [translating, setTranslating] = useState(false);
   const [error, setError] = useState('');
+  const [lastRejection, setLastRejection] = useState<{
+    reviewNote: string | null;
+    reviewedAt: string | null;
+    reviewedBy: { name: string } | null;
+  } | null>(null);
+  const canPublish = useCanPublish('ARCHITECT');
 
   useEffect(() => {
     let cancelled = false;
@@ -59,6 +67,7 @@ export default function EditArchitectPage({ params }: { params: Promise<{ id: st
             bioEn: data.bioEn || '',
             image: data.image || '',
           });
+          if (data.lastRejection) setLastRejection(data.lastRejection);
         }
         setLoading(false);
       })
@@ -131,6 +140,8 @@ export default function EditArchitectPage({ params }: { params: Promise<{ id: st
 
       <form onSubmit={handleSubmit} className="space-y-4">
         {error && <FormError>{error}</FormError>}
+
+        <ReviewNotice section="ARCHITECT" canPublish={canPublish} lastRejection={lastRejection} />
 
         <div className="grid lg:grid-cols-[1fr_260px] gap-5">
           {/* Left: main fields */}
@@ -209,8 +220,8 @@ export default function EditArchitectPage({ params }: { params: Promise<{ id: st
 
         <FormActions
           cancelHref="/admin/architects"
-          submitLabel="Kaydet"
-          submittingLabel={translating ? 'Çevriliyor…' : 'Kaydediliyor…'}
+          submitLabel={canPublish === false ? 'Onaya Gönder' : 'Kaydet'}
+          submittingLabel={translating ? 'Çevriliyor…' : canPublish === false ? 'Gönderiliyor…' : 'Kaydediliyor…'}
           submitting={saving}
           disabled={!form.name}
           extra={

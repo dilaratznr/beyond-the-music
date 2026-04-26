@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { revalidateTag } from 'next/cache';
 import prisma from '@/lib/prisma';
-import { requireSectionAccess } from '@/lib/auth-guard';
+import { requireAuth } from '@/lib/auth-guard';
 import { CACHE_TAGS } from '@/lib/db-cache';
 import { slugify } from '@/lib/utils';
 import { parseCsv, rowsToRecords, parseBool, parseReleaseDate, parseTrackNumber } from '@/lib/csv';
@@ -45,7 +45,11 @@ interface AlbumPlan {
 }
 
 export async function POST(request: NextRequest) {
-  const { error } = await requireSectionAccess('ALBUM', 'canCreate');
+  // Toplu CSV import sadece Super Admin'e açık — editörün `canPublish`
+  // yoksa bile yüzlerce albümü bypass ile yayınlamasını engeller. Tek
+  // seferde 100+ kayıt yazan bir endpoint onay kuyruğunda mantıklı
+  // görünmüyor; import kısıtlaması daha temiz çözüm.
+  const { error } = await requireAuth('SUPER_ADMIN');
   if (error) return error;
 
   const body = await request.json().catch(() => null);

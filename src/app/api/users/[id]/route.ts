@@ -3,6 +3,7 @@ import { revalidateTag } from 'next/cache';
 import prisma from '@/lib/prisma';
 import { requireAuth } from '@/lib/auth-guard';
 import { CACHE_TAGS } from '@/lib/db-cache';
+import { audit, extractContext } from '@/lib/audit-log';
 
 export async function GET(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { error } = await requireAuth('SUPER_ADMIN');
@@ -22,8 +23,13 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
   const { error, user: actor } = await requireAuth('SUPER_ADMIN');
   if (error || !actor) return error;
 
+  const ctx = extractContext(request);
   const { id } = await params;
   const body = await request.json();
+  const before = await prisma.user.findUnique({
+    where: { id },
+    select: { role: true, isActive: true },
+  });
   // Password artık bu endpoint'ten kabul edilmiyor — Super Admin
   // başkasının şifresini belirleyemez. Yeni şifre için "Davet Linki
   // Yeniden Gönder" akışı kullanılır (/api/users/[id]/resend-invite).
@@ -76,14 +82,51 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
     }
   }
 
+  // Audit: rol veya isActive değiştiyse ayrı event'lerle yaz, böylece
+  // breach response'ta "şu kullanıcının rolü ne zaman yükseltildi"
+  // sorgusu hızlı olur.
+  if (before && role && role !== before.role) {
+    await audit({
+      event: 'USER_ROLE_CHANGED',
+      actorId: actor.id,
+      targetId: id,
+      targetType: 'USER',
+      ip: ctx.ip,
+      userAgent: ctx.userAgent,
+      detail: `${before.role} → ${role}`,
+    });
+  }
+  if (before && typeof isActive === 'boolean' && isActive !== before.isActive) {
+    await audit({
+      event: isActive ? 'USER_ACTIVATED' : 'USER_DEACTIVATED',
+      actorId: actor.id,
+      targetId: id,
+      targetType: 'USER',
+      ip: ctx.ip,
+      userAgent: ctx.userAgent,
+    });
+  }
+  if (permissions && Array.isArray(permissions)) {
+    await audit({
+      event: 'PERMISSIONS_CHANGED',
+      actorId: actor.id,
+      targetId: id,
+      targetType: 'USER',
+      ip: ctx.ip,
+      userAgent: ctx.userAgent,
+      detail: `${permissions.length} sections`,
+    });
+  }
+
   revalidateTag(CACHE_TAGS.user, 'max');
   return NextResponse.json(user);
 }
 
-export async function DELETE(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { error, user } = await requireAuth('SUPER_ADMIN');
   if (error) return error;
 
+  const ctx = extractContext(request);
   const { id } = await params;
 
   // Prevent self-deletion
@@ -109,6 +152,14 @@ export async function DELETE(_request: NextRequest, { params }: { params: Promis
   }
 
   await prisma.user.delete({ where: { id } });
+  await audit({
+    event: 'USER_DELETED',
+    actorId: user!.id,
+    targetId: id,
+    targetType: 'USER',
+    ip: ctx.ip,
+    userAgent: ctx.userAgent,
+  });
   revalidateTag(CACHE_TAGS.user, 'max');
   return NextResponse.json({ success: true });
 }

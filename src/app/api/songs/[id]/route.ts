@@ -3,6 +3,7 @@ import { revalidateTag } from 'next/cache';
 import prisma from '@/lib/prisma';
 import { requireSectionAccess } from '@/lib/auth-guard';
 import { CACHE_TAGS } from '@/lib/db-cache';
+import { maybeFlipAlbumOnSongChange } from '@/lib/content-review';
 
 export async function GET(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -24,8 +25,8 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
 }
 
 export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const { error } = await requireSectionAccess('ALBUM', 'canEdit');
-  if (error) return error;
+  const { error, user } = await requireSectionAccess('ALBUM', 'canEdit');
+  if (error || !user) return error;
 
   const { id } = await params;
   const body = await request.json();
@@ -43,17 +44,32 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
   if (youtubeUrl !== undefined) data.youtubeUrl = youtubeUrl || null;
 
   const song = await prisma.song.update({ where: { id }, data });
+
+  // Şarkının parent albümünü onay kapısından geçir — canPublish yoksa
+  // yayındaki album PENDING'e düşer.
+  const { flipped } = await maybeFlipAlbumOnSongChange({
+    albumId: song.albumId,
+    userId: user.id,
+  });
+
   revalidateTag(CACHE_TAGS.song, 'max');
   revalidateTag(CACHE_TAGS.album, 'max');
-  return NextResponse.json(song);
+  return NextResponse.json({ ...song, requiresReview: flipped });
 }
 
 export async function DELETE(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const { error } = await requireSectionAccess('ALBUM', 'canDelete');
-  if (error) return error;
+  const { error, user } = await requireSectionAccess('ALBUM', 'canDelete');
+  if (error || !user) return error;
 
   const { id } = await params;
+  // Parent album'ü önce al — delete sonrası FK kayboluyor.
+  const song = await prisma.song.findUnique({ where: { id }, select: { albumId: true } });
   await prisma.song.delete({ where: { id } });
+
+  if (song) {
+    await maybeFlipAlbumOnSongChange({ albumId: song.albumId, userId: user.id });
+  }
+
   revalidateTag(CACHE_TAGS.song, 'max');
   revalidateTag(CACHE_TAGS.album, 'max');
   return NextResponse.json({ success: true });

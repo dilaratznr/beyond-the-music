@@ -30,9 +30,28 @@ export default function AiChat({ locale }: { locale: string }) {
     setLoading(false);
   }
 
+  // LLM çıktısı `dangerouslySetInnerHTML` ile render ediliyor → prompt-
+  // injection ile saldırgan modele `<script>` veya `<img onerror>` ürettirebilir.
+  // Bu yüzden ÖNCE tüm HTML'i escape ediyoruz, SONRA whitelist edilmiş
+  // markdown-vari işaretlemeyi (bold/italic/list/break) güvenli tag'lere
+  // çeviriyoruz. Escape sonrası gelen tüm `<` artık `&lt;` olduğu için
+  // attacker tag'leri DOM'a hiçbir zaman ulaşmıyor.
+  function escapeHtml(s: string) {
+    return s
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
   function fmt(t: string) {
-    return t.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/\*(.*?)\*/g, '<em>$1</em>')
-      .replace(/\n- /g, '<br/>• ').replace(/\n\n/g, '<br/><br/>').replace(/\n/g, '<br/>');
+    return escapeHtml(t)
+      .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+      .replace(/\*(.*?)\*/g, '<em>$1</em>')
+      .replace(/\n- /g, '<br/>• ')
+      .replace(/\n\n/g, '<br/><br/>')
+      .replace(/\n/g, '<br/>');
   }
 
   const chips = locale === 'tr'

@@ -3,20 +3,10 @@ import crypto from 'node:crypto';
 import bcrypt from 'bcryptjs';
 import prisma from '@/lib/prisma';
 import { rateLimit, getClientIp } from '@/lib/rate-limit';
+import { validatePassword } from '@/lib/password-policy';
 
 function hashToken(token: string): string {
   return crypto.createHash('sha256').update(token).digest('hex');
-}
-
-function validatePassword(pw: string): string | null {
-  if (pw.length < 8) return 'Password must be at least 8 characters';
-  if (pw.length > 200) return 'Password too long';
-  // At least one letter + one digit — keeps the bar low for the admin team
-  // without inventing exotic rules.
-  if (!/[a-zA-Z]/.test(pw) || !/[0-9]/.test(pw)) {
-    return 'Password must include letters and numbers';
-  }
-  return null;
 }
 
 export async function POST(request: NextRequest) {
@@ -46,9 +36,12 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Invalid or expired token' }, { status: 400 });
   }
 
-  const pwError = validatePassword(password);
-  if (pwError) {
-    return NextResponse.json({ error: pwError }, { status: 400 });
+  // Şifre validation context-aware (email/name içermesin) — ama o noktada
+  // hangi user olduğunu henüz bilmiyoruz. Önce minimum koşulları kontrol
+  // ediyoruz; user'ı buldumuzda tam validation tekrar.
+  const minCheck = validatePassword(password);
+  if (!minCheck.ok) {
+    return NextResponse.json({ error: minCheck.error }, { status: 400 });
   }
 
   const tokenHash = hashToken(token);
@@ -87,6 +80,15 @@ export async function POST(request: NextRequest) {
 
   if (!tokenValid || !record || !user || !user.isActive) {
     return NextResponse.json({ error: 'Invalid or expired token' }, { status: 400 });
+  }
+
+  // Tam validation — user context'iyle (email/name içermesin).
+  const fullCheck = validatePassword(password, {
+    email: user.email,
+    name: user.name,
+  });
+  if (!fullCheck.ok) {
+    return NextResponse.json({ error: fullCheck.error }, { status: 400 });
   }
 
   // Use a transaction so we update the password and consume the token atomically.

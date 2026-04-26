@@ -17,6 +17,8 @@ import {
   FormError,
 } from '@/components/admin/FormField';
 import { translatePairs } from '@/lib/translate-client';
+import { useCanPublish } from '@/components/admin/useCanPublish';
+import ReviewNotice from '@/components/admin/ReviewNotice';
 
 interface GenreOption {
   id: string;
@@ -48,6 +50,12 @@ export default function EditArtistPage({ params }: { params: Promise<{ id: strin
   const [saving, setSaving] = useState(false);
   const [translating, setTranslating] = useState(false);
   const [error, setError] = useState('');
+  const [lastRejection, setLastRejection] = useState<{
+    reviewNote: string | null;
+    reviewedAt: string | null;
+    reviewedBy: { name: string } | null;
+  } | null>(null);
+  const canPublish = useCanPublish('ARTIST');
 
   useEffect(() => {
     let cancelled = false;
@@ -70,6 +78,7 @@ export default function EditArtistPage({ params }: { params: Promise<{ id: strin
               ? artist.genres.map((g: { genreId: string }) => g.genreId)
               : [],
           });
+          if (artist.lastRejection) setLastRejection(artist.lastRejection);
         }
         setGenres(Array.isArray(genresList) ? genresList : []);
         setLoading(false);
@@ -159,6 +168,8 @@ export default function EditArtistPage({ params }: { params: Promise<{ id: strin
 
       <form onSubmit={handleSubmit} className="space-y-4">
         {error && <FormError>{error}</FormError>}
+
+        <ReviewNotice section="ARTIST" canPublish={canPublish} lastRejection={lastRejection} />
 
         <div className="grid lg:grid-cols-[1fr_260px] gap-5">
           {/* Left: main fields */}
@@ -262,8 +273,8 @@ export default function EditArtistPage({ params }: { params: Promise<{ id: strin
 
         <FormActions
           cancelHref="/admin/artists"
-          submitLabel="Kaydet"
-          submittingLabel={translating ? 'Çevriliyor…' : 'Kaydediliyor…'}
+          submitLabel={canPublish === false ? 'Onaya Gönder' : 'Kaydet'}
+          submittingLabel={translating ? 'Çevriliyor…' : canPublish === false ? 'Gönderiliyor…' : 'Kaydediliyor…'}
           submitting={saving}
           disabled={!form.name}
           extra={

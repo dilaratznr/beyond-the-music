@@ -4,7 +4,7 @@ import prisma from '@/lib/prisma';
 import { requireSectionAccess } from '@/lib/auth-guard';
 import { CACHE_TAGS } from '@/lib/db-cache';
 import { slugify } from '@/lib/utils';
-import { resolveEditStatus } from '@/lib/content-review';
+import { resolveEditStatus, getLastRejection } from '@/lib/content-review';
 
 export async function GET(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -22,7 +22,8 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
     },
   });
   if (!path) return NextResponse.json({ error: 'Listening path not found' }, { status: 404 });
-  return NextResponse.json(path);
+  const lastRejection = await getLastRejection('LISTENING_PATH', id);
+  return NextResponse.json({ ...path, lastRejection });
 }
 
 export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {

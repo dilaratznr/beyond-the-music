@@ -4,7 +4,7 @@ import prisma from '@/lib/prisma';
 import { requireSectionAccess } from '@/lib/auth-guard';
 import { CACHE_TAGS } from '@/lib/db-cache';
 import { slugify } from '@/lib/utils';
-import { resolveEditStatus } from '@/lib/content-review';
+import { resolveEditStatus, getLastRejection } from '@/lib/content-review';
 
 export async function GET(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -16,7 +16,8 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
     },
   });
   if (!album) return NextResponse.json({ error: 'Album not found' }, { status: 404 });
-  return NextResponse.json(album);
+  const lastRejection = await getLastRejection('ALBUM', id);
+  return NextResponse.json({ ...album, lastRejection });
 }
 
 export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {

@@ -8,6 +8,8 @@ import DeleteButton from '@/components/admin/DeleteButton';
 import ImageUploader from '@/components/admin/ImageUploader';
 import { FormSkeleton } from '@/components/admin/Loading';
 import ListeningPathItems from '@/components/admin/ListeningPathItems';
+import { useCanPublish } from '@/components/admin/useCanPublish';
+import ReviewNotice from '@/components/admin/ReviewNotice';
 
 const TYPES = [
   { v: 'EMOTION', l: 'Duygu' },
@@ -34,6 +36,12 @@ export default function EditListeningPathPage({ params }: { params: Promise<{ id
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const [lastRejection, setLastRejection] = useState<{
+    reviewNote: string | null;
+    reviewedAt: string | null;
+    reviewedBy: { name: string } | null;
+  } | null>(null);
+  const canPublish = useCanPublish('LISTENING_PATH');
 
   useEffect(() => {
     fetch(`/api/listening-paths/${id}`)
@@ -49,6 +57,7 @@ export default function EditListeningPathPage({ params }: { params: Promise<{ id
             descriptionEn: data.descriptionEn || '',
             image: data.image || '',
           });
+          if (data.lastRejection) setLastRejection(data.lastRejection);
         }
       })
       .finally(() => setLoading(false));
@@ -100,7 +109,14 @@ export default function EditListeningPathPage({ params }: { params: Promise<{ id
         </div>
       </div>
       <form onSubmit={handleSubmit} className="space-y-4 bg-zinc-900/40 p-6 rounded-lg border border-zinc-800 max-w-2xl">
-        {error && <div className="p-3 bg-red-500/10 border border-red-500/20 text-red-300 text-sm rounded-lg">{error}</div>}
+        {error && (
+          <div className="flex items-start gap-2 p-3 bg-zinc-900/60 border border-zinc-800 text-zinc-200 text-sm rounded-lg">
+            <span className="mt-1.5 w-1.5 h-1.5 rounded-full bg-rose-400 flex-shrink-0" aria-hidden="true" />
+            <span>{error}</span>
+          </div>
+        )}
+
+        <ReviewNotice section="LISTENING_PATH" canPublish={canPublish} lastRejection={lastRejection} />
         <div className="grid grid-cols-2 gap-4">
           <div>
             <label htmlFor="lp-title-tr" className="block text-sm font-semibold text-zinc-100 tracking-tight mb-1">Başlık (TR)</label>
@@ -139,7 +155,13 @@ export default function EditListeningPathPage({ params }: { params: Promise<{ id
         </div>
         <button type="submit" disabled={saving}
           className="w-full py-2.5 bg-white text-zinc-950 rounded-lg font-medium hover:bg-zinc-200 disabled:opacity-50">
-          {saving ? 'Kaydediliyor…' : 'Kaydet'}
+          {saving
+            ? canPublish === false
+              ? 'Gönderiliyor…'
+              : 'Kaydediliyor…'
+            : canPublish === false
+              ? 'Onaya Gönder'
+              : 'Kaydet'}
         </button>
       </form>
 

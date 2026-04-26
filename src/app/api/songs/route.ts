@@ -3,6 +3,8 @@ import { revalidateTag } from 'next/cache';
 import prisma from '@/lib/prisma';
 import { requireSectionAccess } from '@/lib/auth-guard';
 import { CACHE_TAGS } from '@/lib/db-cache';
+import { maybeFlipAlbumOnSongChange } from '@/lib/content-review';
+import { publicApiRateLimit } from '@/lib/rate-limit';
 
 /**
  * Songs are subordinate to Albums — they inherit the ALBUM permission
@@ -10,6 +12,9 @@ import { CACHE_TAGS } from '@/lib/db-cache';
  */
 
 export async function GET(request: NextRequest) {
+  const limited = publicApiRateLimit(request, 'songs');
+  if (limited) return limited;
+
   const { searchParams } = new URL(request.url);
   const page = parseInt(searchParams.get('page') || '1');
   const limit = parseInt(searchParams.get('limit') || '20');
@@ -45,8 +50,8 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
-  const { error } = await requireSectionAccess('ALBUM', 'canCreate');
-  if (error) return error;
+  const { error, user } = await requireSectionAccess('ALBUM', 'canCreate');
+  if (error || !user) return error;
 
   const body = await request.json();
   const { title, albumId, trackNumber, duration, isDeepCut, spotifyUrl, youtubeUrl } = body;
@@ -71,7 +76,12 @@ export async function POST(request: NextRequest) {
     },
   });
 
+  // Parent album yayındaysa ve kullanıcı canPublish değilse → album'ü
+  // PENDING'e çek. Song'un kendi status'u yok, parent'ın yayın durumunu
+  // değiştirmek yeterli.
+  const { flipped } = await maybeFlipAlbumOnSongChange({ albumId, userId: user.id });
+
   revalidateTag(CACHE_TAGS.song, 'max');
   revalidateTag(CACHE_TAGS.album, 'max');
-  return NextResponse.json(song, { status: 201 });
+  return NextResponse.json({ ...song, requiresReview: flipped }, { status: 201 });
 }

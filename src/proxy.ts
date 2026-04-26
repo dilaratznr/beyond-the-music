@@ -49,8 +49,83 @@ function buildAdminCsp(nonce: string): string {
   ].join('; ');
 }
 
+/**
+ * State-değiştiren HTTP method'ları — bunlara CSRF/Origin kontrolü
+ * uygulanıyor. GET/HEAD/OPTIONS spec gereği safe; mutation yapan
+ * endpoint'ler aşağıdakiler.
+ */
+const MUTATING_METHODS = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
+
+/**
+ * /api altındaki mutating istekler için Origin header doğrulaması.
+ *
+ * NextAuth v4 Credentials provider'ı CSRF token üretmiyor; cookie
+ * httpOnly + SameSite=lax kombinasyonu çoğu CSRF saldırısını zaten
+ * keser, ama "lax" GET ve top-level POST'ları geçirir → form action
+ * attack'i hâlâ teorik olarak mümkün. Origin/Referer header'ı tarayıcı
+ * tarafından attacker JS'in değiştiremeyeceği bir şekilde set edilir;
+ * same-origin doğrulaması bunu pinler.
+ *
+ * Origin kontrolü:
+ *   - Origin header VARSA → host'umuzla eşleşmeli
+ *   - YOKSA Referer'ı kontrol et (eski tarayıcılar)
+ *   - İkisi de yoksa same-origin değil sayıyoruz (fail-closed)
+ *
+ * Server Action'lar bu yoldan geçmez — Next.js kendi içinde origin
+ * doğrulaması yapar (https://nextjs.org/blog/security-nextjs-server-components-actions#csrf).
+ */
+function isSameOrigin(request: NextRequest): boolean {
+  const origin = request.headers.get('origin');
+  const referer = request.headers.get('referer');
+  const host = request.headers.get('host');
+  if (!host) return false;
+
+  const expected = new Set([
+    `http://${host}`,
+    `https://${host}`,
+  ]);
+
+  if (origin) {
+    return expected.has(origin);
+  }
+  if (referer) {
+    try {
+      const refUrl = new URL(referer);
+      return refUrl.host === host;
+    } catch {
+      return false;
+    }
+  }
+  // Origin VE Referer ikisi de yoksa → fail-closed.
+  return false;
+}
+
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
+  const method = request.method.toUpperCase();
+
+  // ── /api: mutating isteklerde same-origin zorunlu ──────────────────
+  //
+  // /api/auth/* (NextAuth) ve /api/cron/* hariç — NextAuth kendi CSRF
+  // mekanizmasını çalıştırıyor; cron endpoint'leri Bearer token ile
+  // kimlik doğrulama yapıyor, tarayıcıdan değil dış scheduler'dan
+  // çağrılıyor (Origin header'ı yok, doğal olarak).
+  //
+  // Bu blok /api/* içinse erken return ediyor — aşağıdaki admin/locale
+  // mantığı API yoluna uygulanmasın diye.
+  if (pathname.startsWith('/api/')) {
+    const skipCsrf =
+      pathname.startsWith('/api/auth/') || pathname.startsWith('/api/cron/');
+    if (MUTATING_METHODS.has(method) && !skipCsrf) {
+      if (!isSameOrigin(request)) {
+        return NextResponse.json(
+          { error: 'Forbidden — cross-origin request' },
+          { status: 403 },
+        );
+      }
+    }
+    return NextResponse.next();
+  }
 
   // ── Admin: auth gate + role check + strict per-request nonce CSP ───
   if (pathname.startsWith('/admin')) {
@@ -114,6 +189,17 @@ export async function proxy(request: NextRequest) {
       request: { headers: requestHeaders },
     });
     response.headers.set('Content-Security-Policy', csp);
+    // Admin sayfaları kişiye özel + auth'la korunmuş — browser back-button,
+    // proxy cache veya CDN'de tutulmamalı. Logout sonrası "back" tuşu
+    // önceki admin sayfasını cache'ten çekmesin diye no-store şart.
+    // `private` zaten paylaşılan cache'e izin vermiyor; `must-revalidate`
+    // intermediate proxy'lerin stale serving'ini bloke ediyor.
+    response.headers.set(
+      'Cache-Control',
+      'private, no-store, no-cache, must-revalidate, max-age=0',
+    );
+    response.headers.set('Pragma', 'no-cache');
+    response.headers.set('Expires', '0');
     return response;
   }
 
@@ -145,11 +231,14 @@ export const config = {
     //   manifest.webmanifest, robots.txt,
     //   sitemap.xml                      — Next file-convention metadata
     //   uploads                          — our content-addressed images
-    //   api                              — JSON handlers, never HTML
     //   tr, en                           — locale-prefixed public pages
+    //
+    // NOT: /api dahil edildi (CSRF/Origin check için). Mutating method'lar
+    // için same-origin doğrulaması yapılıyor; safe method'lar (GET/HEAD)
+    // hızlı geçiyor (NextResponse.next).
     {
       source:
-        '/((?!_next/static|_next/image|favicon\\.ico|opengraph-image|twitter-image|icon|apple-icon|manifest\\.webmanifest|robots\\.txt|sitemap\\.xml|uploads|api|tr/|en/|tr$|en$).*)',
+        '/((?!_next/static|_next/image|favicon\\.ico|opengraph-image|twitter-image|icon|apple-icon|manifest\\.webmanifest|robots\\.txt|sitemap\\.xml|uploads|tr/|en/|tr$|en$).*)',
       missing: [
         { type: 'header', key: 'next-router-prefetch' },
         { type: 'header', key: 'purpose', value: 'prefetch' },

@@ -18,6 +18,8 @@ import {
 } from '@/components/admin/FormField';
 import { translatePairs } from '@/lib/translate-client';
 import AlbumSongs from '@/components/admin/AlbumSongs';
+import { useCanPublish } from '@/components/admin/useCanPublish';
+import ReviewNotice from '@/components/admin/ReviewNotice';
 
 interface ArtistOption {
   id: string;
@@ -43,6 +45,12 @@ export default function EditAlbumPage({ params }: { params: Promise<{ id: string
   const [translating, setTranslating] = useState(false);
   const [error, setError] = useState('');
   const [songsReloadToken, setSongsReloadToken] = useState(0);
+  const [lastRejection, setLastRejection] = useState<{
+    reviewNote: string | null;
+    reviewedAt: string | null;
+    reviewedBy: { name: string } | null;
+  } | null>(null);
+  const canPublish = useCanPublish('ALBUM');
 
   useEffect(() => {
     let cancelled = false;
@@ -63,6 +71,7 @@ export default function EditAlbumPage({ params }: { params: Promise<{ id: string
             descriptionTr: album.descriptionTr || '',
             descriptionEn: album.descriptionEn || '',
           });
+          if (album.lastRejection) setLastRejection(album.lastRejection);
         }
         setArtists(Array.isArray(artistsList) ? artistsList : []);
         setLoading(false);
@@ -145,6 +154,8 @@ export default function EditAlbumPage({ params }: { params: Promise<{ id: string
 
       <form onSubmit={handleSubmit} className="space-y-4">
         {error && <FormError>{error}</FormError>}
+
+        <ReviewNotice section="ALBUM" canPublish={canPublish} lastRejection={lastRejection} />
 
         <div className="grid lg:grid-cols-[1fr_260px] gap-5">
           {/* Left: main fields */}
@@ -237,8 +248,8 @@ export default function EditAlbumPage({ params }: { params: Promise<{ id: string
 
         <FormActions
           cancelHref="/admin/albums"
-          submitLabel="Kaydet"
-          submittingLabel={translating ? 'Çevriliyor…' : 'Kaydediliyor…'}
+          submitLabel={canPublish === false ? 'Onaya Gönder' : 'Kaydet'}
+          submittingLabel={translating ? 'Çevriliyor…' : canPublish === false ? 'Gönderiliyor…' : 'Kaydediliyor…'}
           submitting={saving}
           disabled={!form.title || !form.artistId}
           extra={

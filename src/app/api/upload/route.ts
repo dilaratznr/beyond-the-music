@@ -5,6 +5,7 @@ import { CACHE_TAGS } from '@/lib/db-cache';
 import { writeFile, mkdir } from 'fs/promises';
 import path from 'path';
 import prisma from '@/lib/prisma';
+import { validateImageBuffer } from '@/lib/file-validation';
 
 // Mime → canonical extension. We derive the extension from the validated
 // mime type rather than trusting the original filename, which prevents
@@ -72,6 +73,18 @@ export async function POST(request: NextRequest) {
   const filename = `${Date.now()}-${Math.random().toString(36).substring(2, 10)}.${ext}`;
 
   const buffer = Buffer.from(await file.arrayBuffer());
+
+  // Magic-byte + sharp metadata validation. Browser'ın söylediği `file.type`
+  // kolayca spoof'lanır; gerçek dosya içeriğinin claim edilen tip olduğunu
+  // doğrula. Ayrıca pixel-flood (1KB → 50000x50000) saldırısını burada
+  // kesiyoruz — sharp metadata 8000x8000 üstüne çıkamaz.
+  const validation = await validateImageBuffer(buffer, file.type);
+  if (!validation.ok) {
+    return NextResponse.json(
+      { error: validation.error || 'Geçersiz görsel.' },
+      { status: 400 },
+    );
+  }
 
   let url: string;
   let storage: 's3' | 'local';

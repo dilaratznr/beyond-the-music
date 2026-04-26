@@ -1,0 +1,87 @@
+name: CI
+
+# Pull request'lerde ve main'e push'larda çalışır.
+# Hızlı sinyal için ESLint + Vitest + typecheck; build job'u ayrı çünkü
+# Prisma client + Next compile birlikte ~3-4 dk sürüyor, lint ondan
+# bağımsız feedback verebiliyor.
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+# Aynı branch'e iki PR push gelirse eski run'ı iptal et — ücretsiz CI
+# dakikası tüketmemek için.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      # `--ignore-scripts` postinstall'taki `prisma generate`'i atlar —
+      # lint için DB veya schema'ya gerek yok, sadece tsx/jsx parse.
+      - run: npm ci --ignore-scripts
+      - run: npm run lint
+
+  test:
+    name: Unit tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      - run: npm ci --ignore-scripts
+      - run: npm run test
+
+  typecheck:
+    name: Type check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      # Typecheck Prisma client type'larına ihtiyaç duyuyor; postinstall
+      # `prisma generate`'i çalıştırır. DB bağlantısı GEREKMİYOR — generate
+      # sadece schema.prisma'yı okuyor.
+      - run: npm ci
+      - run: npx tsc --noEmit
+
+  build:
+    name: Next build
+    runs-on: ubuntu-latest
+    # Build, schema'yı DB'ye push etmeyi gerektirir (package.json:build
+    # script'ine bak). PR akışında DB yok — bunun yerine sadece compile'ı
+    # doğrulamak için BUILD_ONLY=1 kontrolü yapacak şekilde script'i
+    # esnek tutmak yerine burada generate + next build'i ayrı çalıştırıyoruz.
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      - run: npm ci
+      - run: npx prisma generate
+      - run: npx next build
+        env:
+          # Build sırasında bazı modüller env okuyor (sitemap, seo). PR
+          # akışında gerçek değer yok, dummy ver — runtime'da production'da
+          # Vercel kendi env'ini enjekte ediyor.
+          DATABASE_URL: postgresql://ci:ci@localhost:5432/ci
+          NEXTAUTH_URL: https://ci.invalid
+          NEXTAUTH_SECRET: ci-build-only-not-a-real-secret-please-rotate
+          NEXT_PUBLIC_APP_URL: https://ci.invalid
+          # `prisma db push` adımını skip — schema'yı DB'ye yazmayı build
+          # script'inden çıkarmak yerine, bu workflow `next build`'i
+          # doğrudan çağırıyor (yukarıda).
+          SKIP_DB_PUSH: '1'

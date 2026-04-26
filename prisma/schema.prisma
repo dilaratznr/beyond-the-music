@@ -110,6 +110,9 @@ model User {
   // Davet akışı ilişkileri
   invitations      UserInvitation[] @relation("InvitationTarget")
   invitationsSent  UserInvitation[] @relation("InvitationSender")
+  // Audit log: bu kullanıcının yaptığı işlemler. Kullanıcı silinince
+  // kayıt korunsun (forensic) — actorId null'a düşer, log korunur.
+  auditLogs        AuditLog[]       @relation("AuditActor")
 }
 
 /// Super Admin tarafından yeni hesap oluşturulduğunda üretilen davet
@@ -382,4 +385,51 @@ model PasswordResetToken {
 
   @@index([userId])
   @@index([expiresAt])
+}
+
+/// Güvenlik denetim kaydı (audit log).
+///
+/// Amaç: breach response, forensic, ve normal şartlarda "kim ne zaman ne
+/// yaptı?" sorusuna anlık cevap vermek. Admin paneline kim girip çıktı,
+/// kim hangi içeriği sildi, kim kimin yetkisini değiştirdi — bunlar
+/// kalıcı olarak kayıtlı kalır.
+///
+/// Saldırı sonrası en kritik soru: "ne zaman başladı, hangi hesap
+/// kompromize oldu?". Audit log olmazsa bu soruyu cevaplamak imkansız.
+///
+/// PII minimize: ipHash sha256 ile maskelenmiş; raw IP yazmıyoruz ki
+/// breach durumunda bu tablo da exfiltrate edilse user IP'leri sızmasın.
+/// userAgent ham — fingerprint için yeterli, kişi tanımlamak için değil.
+///
+/// Retention: cleanup-tokens cron'unda 90 gün üstü kayıtlar silinebilir
+/// (ileride). Şimdilik manuel.
+model AuditLog {
+  id        String   @id @default(cuid())
+  /// Olay türü — string enum yerine string tutuyoruz ki yeni event tipleri
+  /// schema migration gerektirmesin. Standart isimler:
+  ///   LOGIN_SUCCESS, LOGIN_FAILURE, LOGOUT,
+  ///   USER_CREATED, USER_DELETED, USER_ROLE_CHANGED, PERMISSIONS_CHANGED,
+  ///   PASSWORD_CHANGED, PASSWORD_RESET_REQUESTED,
+  ///   ARTICLE_DELETED, ARTIST_DELETED, ALBUM_DELETED, …
+  event     String
+  /// İşlemi yapan kullanıcı (login fail için null — henüz auth yok).
+  actorId   String?  @map("actor_id")
+  actor     User?    @relation("AuditActor", fields: [actorId], references: [id], onDelete: SetNull)
+  /// İşlem hangi kullanıcıyı/objeyi etkiledi (login için actor=target).
+  targetId  String?  @map("target_id")
+  /// Etkilenen objenin tipi: USER / ARTICLE / ALBUM / ARTIST / GENRE / …
+  targetType String? @map("target_type")
+  /// SHA-256(IP) — gerçek IP'yi yazmıyoruz; aynı IP'den gelen
+  /// olaylar aynı hash'e sahip olur, breach exfiltrate'inde bile
+  /// reverse mümkün değil (32-bit space + salt yok ama OK).
+  ipHash    String?  @map("ip_hash")
+  userAgent String?  @map("user_agent")
+  /// Serbest metin — login fail için "wrong password", role change için
+  /// "EDITOR → ADMIN" gibi insan-okur özet.
+  detail    String?
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([event, createdAt])
+  @@index([actorId])
+  @@index([createdAt])
 }

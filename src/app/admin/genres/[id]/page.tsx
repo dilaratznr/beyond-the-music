@@ -17,6 +17,8 @@ import {
   FormError,
 } from '@/components/admin/FormField';
 import { translatePairs } from '@/lib/translate-client';
+import { useCanPublish } from '@/components/admin/useCanPublish';
+import ReviewNotice from '@/components/admin/ReviewNotice';
 
 interface GenreOption {
   id: string;
@@ -43,6 +45,12 @@ export default function EditGenrePage({ params }: { params: Promise<{ id: string
   const [saving, setSaving] = useState(false);
   const [translating, setTranslating] = useState(false);
   const [error, setError] = useState('');
+  const [lastRejection, setLastRejection] = useState<{
+    reviewNote: string | null;
+    reviewedAt: string | null;
+    reviewedBy: { name: string } | null;
+  } | null>(null);
+  const canPublish = useCanPublish('GENRE');
 
   useEffect(() => {
     let cancelled = false;
@@ -64,6 +72,7 @@ export default function EditGenrePage({ params }: { params: Promise<{ id: string
             parentId: genre.parentId || '',
             order: genre.order ?? 0,
           });
+          if (genre.lastRejection) setLastRejection(genre.lastRejection);
         }
         setParents(
           Array.isArray(genresList)
@@ -155,6 +164,8 @@ export default function EditGenrePage({ params }: { params: Promise<{ id: string
 
       <form onSubmit={handleSubmit} className="space-y-4">
         {error && <FormError>{error}</FormError>}
+
+        <ReviewNotice section="GENRE" canPublish={canPublish} lastRejection={lastRejection} />
 
         <div className="grid lg:grid-cols-[1fr_260px] gap-5">
           {/* Left: main fields */}
@@ -257,8 +268,8 @@ export default function EditGenrePage({ params }: { params: Promise<{ id: string
 
         <FormActions
           cancelHref="/admin/genres"
-          submitLabel="Kaydet"
-          submittingLabel="Kaydediliyor…"
+          submitLabel={canPublish === false ? 'Onaya Gönder' : 'Kaydet'}
+          submittingLabel={canPublish === false ? 'Gönderiliyor…' : 'Kaydediliyor…'}
           submitting={saving}
           disabled={!form.nameTr || !form.nameEn}
           extra={

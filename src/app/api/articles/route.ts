@@ -7,8 +7,14 @@ import { slugify } from '@/lib/utils';
 import { publishDueArticles } from '@/lib/article-publishing';
 import { parseScheduledFor } from '@/lib/datetime-local';
 import { canUserPublish, submitForReview } from '@/lib/content-review';
+import { sanitizeRichText } from '@/lib/sanitize-html';
+import { publicApiRateLimit } from '@/lib/rate-limit';
+import { validateImageUrl } from '@/lib/url-validation';
 
 export async function GET(request: NextRequest) {
+  const limited = publicApiRateLimit(request, 'articles');
+  if (limited) return limited;
+
   // Promote any scheduled articles whose time has come before reading the list —
   // keeps the admin badges in sync without a background worker.
   await publishDueArticles();
@@ -66,6 +72,17 @@ export async function POST(request: NextRequest) {
     );
   }
 
+  // featuredImage validation: javascript:/data:/protocol-relative reddedilir.
+  // Saldırgan admin paneline kapatma sonrası bile manipulating request
+  // gönderebilirse bu, render katmanında XSS vektörünü kapatır.
+  const imgValidation = validateImageUrl(featuredImage);
+  if (!imgValidation.ok) {
+    return NextResponse.json(
+      { error: `featuredImage: ${imgValidation.error}` },
+      { status: 400 },
+    );
+  }
+
   // Normalise the status/publishedAt pair:
   //   DRAFT           → publishedAt = null
   //   SCHEDULED       → publishedAt = future date (required); if in the past, publish now
@@ -114,13 +131,17 @@ export async function POST(request: NextRequest) {
   }
 
   const slug = slugify(titleEn);
+  // Rich-text içerik DB'ye yazılmadan önce sanitize ediliyor — admin
+  // hesabı kompromize olsa veya bir editör TipTap'i bypass etse bile
+  // stored XSS payload'ı DB'ye giremez. Render katmanı da DOMPurify
+  // ile temizliyor; bu bilinçli çift kalkan.
   const article = await prisma.article.create({
     data: {
       slug,
       titleTr,
       titleEn,
-      contentTr: contentTr || null,
-      contentEn: contentEn || null,
+      contentTr: sanitizeRichText(contentTr),
+      contentEn: sanitizeRichText(contentEn),
       category,
       featuredImage: featuredImage || null,
       authorId: user.id,

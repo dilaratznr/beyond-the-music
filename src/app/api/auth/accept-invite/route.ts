@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
 import prisma from '@/lib/prisma';
 import { verifyInvitationToken } from '@/lib/user-invitations';
+import { validatePassword } from '@/lib/password-policy';
 
 /**
  * GET /api/auth/accept-invite?token=xxx
@@ -28,16 +29,6 @@ export async function GET(request: NextRequest) {
   });
 }
 
-function validatePassword(pw: string): string | null {
-  if (typeof pw !== 'string') return 'Geçersiz şifre';
-  if (pw.length < 8) return 'Şifre en az 8 karakter olmalı';
-  if (!/[a-zA-Z]/.test(pw) || !/[0-9]/.test(pw)) {
-    return 'Şifre harf ve rakam içermeli';
-  }
-  if (pw.length > 200) return 'Şifre çok uzun';
-  return null;
-}
-
 /**
  * POST /api/auth/accept-invite
  *   Body: { token, password }
@@ -52,10 +43,6 @@ export async function POST(request: NextRequest) {
   if (!token) {
     return NextResponse.json({ error: 'Token eksik' }, { status: 400 });
   }
-  const pwError = validatePassword(password || '');
-  if (pwError) {
-    return NextResponse.json({ error: pwError }, { status: 400 });
-  }
 
   const record = await verifyInvitationToken(token);
   if (!record) {
@@ -63,6 +50,16 @@ export async function POST(request: NextRequest) {
       { error: 'Davet linki geçersiz veya süresi dolmuş' },
       { status: 400 },
     );
+  }
+
+  // Validation token doğrulamadan SONRA — context (email/name) için
+  // kullanıcı bilgisi gerekiyor.
+  const pwResult = validatePassword(password, {
+    email: record.user.email,
+    name: record.user.name,
+  });
+  if (!pwResult.ok) {
+    return NextResponse.json({ error: pwResult.error }, { status: 400 });
   }
 
   const hash = await bcrypt.hash(password!, 12);

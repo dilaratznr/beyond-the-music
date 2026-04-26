@@ -16,12 +16,15 @@
  */
 
 import { redirect } from 'next/navigation';
-import { cookies } from 'next/headers';
+import { cookies, headers } from 'next/headers';
 import Link from 'next/link';
 import bcrypt from 'bcryptjs';
 import { encode } from 'next-auth/jwt';
 import prisma from '@/lib/prisma';
 import AuthLayout from '@/components/admin/AuthLayout';
+import { rateLimit } from '@/lib/rate-limit';
+import { validateInternalRedirect } from '@/lib/url-validation';
+import { audit } from '@/lib/audit-log';
 
 const inputCls =
   'w-full px-3.5 py-2.5 text-sm bg-zinc-950 border border-zinc-800 rounded-md text-zinc-100 placeholder:text-zinc-600 outline-none transition-colors hover:border-zinc-700 focus:border-zinc-500 focus:ring-2 focus:ring-zinc-500/20';
@@ -47,6 +50,36 @@ async function loginAction(formData: FormData) {
     redirect('/admin/login?error=missing');
   }
 
+  // Brute-force koruması: iki katman.
+  //
+  // 1) IP başına 20 deneme / 10 dk — script kiddie tarama'sını keser.
+  // 2) Email başına 5 deneme / 10 dk — bilinen bir admin hesabını
+  //    rotating proxy ile döven saldırı hâlâ engellenir, çünkü email
+  //    sabit kalır.
+  //
+  // Pencere içinde başarısız + başarılı tüm denemeler sayılır; başarılı
+  // login'den sonra ikinci aynı login zaten cookie'yle gelir, bu sayaç
+  // yumuşak (10 dk pencerede 5 deneme, normal kullanıcı sınıra hiç değmez).
+  const hdrs = await headers();
+  const ip =
+    hdrs.get('x-forwarded-for')?.split(',')[0].trim() ||
+    hdrs.get('x-real-ip')?.trim() ||
+    'unknown';
+
+  const ipLimit = rateLimit(`login:ip:${ip}`, 20, 10 * 60 * 1000);
+  const emailLimit = rateLimit(`login:email:${email}`, 5, 10 * 60 * 1000);
+  const userAgent = hdrs.get('user-agent') ?? null;
+
+  if (!ipLimit.success || !emailLimit.success) {
+    await audit({
+      event: 'LOGIN_BLOCKED_RATE_LIMIT',
+      ip,
+      userAgent,
+      detail: `email=${email}`,
+    });
+    redirect('/admin/login?error=too-many');
+  }
+
   const secret = process.env.NEXTAUTH_SECRET;
   if (!secret) {
     // Env variable'ı unutulmuşsa kullanıcıya somut bir hata göster.
@@ -54,23 +87,48 @@ async function loginAction(formData: FormData) {
   }
 
   const user = await prisma.user.findUnique({ where: { email } });
-  if (!user) {
+
+  // Username enumeration koruması: kullanıcı bulunmasa bile bcrypt'i
+  // çalıştırıyoruz. bcrypt.compare ~80ms; user yoksa hemen `redirect`
+  // edersek bu bir timing leak — saldırgan yanıt süresine bakıp hangi
+  // email'lerin DB'de olduğunu çıkarabilir. Sabit bir dummy hash'le
+  // compare çalıştırıp süreyi normalize ediyoruz.
+  //
+  // Dummy hash, "this-password-will-never-match" stringinin saltlı
+  // bcrypt çıktısı; bcrypt.compare onunla geçen şifreyi karşılaştırır,
+  // her zaman false döner ve gerçek user.password compare'ı kadar
+  // CPU harcar.
+  const DUMMY_HASH =
+    '$2a$12$abcdefghijklmnopqrstuuogf04zU82MgjlnRcCfg4S5tRaqQRPhNu';
+  const passwordHash = user?.password ?? DUMMY_HASH;
+  const passwordOk = await bcrypt.compare(password, passwordHash);
+
+  // Hesap durum kontrolleri SADECE şifre doğru olduğunda yapılıyor —
+  // aksi halde "invite-pending" / "disabled" hata mesajları, doğru
+  // şifre bilmeyen saldırgana hesabın varlığını sızdırır. Bu sıralama
+  // kasıtlı: önce auth, sonra status reveal.
+  if (!user || !passwordOk) {
+    await audit({
+      event: 'LOGIN_FAILURE',
+      actorId: user?.id ?? null,
+      ip,
+      userAgent,
+      detail: `email=${email}`,
+    });
     redirect('/admin/login?error=invalid');
   }
 
-  // Davet edilmiş ama henüz şifre belirlememiş kullanıcı → bilgilendir.
-  // "invalid" dönersek kullanıcı ne olduğunu anlamaz; "invite-pending"
-  // ile davet email'ine/linkine bakmasını söyleriz.
   if (user.mustSetPassword) {
     redirect('/admin/login?error=invite-pending');
   }
   if (!user.isActive) {
+    await audit({
+      event: 'LOGIN_BLOCKED_DISABLED',
+      actorId: user.id,
+      ip,
+      userAgent,
+    });
     redirect('/admin/login?error=disabled');
-  }
-
-  const ok = await bcrypt.compare(password, user.password);
-  if (!ok) {
-    redirect('/admin/login?error=invalid');
   }
 
   // NextAuth JWT payload'ı — authOptions callbacks.jwt'nin ürettiğiyle
@@ -100,9 +158,17 @@ async function loginAction(formData: FormData) {
     maxAge,
   });
 
-  // Açık redirect koruması: callback sadece kendi sitemizdeki yollara gidebilir.
-  const safeCallback = callbackUrl.startsWith('/') ? callbackUrl : '/admin/dashboard';
-  redirect(safeCallback);
+  await audit({
+    event: 'LOGIN_SUCCESS',
+    actorId: user.id,
+    ip,
+    userAgent,
+  });
+
+  // Açık redirect koruması: validateInternalRedirect, protocol-relative
+  // (`//evil.com`), backslash-trick, control-char injection ve absolute URL'i
+  // reddedip /admin/dashboard fallback'ine düşer.
+  redirect(validateInternalRedirect(callbackUrl));
 }
 
 function errorMessage(code?: string): string | null {
@@ -117,6 +183,10 @@ function errorMessage(code?: string): string | null {
       return 'Bu hesabın şifresi henüz belirlenmedi. E-posta ile gönderilen davet linkini kullan ya da yöneticine yeniden davet talep et.';
     case 'disabled':
       return 'Bu hesap devre dışı bırakılmış. Erişim için yöneticine başvur.';
+    case 'too-many':
+      return 'Çok fazla başarısız deneme. Lütfen 10 dakika sonra tekrar dene.';
+    case 'unauthorized':
+      return 'Bu hesabın admin paneline erişim yetkisi yok.';
     default:
       return null;
   }
