@@ -141,7 +141,8 @@ async function verifyAction(formData: FormData) {
     maxAge: 24 * 60 * 60,
   });
 
-  const cookieName = getCookieName();
+  // cookieName yukarıda zaten tanımlandı (pending JWT okurken). Aynı
+  // ismi tekrar declare etmiyoruz; tam JWT'yi de aynı cookie üstüne yazıyoruz.
   (await cookies()).set(cookieName, fullToken, {
     httpOnly: true,
     sameSite: 'lax',
