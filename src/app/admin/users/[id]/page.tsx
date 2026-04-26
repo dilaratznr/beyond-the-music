@@ -74,7 +74,10 @@ export default function EditUserPage() {
         return;
       }
       setUser(data);
-      setForm({ name: data.name, email: data.email, role: data.role });
+      // Email artık nullable (opsiyonel) — form state input için boş string'e
+      // düşürüyoruz, kayıt esnasında PUT body'ye boş string gönderirsek
+      // backend null'a çevirip kolonu temizler.
+      setForm({ name: data.name, email: data.email ?? '', role: data.role });
       const next = buildInitialPermissions();
       for (const p of data.permissions || []) {
         next[p.section] = {
