@@ -214,6 +214,8 @@ function errorMessage(code?: string): string | null {
       return 'Çok fazla başarısız deneme. Lütfen 10 dakika sonra tekrar dene.';
     case 'unauthorized':
       return 'Bu hesabın admin paneline erişim yetkisi yok.';
+    case 'session-expired':
+      return 'Oturumun sona erdi. Lütfen tekrar giriş yap.';
     default:
       return null;
   }

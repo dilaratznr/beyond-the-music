@@ -48,6 +48,30 @@ export default function PermissionGrid({
     [value],
   );
 
+  /**
+   * Hangi şablonun mevcut state'le birebir eşleştiğini bul.
+   * "Tam Yetki" tıklandıysa o button highlight olsun, sonradan tek bir
+   * checkbox değiştirilirse highlight kaybolsun (custom config).
+   */
+  const activeTemplateId = useMemo(() => {
+    for (const t of PERMISSION_TEMPLATES) {
+      const matches = PERMISSION_SECTIONS.every((s) => {
+        const target = t.apply(s.key);
+        const cur = value[s.key];
+        if (!target) return !cur.enabled;
+        return (
+          cur.enabled &&
+          cur.canCreate === target.canCreate &&
+          cur.canEdit === target.canEdit &&
+          cur.canDelete === target.canDelete &&
+          cur.canPublish === target.canPublish
+        );
+      });
+      if (matches) return t.id;
+    }
+    return null;
+  }, [value]);
+
   function setSection(key: string, next: PermState) {
     onChange({ ...value, [key]: next });
   }
@@ -95,18 +119,26 @@ export default function PermissionGrid({
       {/* Templates + summary */}
       <div className="flex flex-wrap items-center gap-2 pb-3 border-b border-zinc-800/80">
         <span className="text-[10px] font-semibold uppercase tracking-wider text-zinc-500">Şablon</span>
-        {PERMISSION_TEMPLATES.map((t) => (
-          <button
-            key={t.id}
-            type="button"
-            disabled={disabled}
-            onClick={() => applyTemplate(t.id)}
-            title={t.descriptionTr}
-            className="px-2.5 py-1 bg-zinc-900 border border-zinc-800 text-zinc-300 text-[11px] rounded-md hover:bg-zinc-800 hover:text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {t.labelTr}
-          </button>
-        ))}
+        {PERMISSION_TEMPLATES.map((t) => {
+          const active = activeTemplateId === t.id;
+          return (
+            <button
+              key={t.id}
+              type="button"
+              disabled={disabled}
+              onClick={() => applyTemplate(t.id)}
+              title={t.descriptionTr}
+              aria-pressed={active}
+              className={`px-2.5 py-1 text-[11px] rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
+                active
+                  ? 'bg-emerald-500/15 border border-emerald-500/40 text-emerald-300 hover:bg-emerald-500/20'
+                  : 'bg-zinc-900 border border-zinc-800 text-zinc-300 hover:bg-zinc-800 hover:text-white'
+              }`}
+            >
+              {t.labelTr}
+            </button>
+          );
+        })}
         <div className="flex-1" />
         <span className="text-[11px] text-zinc-400">
           <strong className="text-zinc-100 font-semibold">{enabledCount}</strong> / {PERMISSION_SECTIONS.length} bölüm aktif
@@ -141,7 +173,7 @@ export default function PermissionGrid({
               key={section.key}
               className={`rounded-md border transition-colors ${
                 perm.enabled
-                  ? 'border-zinc-700 bg-zinc-900/70'
+                  ? 'border-emerald-500/40 bg-emerald-500/[0.04]'
                   : 'border-zinc-800 bg-zinc-900/40 hover:border-zinc-700'
               }`}
             >
@@ -152,7 +184,7 @@ export default function PermissionGrid({
                     checked={perm.enabled}
                     disabled={disabled}
                     onChange={() => toggleEnabled(section.key)}
-                    className="w-4 h-4 rounded border-zinc-700 bg-zinc-950 text-zinc-200 focus:ring-zinc-500/40 focus:ring-offset-0"
+                    className="w-4 h-4 rounded border-zinc-700 bg-zinc-950 text-emerald-500 accent-emerald-500 focus:ring-emerald-500/40 focus:ring-offset-0"
                   />
                   <span className="w-5 text-center text-zinc-500 text-sm">{section.icon}</span>
                   <span className={`text-xs font-medium ${perm.enabled ? 'text-zinc-100' : 'text-zinc-400'}`}>
@@ -179,7 +211,7 @@ export default function PermissionGrid({
                         aria-label={`${section.labelTr} — ${lbl.tr}`}
                         className={`h-7 md:h-7 md:w-full flex-1 md:flex-none inline-flex items-center justify-center gap-1.5 rounded-md transition-colors disabled:opacity-30 disabled:cursor-not-allowed ${
                           on && perm.enabled
-                            ? 'bg-white/10 hover:bg-white/15 text-zinc-100'
+                            ? 'bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-300 ring-1 ring-emerald-500/40'
                             : 'bg-zinc-950 hover:bg-zinc-900 text-zinc-600'
                         }`}
                         title={`${lbl.tr} (${lbl.en})`}

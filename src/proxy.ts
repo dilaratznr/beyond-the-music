@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { getToken } from 'next-auth/jwt';
+import prisma from './lib/prisma';
 
 const DEFAULT_LOCALE = 'tr';
 
@@ -163,6 +164,36 @@ export async function proxy(request: NextRequest) {
         const loginUrl = new URL('/admin/login', request.url);
         loginUrl.searchParams.set('error', 'unauthorized');
         return NextResponse.redirect(loginUrl);
+      }
+
+      // Stale-JWT koruması: JWT signature OK olsa bile, kullanıcı DB'de
+      // hâlâ var ve aktif mi kontrol et. Aksi halde silinen/pasifleştirilen
+      // bir admin, eski cookie'siyle 24 saat boyunca admin yetkilerini
+      // kullanmaya devam ederdi (JWT stateless). Bu DB query her admin
+      // sayfa yükünde 1 ek call ekliyor (~5-15ms) — internal admin paneli
+      // için kabul edilebilir maliyet, public traffic'i etkilemez.
+      const tokenUserId = token.id as string | undefined;
+      if (tokenUserId) {
+        const dbUser = await prisma.user.findUnique({
+          where: { id: tokenUserId },
+          select: { isActive: true, role: true },
+        });
+        if (!dbUser || !dbUser.isActive || !ALLOWED_ROLES.has(dbUser.role)) {
+          // Cookie'yi siliyoruz ki sonsuza kadar redirect loop'a girmesin —
+          // kullanıcı login sayfasında temiz bir başlangıç yapsın.
+          const loginUrl = new URL('/admin/login', request.url);
+          loginUrl.searchParams.set('error', 'session-expired');
+          const response = NextResponse.redirect(loginUrl);
+          // NextAuth'un kullandığı her iki cookie ismini de sil
+          response.cookies.delete('__Secure-next-auth.session-token');
+          response.cookies.delete('next-auth.session-token');
+          return response;
+        }
+        // DB'deki güncel role JWT'dekinden farklıysa (admin tarafından
+        // değiştirilmiş), DB'yi otorite kabul ediyoruz — kullanıcı ne
+        // hak ediyorsa onu görsün, JWT'deki eski role'e güvenmiyoruz.
+        // Burada sadece pathname'i bloklayıp loglamıyoruz; downstream
+        // permission check'leri zaten DB'den okuyor (auth-guard.ts).
       }
 
       // 2FA gate: parola OK ama henüz TOTP kodu doğrulanmadı.
