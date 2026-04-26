@@ -18,8 +18,6 @@ import CommandPalette from './CommandPalette';
  */
 const PUBLIC_ADMIN_PREFIXES = [
   '/admin/login',
-  '/admin/forgot-password',
-  '/admin/reset-password',
   // Davet linkini açan kişi henüz login değil ve sidebar'a ihtiyacı yok —
   // Aktivasyon ekranı tek başına AuthLayout içinde görünsün.
   '/admin/accept-invite',

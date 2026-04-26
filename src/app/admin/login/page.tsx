@@ -17,7 +17,6 @@
 
 import { redirect } from 'next/navigation';
 import { cookies, headers } from 'next/headers';
-import Link from 'next/link';
 import bcrypt from 'bcryptjs';
 import { encode } from 'next-auth/jwt';
 import prisma from '@/lib/prisma';
@@ -277,20 +276,12 @@ export default async function AdminLoginPage({
         </div>
 
         <div>
-          <div className="flex items-center justify-between mb-1.5">
-            <label
-              htmlFor="admin-login-password"
-              className="block text-[11px] font-semibold text-zinc-400 uppercase tracking-wider"
-            >
-              Şifre
-            </label>
-            <Link
-              href="/admin/forgot-password"
-              className="text-[11px] text-zinc-500 hover:text-zinc-100 transition-colors"
-            >
-              Şifremi unuttum
-            </Link>
-          </div>
+          <label
+            htmlFor="admin-login-password"
+            className="block text-[11px] font-semibold text-zinc-400 mb-1.5 uppercase tracking-wider"
+          >
+            Şifre
+          </label>
           <input
             id="admin-login-password"
             name="password"

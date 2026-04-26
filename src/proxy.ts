@@ -131,8 +131,6 @@ export async function proxy(request: NextRequest) {
   if (pathname.startsWith('/admin')) {
     const isPublicAdminPath =
       pathname.startsWith('/admin/login') ||
-      pathname.startsWith('/admin/forgot-password') ||
-      pathname.startsWith('/admin/reset-password') ||
       // Davet linkine tıklayan henüz login değil — auth gate'inden
       // muaf. Ayrıca nonce CSP de uygulanmıyor (aşağıda): client-side
       // chunk'lar Turbopack hash'leriyle geliyor, strict-dynamic'in
