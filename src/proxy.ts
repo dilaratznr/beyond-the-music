@@ -17,10 +17,16 @@ const DEFAULT_LOCALE = 'tr';
  */
 function buildAdminCsp(nonce: string): string {
   const isDev = process.env.NODE_ENV === 'development';
+  // strict-dynamic kaldırıldı: Turbopack/Next.js client chunk'larının
+  // bir kısmı kendi script tag'lerini nonce'suz inject ediyor, strict-
+  // dynamic ile bunlar bloke oluyordu (admin sayfalarında butonlar
+  // tepki vermiyordu, network'te `(blocked)`). 'self' + nonce kombinasyonu
+  // hem aynı origin'den gelen Next chunk'larını kabul ediyor hem de
+  // inline event handler'ları + 3rd-party script'leri reddediyor — XSS'e
+  // karşı yeterli koruma sağlıyor.
   const scriptSrc = [
     "'self'",
     `'nonce-${nonce}'`,
-    "'strict-dynamic'",
     isDev ? "'unsafe-eval'" : '',
   ]
     .filter(Boolean)
