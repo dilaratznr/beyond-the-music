@@ -217,7 +217,16 @@ export default function Sidebar() {
           {!collapsed && (
             <span className="flex flex-col leading-none">
               <span className="font-editorial text-[14px] text-white tracking-tight">Beyond</span>
-              <span className="text-[9px] uppercase tracking-[0.3em] text-zinc-500 mt-0.5">Editor</span>
+              {/* Logo altındaki etiket kullanıcının role'üne göre dinamik:
+                  SUPER_ADMIN → "Super Admin", ADMIN → "Admin", EDITOR → "Editor".
+                  Login yokken / yüklenirken default "Editor" gösterir. */}
+              <span className="text-[9px] uppercase tracking-[0.3em] text-zinc-500 mt-0.5">
+                {perms?.role === 'SUPER_ADMIN'
+                  ? 'Super Admin'
+                  : perms?.role === 'ADMIN'
+                    ? 'Admin'
+                    : 'Editor'}
+              </span>
             </span>
           )}
         </Link>
