@@ -7,16 +7,8 @@ import { ScrollTrigger } from 'gsap/ScrollTrigger';
 gsap.registerPlugin(ScrollTrigger);
 
 /**
- * Hafif GSAP scroll animasyonları — sadece "one-shot" fade/slide/stagger
- * kullanıyor (toggleActions: 'play none none none'). Her element bir kez
- * tetiklenir ve biter, scroll frame'de GSAP çalışmaya devam etmez.
- *
- * Daha önce `.scene` zoom + `.depth-*` parallax + `.gsap-title-reveal`
- * gibi `scrub: true` tetikleyiciler vardı; bunlar her scroll frame'de
- * hesap yapıyordu ve sayfa akışını ağırlaştırıyordu. Kaldırıldı.
- *
- * CSS fallback: globals.css içinde bu sınıflar zaten opak başlıyor —
- * JS yüklenmese bile içerik görünür kalır (graceful degradation).
+ * Light GSAP animations: one-shot fade/slide/stagger (no scrub).
+ * Each element triggers once; CSS fallback for JS-disabled (graceful degrade).
  */
 export default function SmoothScroll({ children }: { children: React.ReactNode }) {
   useEffect(() => {

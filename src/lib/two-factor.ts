@@ -1,21 +1,7 @@
 /**
- * 2FA (TOTP — RFC 6238) helper'ları.
- *
- * Tasarım kararları:
- *   - TOTP: 6 haneli kod, 30s pencere, SHA-1 (Authenticator app uyumluluğu).
- *     SHA-256 daha güçlü ama Google Authenticator default olarak SHA-1
- *     kullanır → uyumluluk için bunu seçiyoruz.
- *   - Window: ±1 (önceki + şu anki + sonraki kod) — saat senkron olmayan
- *     telefonlarda da çalışsın diye. ±1 endüstri standardı.
- *   - Secret: 20 byte (160 bit) random, base32 string — TOTP standardı.
- *   - Encryption: AES-256-GCM. Key = HKDF(NEXTAUTH_SECRET, "2fa-secret-v1").
- *     Format: hex(iv) + ":" + hex(ciphertext) + ":" + hex(authTag).
- *     GCM auth tag'i tampering'i tespit eder — secret'a dokunulduysa
- *     decrypt fail eder.
- *   - Backup code: 8 karakter base32 (A-Z, 2-7), kullanıcıya `XXXX-XXXX`
- *     formatında gösterilir, DB'de hash'li tutulur (raw asla saklanmaz).
- *
- * Bu lib SADECE server-side. Client'a otpauth bundle'lamıyoruz.
+ * 2FA (TOTP — RFC 6238). 6-digit, 30s window, SHA-1 (Authenticator compat).
+ * Window ±1 for clock skew. Secret 160-bit base32. AES-256-GCM encryption
+ * via HKDF(NEXTAUTH_SECRET). Backup codes 8-char base32 base, hashed in DB.
  */
 
 import crypto from 'node:crypto';
@@ -36,9 +22,7 @@ function getEncryptionKey(): Buffer {
       '2FA: NEXTAUTH_SECRET env zorunlu. Set edilmeden 2FA secret\'ları encrypt edilemez.',
     );
   }
-  // HKDF ile NEXTAUTH_SECRET'tan 32 byte AES key türet. Aynı seed
-  // → aynı key, ama "2fa-secret-v1" info'su NextAuth'un kendi token
-  // imzalama key'iyle çakışmasını engeller (key separation).
+  // HKDF derives consistent key; "2fa-secret-v1" info prevents key collision.
   return Buffer.from(
     crypto.hkdfSync('sha256', Buffer.from(seed), Buffer.alloc(0), '2fa-secret-v1', 32),
   );

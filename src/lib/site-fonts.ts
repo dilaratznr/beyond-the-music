@@ -5,17 +5,9 @@ import { CACHE_TAGS } from '@/lib/db-cache';
 import { FONT_CSS_VARS, FONT_LOADERS, type FontFamily } from '@/app/fonts';
 
 /**
- * Curated list of Google Fonts the super admin can pick from. Every family
- * here is also wired up in `src/app/fonts.ts` via `next/font/google` so it
- * is self-hosted at build time — zero runtime requests to Google, zero FOUT
- * on refresh.
- *
- * Two roles:
- *   - body: default running text / UI
- *   - display: editorial headings (Hero, large titles, `.font-editorial`)
- *
- * Keep this list opinionated — every entry is an extra font file in the
- * build output. The stock Inter / Outfit combo already looks great.
+ * Super-admin font picker. Curated list (every entry adds a build file).
+ * All wired in src/app/fonts.ts (self-hosted, no Google requests).
+ * Roles: body (UI), display (editorial headings).
  */
 
 export type FontCategory = 'sans' | 'serif' | 'display' | 'mono';
@@ -63,8 +55,8 @@ export const DEFAULT_BODY_FONT: FontFamily = 'Inter';
 // (a, e, s, r gibi harflerin uçları) Plus Jakarta Sans'tan daha yuvarlak/
 // yumuşak — geometrik değil, Calibri'ye en yakın "keskin hatları olmayan"
 // karşılık. Tüm ağırlıklar (200-800) mevcut, hero'daki bold (700) gerçek.
-// Dilara iki iterasyon geri bildirimi sonrası: Fraunces (serif, "resmi
-// duruyor") → Plus Jakarta Sans ("hala keskin") → Manrope.
+// İki iterasyon sonrası seçildi: Fraunces (serif, "resmi duruyor") →
+// Plus Jakarta Sans ("hâlâ keskin") → Manrope.
 export const DEFAULT_DISPLAY_FONT: FontFamily = 'Manrope';
 
 /**

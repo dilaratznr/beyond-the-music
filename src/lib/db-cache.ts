@@ -1,29 +1,9 @@
 /**
- * Centralized read-side caching for Prisma queries.
- *
- * Why bother, given pages already export `revalidate = 30`?
- *   Route-level ISR caches the rendered HTML, but each revalidation
- *   re-runs the Prisma queries. With `unstable_cache`:
- *     - The same query shape is shared across routes/locales — /tr and /en
- *       both querying the main genre list hit Postgres once, not twice.
- *     - Admin writes call `revalidateTag(...)` and the public pages see
- *       fresh data on the *next* request instead of waiting up to 30s.
- *     - Per-query revalidate can be bumped (we use 5 min) because tag
- *       invalidation keeps data visibly fresh regardless.
- *
- * Tag vocabulary mirrors the Prisma models admin routes mutate; see the
- * revalidateTag calls in the api/ route handlers for the companion side.
- *
- * Constraints to keep in mind when adding new cached queries:
- *   1. Arguments must be JSON-serializable primitives (strings, numbers,
- *      booleans, null, arrays/objects thereof). No Date, no Prisma enums
- *      as imports — pass them as string literals.
- *   2. Return values go through RSC serialization — Date is fine, class
- *      instances are NOT. Prisma's default output is plain objects with
- *      Date fields, so normal findMany results are safe.
- *   3. Don't read cookies/headers/searchParams inside these functions —
- *      the cache key has no idea about request context and would serve
- *      the wrong user's data.
+ * Centralized read-side caching for Prisma queries. `unstable_cache` +
+ * `revalidateTag` let us share queries across routes/locales and bust
+ * on admin writes. Tag vocabulary mirrors Prisma models; see api/ route
+ * handlers for revalidateTag calls. Args must be JSON primitives; return
+ * values go through RSC serialization (Date OK, class instances NO).
  */
 
 import { unstable_cache } from 'next/cache';
@@ -52,10 +32,7 @@ export const CACHE_TAGS = {
   heroVideo: 'heroVideo',
 } as const;
 
-// 5 minutes — a safety net for tag invalidation. Admin writes bust tags
-// immediately, so this upper bound rarely matters; it just guarantees that
-// a forgotten revalidateTag somewhere can't serve truly stale content for
-// hours on end.
+// Safety net upper bound; admin writes invalidate immediately anyway.
 const FIVE_MINUTES = 300;
 
 // ---------------------------------------------------------------------------

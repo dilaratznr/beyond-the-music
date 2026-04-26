@@ -24,9 +24,9 @@ export interface ArticleCategoryInfo {
   pill: string;
 }
 
-// Tüm kategoriler aynı editoryal pill stili (Dilara geri bildirimi:
-// "her yerde renkli pill istemiyorum"). Kategori farkını metin ayırt
-// ediyor; renk gerekli değil. Public tarafta ve admin'de tek ton.
+// Tüm kategoriler aynı editoryal pill stili — her yerde renkli pill
+// editoryal tona uymuyor. Kategori farkını metin ayırt ediyor; renk
+// gerekli değil. Public tarafta ve admin'de tek ton.
 const CATEGORY_PILL = 'bg-zinc-900/40 text-zinc-300 border border-zinc-800';
 
 export const ARTICLE_CATEGORIES: ArticleCategoryInfo[] = [

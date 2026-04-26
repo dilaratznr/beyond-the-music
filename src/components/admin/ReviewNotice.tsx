@@ -1,15 +1,9 @@
 'use client';
 
 /**
- * Edit sayfalarında iki küçük duyuru kutusu:
- *
- *   1. `canPublish=false` → "Bu kaydın düzenlemesi Super Admin onayına
- *      düşecek" — editör bilinçli çalışsın diye.
- *   2. `lastRejection` → önceki bir submit reddedilmişse, Super Admin'in
- *      notu + kim/ne zaman. Editör aynı hatayı tekrar etmeden düzeltir.
- *
- * İki kutu da nötr zinc + sol kenarda 6px dot. Büyük renkli blok yok
- * (Dilara geri bildirimi: "çok AI duruyor") — mesaj metin ve tonla.
+ * Review notices: (1) canPublish=false → needs Super Admin approval,
+ * (2) lastRejection → admin note + timestamp if previously rejected.
+ * Neutral zinc + left dot (no color block).
  */
 
 interface Props {

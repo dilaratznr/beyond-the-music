@@ -132,10 +132,10 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
           <div>
             <p className="text-zinc-400 text-[11px] tracking-[0.3em] uppercase font-bold mb-3">{tr ? 'Keşfet' : 'Explore'}</p>
             <h2 className="section-title font-editorial tracking-[-0.03em]">{dict.genre.title}</h2>
-            {/* Önceki "Aşağı kaydır — türler yanına akacak" metni kaldırıldı
-                (Dilara: "ne saçma duruyor, tasarım kusursuz olmalı"). O cümle
-                developer için yazılmış bir davranış ipucuydu; okuyucu için
-                anlamı yok. Yerine editoryel bir alt-başlık: türlerin
+            {/* Önceki "Aşağı kaydır — türler yanına akacak" metni kaldırıldı.
+                O cümle developer için yazılmış bir davranış ipucuydu;
+                okuyucu için anlamı yok ve editoryal tonu bozuyordu.
+                Yerine editoryel bir alt-başlık: türlerin
                 kültürel/sessel yelpazesini çağrıştıran iki kısa cümle. */}
             <p className="text-zinc-500 text-base md:text-lg mt-6 max-w-lg leading-relaxed font-light italic">{tr ? 'Ritimden kültüre, sesten hikayeye.' : 'From rhythm to culture, sound to story.'}</p>
           </div>
@@ -191,9 +191,10 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
       </section>
 
       {/* ▸▸▸ SCENE 4: ARTISTS - zoom-in sahne ▸▸▸
-          Üst padding py-20 → pt-6/md:pt-10 (Dilara: "türler ve
-          sanatçılar arası çok boşluk var"). Horizontal scroll pin'i
-          zaten sticky çıktığında büyük bir viewport kalıyor, üstüne
+          Üst padding py-20 → pt-6/md:pt-10 — türler ve sanatçılar
+          sahneleri arasında çok büyük dikey boşluk vardı. Horizontal
+          scroll pin'i sticky çıktığında zaten büyük bir viewport
+          bırakıyor, üstüne
           80px pt-20 gelmesi boşluk hissini ikiye katlıyordu. Alt padding
           aynı kaldı — sonraki section'a yumuşak geçiş için. */}
       <section className="scene pt-6 md:pt-10 pb-20 bg-[#111113] text-white">
@@ -335,8 +336,8 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
         <div className="scene-inner max-w-[1480px] mx-auto px-6 lg:px-10 xl:px-14">
           <div className="gsap-fade-up mb-12">
             {/* Eyebrow'un yeşili de bütün sitedeki pill yeşiliyle aynı
-                AI-ish hissini veriyordu (Dilara geri bildirimi). Nötr
-                zinc'e çekildi — diğer section eyebrow'larıyla tutarlı. */}
+                AI üretimi hissini veriyordu. Nötr zinc'e çekildi —
+                diğer section eyebrow'larıyla tutarlı. */}
             <p className="text-[10px] uppercase tracking-[0.3em] text-zinc-500 font-bold">{tr ? 'Dinleme Yolculukları' : 'Listening Journeys'}</p>
             <h2 className="text-3xl md:text-4xl font-black font-editorial mt-1 tracking-[-0.03em] gsap-title-reveal">{dict.listeningPaths.title}</h2>
           </div>
@@ -351,9 +352,10 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
                 'from-amber-900/40 via-zinc-950 to-black',
               ];
               return (
-                // Bug: kart <div> idi, tıklanmıyordu. <Link>'e çevrildi
-                // ve /listening-paths/[slug] detayına gidiyor. cursor-pointer
-                // sınıfı artık gerçek link anchor'ı veriyor.
+                // Kart önceden bir <div> idi ve tıklanmıyordu; <Link>'e
+                // çevrildi → /listening-paths/[slug] detayına gidiyor.
+                // Gerçek anchor olduğu için klavye/erişilebilirlik ve
+                // sağ-tık "yeni sekmede aç" davranışları doğal çalışıyor.
                 <Link
                   key={p.id}
                   href={`/${locale}/listening-paths/${p.slug}`}
@@ -364,7 +366,7 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
                   ) : (
                     <>
                       {/* Fallback: sadece gradient + diagonal tarama;
-                          harf artık yok (Dilara talebi). */}
+                          tek-harf watermark kaldırıldı (editoryal ton). */}
                       <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(255,255,255,0.08),transparent_60%)]" />
                       <div className="absolute inset-0 opacity-30" style={{ backgroundImage: 'repeating-linear-gradient(60deg, transparent, transparent 30px, rgba(255,255,255,0.02) 30px, rgba(255,255,255,0.02) 60px)' }} />
                     </>

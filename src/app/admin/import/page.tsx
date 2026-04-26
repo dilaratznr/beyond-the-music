@@ -49,18 +49,9 @@ Hep Sonradan,2003,,1,Bir İhtimal,3:50,false,,
 Hep Sonradan,2003,,2,Söz,4:10,false,,`;
 
 /**
- * CSV import page. Two stages:
- *   1. Artist + CSV input. We send the CSV to the server with
- *      dryRun=true to validate and produce a row-by-row plan.
- *   2. Preview. The user sees what would change and clicks "İçe aktar"
- *      to commit (same payload, dryRun=false).
- *
- * Design choices:
- *  - The artist is fixed at the page level so the CSV doesn't need
- *    to repeat the artist column on every row (matches the user's
- *    stated workflow: "I'm adding ONE artist's discography").
- *  - The page also offers per-resource "CSV indir" links (handled in
- *    each list page itself); this screen is just the import side.
+ * CSV import page. İki aşama: (1) artist + CSV input → server dryRun=true
+ * ile plan üretir, (2) preview üzerinden onaylanırsa dryRun=false commit.
+ * Artist sayfa seviyesinde sabit; CSV her satırda tekrarlamaz.
  */
 export default function ImportPage() {
   const { data: session, status } = useSession();

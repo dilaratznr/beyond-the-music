@@ -1,8 +1,6 @@
 # 🚀 Buradan Başla — Yayına Alma Rehberi
 
-Selam Dilara,
-
-Site production'a hazır. Tam adım adım rehber için **[DEPLOYMENT.md](./DEPLOYMENT.md)** dosyasını aç.
+Bu doküman, projeyi ilk kez yayına çıkaran kişi için kısa bir başlangıç notudur. Tam adım adım rehber için **[DEPLOYMENT.md](./DEPLOYMENT.md)** dosyasını aç.
 
 ## Kısa özet
 
@@ -20,8 +18,5 @@ Hepsi ücretsiz tier'da başlar. Yıllık toplam maliyet: sadece domain ücreti.
 
 ## Sırada ne var?
 
-Şu an yapman gereken: **DEPLOYMENT.md Aşama 1**'e bak, GitHub'da repo aç.
-
-Sonrasında bana "GitHub reposunu açtım, URL'i: …" yaz. Ben de kalan kısımları (Neon, R2, Resend, Vercel) tek tek seninle aşıp, env variables'ı eksiksiz hazırlayacağım.
-
-Takıldığın her yerde sor.
+İlk adım: **DEPLOYMENT.md Aşama 1**'e bak, GitHub'da boş bir repo aç.
+Sonrasında Neon, R2, Resend ve Vercel adımlarını sırasıyla DEPLOYMENT.md üzerinden takip et.

@@ -6,24 +6,13 @@ import prisma from './lib/prisma';
 const DEFAULT_LOCALE = 'tr';
 
 /**
- * Strict, per-request CSP used for the admin surface. Every response
- * carries a fresh nonce that `next/script` and Next's own injected
- * inline scripts bind to, and `strict-dynamic` tells modern browsers
- * to trust only scripts loaded from those nonced origins.
- *
- * Public pages do NOT flow through this middleware — see the matcher
- * at the bottom of the file. Their (static) CSP lives in
- * `next.config.ts` so Vercel's edge can treat them as ISR-cacheable.
+ * Per-request CSP for admin (nonce + 'self'). Public pages use static CSP
+ * in next.config.ts (ISR-cacheable).
  */
 function buildAdminCsp(nonce: string): string {
   const isDev = process.env.NODE_ENV === 'development';
-  // strict-dynamic kaldırıldı: Turbopack/Next.js client chunk'larının
-  // bir kısmı kendi script tag'lerini nonce'suz inject ediyor, strict-
-  // dynamic ile bunlar bloke oluyordu (admin sayfalarında butonlar
-  // tepki vermiyordu, network'te `(blocked)`). 'self' + nonce kombinasyonu
-  // hem aynı origin'den gelen Next chunk'larını kabul ediyor hem de
-  // inline event handler'ları + 3rd-party script'leri reddediyor — XSS'e
-  // karşı yeterli koruma sağlıyor.
+  // 'self' + nonce allow Next chunks and nonce'd scripts; block inline handlers.
+  // (strict-dynamic blocked some Next client chunks in production.)
   const scriptSrc = [
     "'self'",
     `'nonce-${nonce}'`,
@@ -56,30 +45,13 @@ function buildAdminCsp(nonce: string): string {
   ].join('; ');
 }
 
-/**
- * State-değiştiren HTTP method'ları — bunlara CSRF/Origin kontrolü
- * uygulanıyor. GET/HEAD/OPTIONS spec gereği safe; mutation yapan
- * endpoint'ler aşağıdakiler.
- */
+// State-mutating HTTP methods (GET/HEAD/OPTIONS are safe per spec).
 const MUTATING_METHODS = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
 
 /**
- * /api altındaki mutating istekler için Origin header doğrulaması.
- *
- * NextAuth v4 Credentials provider'ı CSRF token üretmiyor; cookie
- * httpOnly + SameSite=lax kombinasyonu çoğu CSRF saldırısını zaten
- * keser, ama "lax" GET ve top-level POST'ları geçirir → form action
- * attack'i hâlâ teorik olarak mümkün. Origin/Referer header'ı tarayıcı
- * tarafından attacker JS'in değiştiremeyeceği bir şekilde set edilir;
- * same-origin doğrulaması bunu pinler.
- *
- * Origin kontrolü:
- *   - Origin header VARSA → host'umuzla eşleşmeli
- *   - YOKSA Referer'ı kontrol et (eski tarayıcılar)
- *   - İkisi de yoksa same-origin değil sayıyoruz (fail-closed)
- *
- * Server Action'lar bu yoldan geçmez — Next.js kendi içinde origin
- * doğrulaması yapar (https://nextjs.org/blog/security-nextjs-server-components-actions#csrf).
+ * Origin validation for /api mutations (CSRF defense). NextAuth v4 + httpOnly
+ * + SameSite=lax; Origin/Referer header can't be spoofed by attacker JS.
+ * Server Actions already validated by Next.js.
  */
 function isSameOrigin(request: NextRequest): boolean {
   const origin = request.headers.get('origin');
@@ -237,6 +209,11 @@ export async function proxy(request: NextRequest) {
     const requestHeaders = new Headers(request.headers);
     requestHeaders.set('x-nonce', nonce);
     requestHeaders.set('Content-Security-Policy', csp);
+    // Layout/page server component'lerinin pathname'i bilmesi için —
+    // Next.js varsayılan olarak headers()'ta pathname expose etmiyor.
+    // Defense-in-depth auth gate (AdminAuthGate) bunu okuyup public
+    // route'ları muaf tutuyor.
+    requestHeaders.set('x-pathname', pathname);
 
     const response = NextResponse.next({
       request: { headers: requestHeaders },
@@ -270,25 +247,9 @@ export async function proxy(request: NextRequest) {
 
 export const config = {
   matcher: [
-    // The middleware should only run for:
-    //   - /admin/* (auth + per-request nonce CSP)
-    //   - locale-less top-level paths that need a redirect (/foo → /tr/foo)
-    //
-    // Everything else — and especially /tr/* and /en/* — MUST bypass the
-    // middleware so Vercel's ISR cache can serve those pages.
-    //
-    // The negative lookahead excludes:
-    //   _next/static, _next/image        — build assets
-    //   favicon.ico, opengraph-image,
-    //   twitter-image, icon, apple-icon,
-    //   manifest.webmanifest, robots.txt,
-    //   sitemap.xml                      — Next file-convention metadata
-    //   uploads                          — our content-addressed images
-    //   tr, en                           — locale-prefixed public pages
-    //
-    // NOT: /api dahil edildi (CSRF/Origin check için). Mutating method'lar
-    // için same-origin doğrulaması yapılıyor; safe method'lar (GET/HEAD)
-    // hızlı geçiyor (NextResponse.next).
+    // /admin/* + /api/* + locale-less paths. Diğer her şey (özellikle
+    // /tr/*, /en/*, _next/static, metadata route'ları, uploads) ISR
+    // cache'ten direkt servis edilebilsin diye middleware'i atlamalı.
     {
       source:
         '/((?!_next/static|_next/image|favicon\\.ico|opengraph-image|twitter-image|icon|apple-icon|manifest\\.webmanifest|robots\\.txt|sitemap\\.xml|uploads|tr/|en/|tr$|en$).*)',

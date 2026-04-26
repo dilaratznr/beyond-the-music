@@ -8,26 +8,15 @@ interface Props {
 }
 
 /**
- * "Pin + translate" yatay kaydırma.
- *
- * Perf not: translate değerini React state'te tutmuyoruz — her scroll
- * frame'de re-render ağır kaçıyordu. Bunun yerine ref üzerinden doğrudan
- * `element.style.transform` yazıyoruz. rAF ile throttled.
- *
- * Dikey hizalama (Dilara geri bildirimi: "kaydirirken alti cok bos duruyor"):
- * Sticky alanı `h-screen` (viewport) tutuyoruz — aksi halde viewport'un
- * kalan kısmı "sticky altı" boşluğu olarak siyah kalıyordu. Ancak kartlar
- * `items-start`'ta olunca altta kocaman dead zone oluyordu; çözüm:
- * kartları `items-center` + hafif `-mt` ile yatay ortanın biraz üstüne
- * al. Üst/alt boşluk dengeli, kartlar "optik merkezde" ve scroll pin'i
- * tamamlandığında hemen sonraki section geliyor.
+ * Pin+translate horizontal scroll. Transform via ref (avoid state re-renders).
+ * Vertical alignment: items-center with -mt for optical center on pin.
  */
 export default function HorizontalScroll({ children, className = '' }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const [sectionHeight, setSectionHeight] = useState<number | null>(null);
 
-  // Overflow ölç ve section yüksekliğini ayarla
+  // Measure overflow & set section height.
   useLayoutEffect(() => {
     function measure() {
       const scroll = scrollRef.current;
@@ -37,7 +26,7 @@ export default function HorizontalScroll({ children, className = '' }: Props) {
     }
     measure();
     window.addEventListener('resize', measure);
-    // Resimler yüklendikçe genişlik değişebilir — ResizeObserver yakalar
+    // ResizeObserver catches width changes from lazy-loaded images.
     let ro: ResizeObserver | null = null;
     if ('ResizeObserver' in window && scrollRef.current) {
       ro = new ResizeObserver(measure);

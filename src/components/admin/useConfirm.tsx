@@ -4,29 +4,8 @@ import { useCallback, useRef, useState } from 'react';
 import TypedConfirmDialog from './TypedConfirmDialog';
 
 /**
- * Imperative confirm hook — `window.confirm` yerine.
- *
- * Neden?
- *   Native browser confirm bir Vercel/Chrome dialogu gibi görünüyor,
- *   site tasarımıyla çelişiyor ("amator duruyor"). Tüm silme/yayın
- *   onaylarının aynı `TypedConfirmDialog` component'ini kullanması
- *   tutarlılık sağlıyor — her yerde aynı ikon, aynı tipografi, aynı
- *   loading state.
- *
- * Kullanım:
- *   const { confirm, dialog } = useConfirm();
- *
- *   async function onDelete() {
- *     const ok = await confirm({
- *       title: 'Şarkı silinecek',
- *       description: '"Here Comes the Sun"',
- *       confirmLabel: 'Sil',
- *     });
- *     if (!ok) return;
- *     // ... silme işlemi
- *   }
- *
- *   return <>{dialog}{/ rest of UI /}</>;
+ * Imperative confirm hook. Styled dialog (TypedConfirmDialog) yerine
+ * native browser confirm; tutarlı UI ve loading state sağlar.
  */
 
 interface ConfirmOptions {

@@ -145,9 +145,9 @@ export default async function ListeningPathDetailPage({
             <span className="mx-1">/</span>
             <span className="text-white font-medium">{title}</span>
           </div>
-          {/* Önceden bg-emerald-500/15 + text-emerald-400 idi — Dilara:
-              "yesil cok ai duruyor". Nötr editoryel pill'e çevrildi,
-              sitenin geri kalanındaki pill dili ile (meta/tag'lerle)
+          {/* Önceden bg-emerald-500/15 + text-emerald-400 idi — yoğun
+              yeşil "AI üretimi" hissi veriyordu. Nötr editoryel pill'e
+              çevrildi, sitenin geri kalanındaki pill dili ile (meta/tag'lerle)
               aynı ton: beyaz üzerine saydam, ince kenarlık. */}
           <span className="inline-block px-2.5 py-0.5 bg-white/[0.06] border border-white/15 text-zinc-200 text-[10px] font-bold uppercase tracking-widest rounded-full mb-3">
             {typeLabels[path.type] || path.type}

@@ -17,16 +17,8 @@ function getCookieName() {
 }
 
 /**
- * POST /api/admin/2fa/verify
- *
- * Body: { code: "123456" }
- *
- * Setup sırasında kullanıcının ilk TOTP kodunu doğrular. Başarılıysa:
- *   - twoFactorEnabledAt = now()  → 2FA aktif
- *   - 10 yeni backup kodu oluştur → DB'ye hash'li yaz
- *   - Kullanıcıya raw kodları DÖN (TEK SEFER, asla bir daha gösterilmez)
- *
- * Başarısızsa rate-limit artar (kod brute force koruması).
+ * Verify TOTP during 2FA setup. On success: enable 2FA, generate + return
+ * backup codes (raw, one-time display). Rate-limited (brute force defense).
  */
 export async function POST(request: NextRequest) {
   const { error, user } = await requireAuth('EDITOR');
@@ -35,9 +27,7 @@ export async function POST(request: NextRequest) {
   const userId = (user as { id: string }).id;
   const ctx = extractContext(request);
 
-  // Brute force koruması — TOTP 6 hane = 10^6 kombinasyon. Window=±1
-  // ile başarı şansı 3/10^6 ama saniyede 1000 deneme = 6 dakikada
-  // çatlar. Dakikada 5 ile bunu pratikte imkansızlaştırıyoruz.
+  // Brute force defense: rate-limit 5/min makes exhaustive search impractical.
   const rl = rateLimit(`2fa:verify:${userId}`, 5, 60_000);
   if (!rl.success) {
     return NextResponse.json(

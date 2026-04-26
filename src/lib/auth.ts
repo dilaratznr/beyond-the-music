@@ -1,24 +1,24 @@
 import { AuthOptions } from 'next-auth';
 import CredentialsProvider from 'next-auth/providers/credentials';
 import bcrypt from 'bcryptjs';
-import prisma from './prisma';
+import { findUserByIdentifier } from './user-lookup';
 
 export const authOptions: AuthOptions = {
   providers: [
     CredentialsProvider({
       name: 'Credentials',
       credentials: {
-        email: { label: 'Email', type: 'email' },
+        // identifier: kullanıcı adı veya e-posta (email opsiyonel olduğu için
+        // ikisi de kabul ediliyor). Form'da single input olarak gösterilir.
+        identifier: { label: 'Kullanıcı adı veya e-posta', type: 'text' },
         password: { label: 'Password', type: 'password' },
       },
       async authorize(credentials) {
-        if (!credentials?.email || !credentials?.password) {
+        if (!credentials?.identifier || !credentials?.password) {
           return null;
         }
 
-        const user = await prisma.user.findUnique({
-          where: { email: credentials.email },
-        });
+        const user = await findUserByIdentifier(credentials.identifier);
 
         if (!user) {
           return null;
@@ -46,7 +46,7 @@ export const authOptions: AuthOptions = {
 
         return {
           id: user.id,
-          email: user.email,
+          email: user.email ?? undefined,
           name: user.name,
           role: user.role,
         };

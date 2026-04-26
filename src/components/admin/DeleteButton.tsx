@@ -5,20 +5,8 @@ import { useToast } from '@/components/admin/Toast';
 import TypedConfirmDialog, { ImpactItem } from '@/components/admin/TypedConfirmDialog';
 
 /**
- * Her admin sayfasında ortak silme butonu.
- *
- * Akış:
- *   1. Tıklayınca önce basit bir window.confirm — hızlı silme, bir
- *      klavye yanlışını engellemek için.
- *   2. API çağrısı yapılır. Eğer 409 "requiresConfirmation: true" ile
- *      dönerse, cascade etkisi vardır — kullanıcıya typed confirm modal
- *      gösterilir (entity adını yazarak onayla).
- *   3. Kullanıcı onaylarsa `?force=true` ile tekrar DELETE atılır.
- *   4. 409 "requiresConfirmation: false" (örn. User silme'de foreign key
- *      blokajı) ise force opsiyonu yok — sadece hata mesajı gösterilir.
- *
- * Backward-compat: `entityName` verilmeyen eski kullanımlarda 409
- * impact akışı devreye girmez, sadece toast error gösterilir.
+ * Common delete button: quick confirm + API call. If 409 with cascade impact,
+ * show typed confirm modal. `?force=true` on retry. Backward-compat when no entityName.
  */
 interface DeleteButtonProps {
   endpoint: string;

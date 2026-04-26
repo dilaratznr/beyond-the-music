@@ -1,14 +1,6 @@
 /**
- * Site-wide iletişim ve sosyal medya bilgileri.
- *
- * Hardcoded değerler yerine burada tek noktadan yönetilir. Env değişkeni
- * tanımlıysa onu kullanır, yoksa fallback değere düşer. Böylece:
- *   - Dev ortamında ek ayar gerekmez, her şey çalışır.
- *   - Production'da mail/telefon/sosyal hesaplar `.env`'den override edilir,
- *     kod değişikliği gerekmez.
- *
- * NEXT_PUBLIC_ ön eki zorunlu — client component'lerde (örn. contact
- * formu) okunabilmesi için. Bu değerler public olduğu için sakıncası yok.
+ * Contact & social links (env override or fallback). NEXT_PUBLIC_ required
+ * for client-side access. Public data, no secrets.
  */
 
 export const SITE_CONTACT = {
@@ -27,10 +19,7 @@ export interface SocialLink {
   url: string;
 }
 
-/**
- * Boş URL'li girdileri filtreler — env'de set edilmemiş platformlar UI'da
- * gözükmez (ölü link yerine hiç basmamak daha iyi).
- */
+/** Filter empty URLs (hide unset platforms instead of dead links). */
 export const SOCIAL_LINKS: SocialLink[] = [
   {
     name: 'Instagram',

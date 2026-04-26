@@ -1,16 +1,7 @@
 /**
- * Server-side rich-text sanitizer.
- *
- * TipTap ürettiği HTML'i DB'ye yazmadan ÖNCE buradan geçiriyoruz —
- * defence-in-depth. Render anında da (article slug page) DOMPurify
- * çalışıyor; ama bir editör hesabı ele geçirilirse stored XSS'in
- * Admin önizlemelerine bile sızmaması için yazma katmanında da
- * kesiyoruz. isomorphic-dompurify hem Node hem edge runtime'ında
- * çalışır.
- *
- * Whitelist'i TipTap'in StarterKit + custom extension setine göre
- * tutuyoruz — eklenen yeni bir node (örn. embed) varsa burayı da
- * güncelle, aksi halde editörde göründüğü gibi DB'ye gitmez.
+ * Server-side rich-text sanitizer (defence-in-depth). Client-side DOMPurify
+ * on render; server sanitize on write (prevent stored XSS). Whitelist matches
+ * TipTap StarterKit extensions.
  */
 import DOMPurify from 'isomorphic-dompurify';
 
@@ -38,8 +29,7 @@ export function sanitizeRichText(input: string | null | undefined): string | nul
   return DOMPurify.sanitize(input, {
     ALLOWED_TAGS,
     ALLOWED_ATTR,
-    // TipTap output'u hiçbir zaman <script>/<style>/<iframe>/eventattr
-    // üretmiyor — buradaki kapatma sadece bypass denemelerine karşı.
+    // TipTap never produces these; forbid as defense-in-depth vs bypass attempts.
     FORBID_TAGS: ['script', 'style', 'iframe', 'object', 'embed', 'form'],
     FORBID_ATTR: ['onerror', 'onload', 'onclick', 'onmouseover', 'onfocus', 'onblur'],
     ALLOW_DATA_ATTR: false,

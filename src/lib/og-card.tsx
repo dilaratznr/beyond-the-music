@@ -1,23 +1,7 @@
 /**
- * Shared OG-card renderer used by every `opengraph-image.tsx` in the app.
- *
- * Why a helper:
- *   Each detail page (article, artist, album, genre, ...) wants the same
- *   branded 1200×630 social card — dark background, eyebrow tag, editorial
- *   title, site monogram bottom-right. Duplicating the JSX across six
- *   files drifts fast; centralizing it gives every card the same visual
- *   language for free.
- *
- * Constraints imposed by `next/og` (satori):
- *   - Only flexbox layout. No `display: grid`, no `float`.
- *   - No CSS variables — all colors/sizes are literal.
- *   - External fonts require fetching binary TTF/OTF files and passing
- *     them in `{ fonts: [...] }`. We skip that: satori's built-in Inter
- *     fallback reads clean enough for social cards and keeps the edge
- *     function cold-start light.
- *
- * The output is the JSX tree — callers wrap it in `new ImageResponse(...)`
- * so they can supply their own `size` export if needed.
+ * Shared OG card renderer (satori via next/og). Dark bg + eyebrow + title +
+ * monogram. Flexbox-only, no CSS vars, no external fonts (Inter fallback).
+ * Callers wrap in ImageResponse with custom size.
  */
 
 import type { ReactElement } from 'react';
@@ -39,13 +23,7 @@ export type OgCardProps = {
 };
 
 /**
- * Returns the JSX passed to `new ImageResponse(...)`.
- * Callers stay thin:
- *
- *   export default async function Image({ params }) {
- *     const { title, ... } = await loadData(params);
- *     return new ImageResponse(renderOgCard({ title, ... }), OG_SIZE);
- *   }
+ * Returns JSX for ImageResponse. Callers pass data, receive JSX to wrap.
  */
 export function renderOgCard({
   title,
@@ -60,15 +38,13 @@ export function renderOgCard({
         display: 'flex',
         flexDirection: 'column',
         justifyContent: 'space-between',
-        // Layered dark background: the site bg (#0a0a0b) plus a subtle
-        // radial highlight upper-left so the card doesn't look flat.
+        // Dark bg + subtle radial highlight.
         backgroundColor: '#0a0a0b',
         backgroundImage:
           'radial-gradient(circle at 20% 15%, rgba(255,255,255,0.08), transparent 55%), linear-gradient(135deg, #151518 0%, #0a0a0b 60%)',
         color: '#ffffff',
         padding: '72px',
-        // Letter-spacing / line-height inherited by children unless they
-        // override — keeps the overall typographic rhythm predictable.
+        // Typography inherited by children unless overridden.
         letterSpacing: '-0.02em',
       }}
     >
@@ -97,8 +73,7 @@ export function renderOgCard({
             </div>
           </>
         ) : (
-          // Reserve vertical space even with no eyebrow so every card has
-          // the same "title sits lower than perfect center" composition.
+          // Reserve space without eyebrow for consistent title placement.
           <div style={{ height: 24 }} />
         )}
       </div>

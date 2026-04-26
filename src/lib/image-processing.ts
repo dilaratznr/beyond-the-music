@@ -1,26 +1,7 @@
 /**
- * Image processing pipeline.
- *
- * Responsibilities:
- *   1. Take a raw image Buffer (JPEG/PNG/WebP/GIF).
- *    2. Produce a deterministic, content-addressed filename stem (`{hash}`).
- *   3. Generate a small, predictable set of derivatives:
- *        - sizes:   thumb (400w), medium (1024w), large (1920w)
- *        - formats: primary = WebP, optional = AVIF, fallback = original JPEG/PNG
- *   4. Return the list of outputs so callers (upload route / migration script)
- *      can persist them to S3 or the local disk.
- *
- * Why content-addressed names?
- *   - Immutable assets can be served with `Cache-Control: public, max-age=31536000, immutable`.
- *   - Re-uploading the same bytes is a no-op and lets us de-duplicate storage.
- *
- * Why WebP-first, AVIF-also, JPEG fallback?
- *   - next/image will automatically pick the best format the browser accepts
- *     when `formats: ['image/avif', 'image/webp']` is set in next.config.ts,
- *     but that only happens for *remote* images it fetches. For URLs we store
- *     directly in the DB we want the on-disk asset itself to already be WebP,
- *     so even pages that use `<img>` (temporarily, before Phase 2 finishes)
- *     get the smaller file. AVIF is produced alongside for `<picture>` sources.
+ * Image processing pipeline. Buffer → content-addressed hash → WebP/AVIF
+ * variants (thumb/medium/large). Content-addressed names enable cache
+ * immutability and deduplication; WebP primary format.
  */
 
 import sharp from "sharp";
@@ -109,8 +90,7 @@ export async function processImage(
 
   const hash = hashBuffer(source);
 
-  // EXIF rotation is applied up-front so every derivative is oriented
-  // correctly. We clone per-output to avoid mutating a shared pipeline.
+  // EXIF rotation up-front; clone per-output to avoid shared pipeline mutation.
   const pipeline = sharp(source, { failOn: "none" }).rotate();
   const meta = await pipeline.metadata();
 
@@ -118,9 +98,7 @@ export async function processImage(
   const sourceHeight = meta.height ?? 0;
   const isAnimated = (meta.pages ?? 1) > 1;
 
-  // Animated GIFs: bail out of the resize pipeline and just return the
-  // original. We'd lose the animation otherwise — sharp *can* handle it
-  // but the output tends to be larger than the input for small GIFs.
+  // Animated GIFs: return original to preserve animation; sharp re-encode often larger.
   if (isAnimated && opts.keepAnimated !== false) {
     const variant: ImageVariant = {
       key: `${prefix}/${hash}.gif`,
@@ -142,15 +120,12 @@ export async function processImage(
 
   const variants: ImageVariant[] = [];
 
-  // Only emit a bucket if the source is at least that wide. Upscaling
-  // a 300px logo to 1920px would blur it and bloat storage for nothing.
+  // Don't upscale (e.g., 300px → 1920px would blur + bloat).
   const usableBuckets = SIZE_BUCKETS.filter(
     (b) => sourceWidth === 0 || sourceWidth >= b.width,
   );
 
-  // If the image is smaller than our smallest bucket, we still emit one
-  // variant at the source's native width so every uploaded image has at
-  // least one entry to serve.
+  // Emit at native width if smaller than smallest bucket.
   const bucketsToProduce =
     usableBuckets.length > 0
       ? usableBuckets
@@ -183,8 +158,7 @@ export async function processImage(
     }
   }
 
-  // Pick the primary: prefer `medium` WebP, else `thumb` WebP, else the
-  // first variant we produced. This is what ends up in the DB.
+  // Primary: prefer medium WebP, else thumb WebP, else first variant.
   const primary =
     variants.find((v) => v.format === "webp" && v.sizeLabel === "medium") ??
     variants.find((v) => v.format === "webp" && v.sizeLabel === "thumb") ??
@@ -215,8 +189,7 @@ type EncodeArgs = {
 async function encodeVariant(args: EncodeArgs): Promise<ImageVariant> {
   const { source, prefix, hash, sizeLabel, targetWidth, format } = args;
 
-  // Every variant starts from the original buffer, not a shared pipeline,
-  // so sharp's internal state can't leak between encodes.
+  // Fresh buffer per variant to avoid state leakage.
   let pipe = sharp(source, { failOn: "none" })
     .rotate()
     .resize({
@@ -228,8 +201,7 @@ async function encodeVariant(args: EncodeArgs): Promise<ImageVariant> {
   if (format === "webp") {
     pipe = pipe.webp({ quality: WEBP_QUALITY, effort: 4 });
   } else {
-    // effort 4 is a good sweet spot — higher values triple the CPU cost
-    // for single-digit-percent size improvements.
+    // effort 4 balances CPU cost and compression (higher = marginal gains).
     pipe = pipe.avif({ quality: AVIF_QUALITY, effort: 4 });
   }
 

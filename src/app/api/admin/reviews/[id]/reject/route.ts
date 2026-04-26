@@ -6,16 +6,8 @@ import { CACHE_TAGS } from '@/lib/db-cache';
 import { rejectReview } from '@/lib/content-review';
 
 /**
- * POST /api/admin/reviews/[id]/reject
- *   Bekleyen bir review'i reddet. Super Admin only.
- *   Body: { note?: string } — admin'e geri bildirim olarak gösterilir.
- *
- *   Her section için:
- *     - Entity status → DRAFT (editör düzenleyip tekrar "Onaya Gönder"
- *       diyebilir; DRAFT zaten public'e kapalı)
- *     - Article için publishedAt ayrıca null'a set edilir
- *     - Review status → REJECTED (+ not)
- *   Entity silinmişse review yine de REJECTED olarak kapatılır, log atılır.
+ * Reject pending review. Sets entity to DRAFT (Article: also null publishedAt),
+ * review to REJECTED + note. Handles deleted entities (warns, closes review).
  */
 export async function POST(
   request: NextRequest,

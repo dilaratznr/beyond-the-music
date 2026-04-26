@@ -4,17 +4,9 @@ import { ReactNode } from 'react';
 import Link from 'next/link';
 
 /**
- * Shared form primitives for admin create/edit pages.
- *
- * Dark, Vercel / GitHub-style inputs:
- *   - zinc-950 base, zinc-800 border, white focus ring
- *   - subtle hover state, visible placeholder
+ * Admin form primitives. Dark Vercel/GitHub-style inputs with subtle
+ * white tint, light hover state, wide soft focus ring.
  */
-
-// Editorial dokunuşlu input stili: zinc-950 bg yerine hafif beyaz tint
-// (bg-white/[0.02]) + zinc yerine daha karakterli alt border (iki-ton:
-// üst zinc-800, alt zinc-700 — hafif hacim verir). Focus ring daha geniş
-// ve yumuşak. Tüm inputlar (text, textarea, select) paylaşıyor.
 const inputBase =
   'w-full px-3.5 py-2.5 text-sm text-zinc-100 bg-white/[0.02] border border-zinc-800 rounded-lg outline-none transition-all ' +
   'hover:border-zinc-700 hover:bg-white/[0.04] focus:border-white/40 focus:bg-white/[0.05] focus:ring-4 focus:ring-white/[0.04] ' +
@@ -174,17 +166,9 @@ export function FormSection({
 }
 
 /**
- * Form footer shown at the bottom of create/edit pages.
- *
- * Layout:
- *   [ danger slot ]            [ hint · cancel · save ]
- *
- * The `extra` slot is intended for a destructive action (typically a
- * DeleteButton with variant="outline"). A subtle vertical divider separates
- * it from the main actions so the "destructive zone" reads as distinct.
- *
- * Designed to be dropped directly inside the form — it ships its own
- * card background so callers don't need a wrapper div.
+ * Create/edit sayfa footer'ı: [ danger slot ] | [ hint · cancel · save ].
+ * `extra` slot destructive action için (ör. DeleteButton). Kendi card
+ * background'unu taşır, ek wrapper gerekmez.
  */
 export function FormActions({
   cancelHref,

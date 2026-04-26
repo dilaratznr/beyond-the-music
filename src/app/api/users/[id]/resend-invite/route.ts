@@ -64,12 +64,19 @@ export async function POST(
   const origin = request.headers.get('origin') || undefined;
   const inviteUrl = buildInviteUrl(rawToken, origin);
 
-  const { emailSent, error: emailError } = await sendInviteEmail({
-    to: user.email,
-    recipientName: user.name,
-    inviteUrl,
-    invitedByName: actor.name || 'Super Admin',
-  });
+  // Email yoksa SMTP'yi denemenin anlamı yok — manuel paylaşım modu.
+  let emailSent = false;
+  let emailError: string | undefined;
+  if (user.email) {
+    const result = await sendInviteEmail({
+      to: user.email,
+      recipientName: user.name,
+      inviteUrl,
+      invitedByName: actor.name || 'Super Admin',
+    });
+    emailSent = result.emailSent;
+    emailError = result.error;
+  }
 
   return NextResponse.json({
     invite: {

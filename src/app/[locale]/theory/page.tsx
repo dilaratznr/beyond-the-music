@@ -71,8 +71,8 @@ export default async function TheoryPage({ params }: { params: Promise<{ locale:
                 <Link key={a.id} href={`/${locale}/article/${a.slug}`}
                   className="group relative block rounded-xl overflow-hidden bg-white/[0.02] border border-white/5 hover:bg-white/[0.05] transition-colors">
                   {/* Görsel eksikse artık boş alan değil, CardImage fallback
-                      (gradient + watermark harf) — Dilara "bazi seylerde
-                      gorsel yok, onlara da gorsel koysun" geri bildirimi. */}
+                      (gradient + watermark harf) — görselsiz kayıtlar için
+                      tutarlı bir görsel doldurma. */}
                   <div className="relative w-full h-40 overflow-hidden bg-zinc-900">
                     <CardImage
                       src={a.featuredImage}

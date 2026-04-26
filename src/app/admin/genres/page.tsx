@@ -230,9 +230,9 @@ function GenreCard({
   return (
     <div
       // Önceden `col-span-full` ile açılan kart tüm grid row'unu kaplıyordu,
-      // diğer kartlar alt satıra atlıyordu (Dilara: "alt türlere tıklayınca
-      // alta geçmesi kötü"). Artık kart kendi sütununda yerinde uzuyor —
-      // akordiyon davranışı, grid bozulmuyor.
+      // diğer kartlar alt satıra atlıyordu — alt türlere tıklayınca grid'in
+      // alta kayması rahatsız ediciydi. Artık kart kendi sütununda yerinde
+      // uzuyor; akordiyon davranışı, grid bozulmuyor.
       className={`bg-zinc-900/40 rounded-lg border overflow-hidden transition-colors self-start ${
         isOpen ? 'border-zinc-700' : 'border-zinc-800 hover:border-zinc-700'
       }`}

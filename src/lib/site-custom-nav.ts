@@ -4,17 +4,9 @@ import prisma from '@/lib/prisma';
 import { CACHE_TAGS } from '@/lib/db-cache';
 
 /**
- * Super-admin-defined extra navbar links, stored as a single JSON blob in
- * SiteSetting (key `nav_custom_items`). Each row has:
- *   - id:      stable identifier (used as React key + in admin UI updates)
- *   - labelTr: Turkish label
- *   - labelEn: English label
- *   - href:    absolute URL (http(s)://…) OR a relative path (/genre, /x/y).
- *              Relative paths are auto-prefixed with the active locale at
- *              render time — entering "/listening-paths" becomes "/tr/listening-paths".
- *   - enabled: can be toggled off without deleting.
- *
- * The admin form writes the same JSON back through `/api/settings`.
+ * Extra navbar links from SiteSetting (nav_custom_items JSON blob).
+ * Each item: id, labelTr, labelEn, href (absolute or relative + locale),
+ * enabled flag. Admin form writes via /api/settings.
  */
 export interface CustomNavItem {
   id: string;
@@ -35,7 +27,7 @@ function sanitize(raw: unknown): CustomNavItem | null {
   const labelEn = typeof r.labelEn === 'string' ? r.labelEn.trim() : '';
   const href = typeof r.href === 'string' ? r.href.trim() : '';
   if (!id || !href) return null;
-  // At least one label is required so there's something to show.
+  // At least one label required.
   if (!labelTr && !labelEn) return null;
   return {
     id,

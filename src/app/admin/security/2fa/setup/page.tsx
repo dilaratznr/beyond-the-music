@@ -14,6 +14,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import { useRouter, useSearchParams } from 'next/navigation';
 
 type State =
   | { kind: 'idle' }
@@ -21,10 +22,35 @@ type State =
   | { kind: 'success'; backupCodes: string[] };
 
 export default function TwoFactorSetupPage() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  // Onboarding modu: ilk login'de buraya yönlendiren cookie var.
+  // Bu modda "Şimdi atla" butonu görünür; ayarlardan açıkça gelindiğinde
+  // (onboarding=1 yok) atlama butonu gizli, sadece kurulum akışı.
+  const isOnboarding = searchParams.get('onboarding') === '1';
+
   const [state, setState] = useState<State>({ kind: 'idle' });
   const [code, setCode] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  async function skipSetup() {
+    setBusy(true);
+    setError(null);
+    try {
+      const res = await fetch('/api/admin/2fa/skip', { method: 'POST' });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || 'Atlanamadı');
+      }
+      // Pending JWT artık tam JWT — middleware enroll yönlendirmesi yapmıyor.
+      router.push('/admin/dashboard');
+      router.refresh();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Hata');
+      setBusy(false);
+    }
+  }
 
   async function startSetup() {
     setBusy(true);
@@ -119,8 +145,20 @@ export default function TwoFactorSetupPage() {
               {busy ? 'Hazırlanıyor…' : 'Kuruluma Başla'}
             </button>
 
+            {isOnboarding && (
+              <button
+                onClick={skipSetup}
+                disabled={busy}
+                className="w-full mt-2 py-2.5 text-sm text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800/40 rounded-lg disabled:opacity-50 transition-colors"
+              >
+                Şimdi atla, sonra ayarlardan kurarım
+              </button>
+            )}
+
             <p className="text-[11px] text-zinc-600 text-center mt-4 leading-relaxed">
-              Kurulum 1 dakikadan az sürer. İstediğin zaman ayarlardan değiştirebilirsin.
+              {isOnboarding
+                ? 'Şiddetle önerilir — şifren çalınsa bile hesabın güvende kalır. Atladığında istediğin zaman ayarlardan açabilirsin.'
+                : 'Kurulum 1 dakikadan az sürer. İstediğin zaman ayarlardan değiştirebilirsin.'}
             </p>
           </div>
         )}

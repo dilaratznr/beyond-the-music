@@ -2,49 +2,38 @@
  * One-off: bir admin hesabının şifresini terminalden manuel set et.
  *
  * KULLANIM:
- *   npx tsx scripts/set-password.ts <email> <yeni-şifre>
+ *   npx tsx scripts/set-password.ts <kullanıcı-adı-veya-email> <yeni-şifre>
  *
  * ÖRNEK:
- *   npx tsx scripts/set-password.ts dilaratuezuner@gmail.com "X9!kT8mP2vQ9wR4t"
- *
- * NE YAPAR:
- *   - Bcrypt 12-round hash üretir, user.password'e yazar
- *   - mustSetPassword=false yapar (eğer önceden true idiyse)
- *   - Şifre policy'sine uygun mu kontrol eder (12+ karakter vb.)
- *   - Audit log'a "PASSWORD_SET_VIA_SCRIPT" düşer
- *
- * GÜVENLİK:
- *   - Sadece DATABASE_URL erişimi olan biri (sen) çalıştırabilir
- *   - Şifre bash history'ye düşer; sonrasında temizlemek için:
- *       history -d $(history 1)
- *     veya:
- *       echo "" > ~/.zsh_history
+ *   npx tsx scripts/set-password.ts admin "<güçlü-şifre>"
+ *   npx tsx scripts/set-password.ts admin@example.com "<güçlü-şifre>"
  */
 
 import 'dotenv/config';
 import bcrypt from 'bcryptjs';
 import prisma from '../src/lib/prisma';
 import { validatePassword } from '../src/lib/password-policy';
+import { findUserByIdentifier } from '../src/lib/user-lookup';
 
 async function main() {
-  const [email, password] = process.argv.slice(2);
+  const [identifier, password] = process.argv.slice(2);
 
-  if (!email || !password) {
-    console.error('Kullanım: npx tsx scripts/set-password.ts <email> <şifre>');
+  if (!identifier || !password) {
+    console.error(
+      'Kullanım: npx tsx scripts/set-password.ts <kullanıcı-adı-veya-email> <şifre>',
+    );
     process.exit(1);
   }
 
-  const user = await prisma.user.findUnique({ where: { email: email.toLowerCase() } });
+  const user = await findUserByIdentifier(identifier);
   if (!user) {
-    console.error(`❌ Kullanıcı bulunamadı: ${email}`);
+    console.error(`❌ Kullanıcı bulunamadı: ${identifier}`);
     process.exit(1);
   }
 
-  // Yeni şifre policy kontrolü — kullanıcı login flow'unda nasılsa
-  // burada da aynı kuralları uygula. Tutarlılık + script üzerinden
-  // zayıf şifre set edilemesin.
   const validation = validatePassword(password, {
     email: user.email,
+    username: user.username,
     name: user.name,
   });
   if (!validation.ok) {
@@ -53,18 +42,13 @@ async function main() {
   }
 
   const hash = await bcrypt.hash(password, 12);
-
   await prisma.user.update({
     where: { id: user.id },
-    data: {
-      password: hash,
-      mustSetPassword: false,
-    },
+    data: { password: hash, mustSetPassword: false },
   });
 
-  console.log(`✅ Şifre güncellendi: ${user.email} (${user.role})`);
+  console.log(`✅ Şifre güncellendi: @${user.username} (${user.role})`);
   console.log('   Şimdi /admin/login\'den giriş yapabilirsin.');
-  console.log('   2FA aktif değilse, ilk login\'de setup sayfasına yönlendirileceksin.');
 }
 
 main()

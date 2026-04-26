@@ -2,24 +2,27 @@
  * One-off: super admin değişikliği.
  *
  * NE YAPAR:
- *   1) `dilaratuezuner@gmail.com` kullanıcısını SUPER_ADMIN yapar.
+ *   1) `NEW_SUPER_ADMIN_USERNAME` env'iyle verilen kullanıcıyı SUPER_ADMIN yapar.
  *      - Yoksa yeni kullanıcı olarak oluşturur (mustSetPassword=true,
  *        davet token'ı üretir → URL console'a basılır).
  *      - Varsa rolünü SUPER_ADMIN'e yükseltir.
- *   2) `admin@beyondthemusic.com` kullanıcısını siler.
- *      - Onun yazdığı tüm makaleler dilaratuezuner@gmail.com'a transfer
+ *   2) `OLD_ADMIN_USERNAME` env'iyle verilen kullanıcıyı siler.
+ *      - Onun yazdığı tüm makaleler yeni super admin'e transfer
  *        edilir (yetim makale kalmasın).
  *      - Sonra hesabı silinir.
  *
  * GÜVENLİK:
- *   - Tüm DB değişiklikleri tek bir prisma.$transaction içinde — herhangi
- *     bir adım fail ederse hiçbir şey commit'lenmez (atomic).
- *   - Eylem audit log'a yazılır (NEW_SUPER_ADMIN_PROMOTED, USER_DELETED).
- *   - Senin kendi hesabını silmemen için ek check var.
+ *   - Tüm DB değişiklikleri tek bir prisma.$transaction içinde — atomik.
+ *   - Eylem audit log'a yazılır (SUPER_ADMIN_SWAPPED).
+ *   - Yeni ve silinecek username aynı olamaz (self-delete koruması).
  *
  * KULLANIM:
- *   npx tsx scripts/swap-super-admin.ts --dry-run   # önce gör
- *   npx tsx scripts/swap-super-admin.ts             # gerçek yap
+ *   NEW_SUPER_ADMIN_USERNAME="<yeni>" OLD_ADMIN_USERNAME="<eski>" \
+ *     npx tsx scripts/swap-super-admin.ts --dry-run   # önce gör
+ *
+ *   NEW_SUPER_ADMIN_USERNAME="<yeni>" OLD_ADMIN_USERNAME="<eski>" \
+ *     [NEW_SUPER_ADMIN_EMAIL="..."] [NEW_SUPER_ADMIN_NAME="Ad Soyad"] \
+ *     npx tsx scripts/swap-super-admin.ts             # gerçek yap
  *
  * GERİ ALMA: Yapamaz — silme kalıcı. Önce DB backup al:
  *   pg_dump $DATABASE_URL > backup-$(date +%Y%m%d-%H%M).sql
@@ -31,33 +34,42 @@ import prisma from '../src/lib/prisma';
 import { createInvitation } from '../src/lib/user-invitations';
 import { audit } from '../src/lib/audit-log';
 
-const NEW_SUPER_ADMIN_EMAIL = 'dilaratuezuner@gmail.com';
-const OLD_ADMIN_EMAIL = 'admin@beyondthemusic.com';
+const NEW_SUPER_ADMIN_USERNAME = process.env.NEW_SUPER_ADMIN_USERNAME ?? '';
+const NEW_SUPER_ADMIN_EMAIL = process.env.NEW_SUPER_ADMIN_EMAIL || null;
+const OLD_ADMIN_USERNAME = process.env.OLD_ADMIN_USERNAME ?? '';
+// İsteğe bağlı — sadece "yeni hesap oluştur" akışında kullanılır.
+const NEW_SUPER_ADMIN_NAME = process.env.NEW_SUPER_ADMIN_NAME ?? 'Super Admin';
+
+if (!NEW_SUPER_ADMIN_USERNAME || !OLD_ADMIN_USERNAME) {
+  throw new Error(
+    'NEW_SUPER_ADMIN_USERNAME ve OLD_ADMIN_USERNAME env değişkenleri gerekli. ' +
+      'Kullanım: NEW_SUPER_ADMIN_USERNAME=... OLD_ADMIN_USERNAME=... npx tsx scripts/swap-super-admin.ts',
+  );
+}
 
 const dryRun = process.argv.includes('--dry-run');
 
 async function main() {
   console.log(
     `\n${dryRun ? '[DRY RUN] ' : ''}Super admin değişikliği:\n` +
-      `  • Yeni SUPER_ADMIN: ${NEW_SUPER_ADMIN_EMAIL}\n` +
-      `  • Silinecek:        ${OLD_ADMIN_EMAIL}\n`,
+      `  • Yeni SUPER_ADMIN: ${NEW_SUPER_ADMIN_USERNAME}\n` +
+      `  • Silinecek:        ${OLD_ADMIN_USERNAME}\n`,
   );
 
-  // Defensive: constants iki sabit string olduğu için TS bunları literal
-  // tip olarak görür ve comparison'ı "asla true olamaz" der. `as string`
-  // cast'iyle widen ediyoruz; ileride biri copy-paste'le aynı maile set
-  // ederse runtime check yine devreye girer.
-  if ((NEW_SUPER_ADMIN_EMAIL as string) === (OLD_ADMIN_EMAIL as string)) {
-    throw new Error('Yeni ve silinecek email aynı olamaz.');
+  // Self-delete koruması: aynı username'e yanlışlıkla set edilirse
+  // hesap silinip sonra promote edilemez bir state'e düşeriz.
+  if (NEW_SUPER_ADMIN_USERNAME === OLD_ADMIN_USERNAME) {
+    throw new Error('Yeni ve silinecek kullanıcı adı aynı olamaz.');
   }
 
   const newUser = await prisma.user.findUnique({
-    where: { email: NEW_SUPER_ADMIN_EMAIL },
+    where: { username: NEW_SUPER_ADMIN_USERNAME },
   });
   const oldUser = await prisma.user.findUnique({
-    where: { email: OLD_ADMIN_EMAIL },
+    where: { username: OLD_ADMIN_USERNAME },
     select: {
       id: true,
+      username: true,
       email: true,
       name: true,
       role: true,
@@ -66,20 +78,20 @@ async function main() {
   });
 
   if (!oldUser) {
-    console.log(`⚠️  ${OLD_ADMIN_EMAIL} bulunamadı — silme adımı atlanacak.`);
+    console.log(`⚠️  ${OLD_ADMIN_USERNAME} bulunamadı — silme adımı atlanacak.`);
   } else {
     console.log(
-      `  📋 ${OLD_ADMIN_EMAIL}: rol=${oldUser.role}, ${oldUser._count.articles} makale yazmış.`,
+      `  📋 ${OLD_ADMIN_USERNAME}: rol=${oldUser.role}, ${oldUser._count.articles} makale yazmış.`,
     );
   }
 
   if (newUser) {
     console.log(
-      `  📋 ${NEW_SUPER_ADMIN_EMAIL}: var (rol=${newUser.role}) — promote edilecek.`,
+      `  📋 ${NEW_SUPER_ADMIN_USERNAME}: var (rol=${newUser.role}) — promote edilecek.`,
     );
   } else {
     console.log(
-      `  📋 ${NEW_SUPER_ADMIN_EMAIL}: YOK — yeni hesap açılacak, davet linki üretilecek.`,
+      `  📋 ${NEW_SUPER_ADMIN_USERNAME}: YOK — yeni hesap açılacak, davet linki üretilecek.`,
     );
   }
 
@@ -109,8 +121,9 @@ async function main() {
     } else {
       const created = await tx.user.create({
         data: {
+          username: NEW_SUPER_ADMIN_USERNAME,
           email: NEW_SUPER_ADMIN_EMAIL,
-          name: 'Dilara Tüzüner',
+          name: NEW_SUPER_ADMIN_NAME,
           role: 'SUPER_ADMIN',
           password: placeholderHash,
           mustSetPassword: true,
@@ -180,9 +193,9 @@ async function main() {
   });
 
   console.log('\n✅ DB değişiklikleri tamam.\n');
-  console.log(`  • ${NEW_SUPER_ADMIN_EMAIL}: SUPER_ADMIN (${result.createdNew ? 'yeni hesap' : 'yükseltildi'})`);
+  console.log(`  • ${NEW_SUPER_ADMIN_USERNAME}: SUPER_ADMIN (${result.createdNew ? 'yeni hesap' : 'yükseltildi'})`);
   if (result.oldUserDeleted) {
-    console.log(`  • ${OLD_ADMIN_EMAIL}: silindi (${result.articlesTransferred} makale yeni admin'e transfer edildi)`);
+    console.log(`  • ${OLD_ADMIN_USERNAME}: silindi (${result.articlesTransferred} makale yeni admin'e transfer edildi)`);
   }
 
   // Davet URL'i üret (yeni hesap açıldıysa veya mevcut hesap zaten
@@ -216,8 +229,8 @@ async function main() {
     targetId: result.newSuperAdminId,
     targetType: 'USER',
     detail:
-      `promoted=${NEW_SUPER_ADMIN_EMAIL}` +
-      (result.oldUserDeleted ? `; removed=${OLD_ADMIN_EMAIL}` : ''),
+      `promoted=${NEW_SUPER_ADMIN_USERNAME}` +
+      (result.oldUserDeleted ? `; removed=${OLD_ADMIN_USERNAME}` : ''),
   });
 }
 

@@ -1,27 +1,13 @@
 /**
- * Server-side image upload validation — magic-byte signature kontrolü +
- * sharp ile metadata doğrulama.
- *
- * Neden ilave kontrol gerekli: `file.type` browser'da uzantıdan üretilir,
- * saldırgan curl ile istediği MIME'i header'a yazabilir. `.png` olarak
- * post edilen PHP/HTML dosyası header check'inden geçer ama gerçek
- * binary içeriği farklıdır. Magic-byte kontrolü ilk 4-12 byte'a bakarak
- * dosyanın gerçek tipini doğrular.
- *
- * Sharp ek olarak:
- *   - Bozuk veya kasten malformed image'i reddeder
- *   - "Pixel-flood" / "image-bomb" saldırısını keser (1KB PNG → 50000x50000
- *     decode etmeye kalkıyor → OOM). 8000x8000 üst sınırı koyuyoruz.
- *   - Animasyonlu GIF veya çok-frame'li dosyalarda anomali tespit edebilir
- *
- * SVG ASLA kabul edilmiyor: SVG XML olduğu için <script> taşıyabilir,
- * sanitize edilmeden render edilirse stored XSS. ALLOWED_MIMES'a ekleme.
+ * Server-side image validation: magic-byte signature check + sharp metadata
+ * (size, format). Detects spoofed MIME, pixel-bombs, corrupted files.
+ * SVG never allowed (XML, stored XSS risk).
  */
 
 const SIGNATURES: Array<{
   mime: string;
   prefix: number[];
-  // Bazı format'lar offset'te ek byte arar (WebP'de RIFF...WEBP)
+  // Some formats check suffix bytes at offset (e.g., WebP: RIFF...WEBP).
   suffix?: { offset: number; bytes: number[] };
 }> = [
   // JPEG: FF D8 FF (sonraki byte JPEG variant'ına göre değişir)
@@ -53,10 +39,7 @@ function bufferStartsWith(
   return true;
 }
 
-/**
- * Buffer'ın gerçek MIME type'ını magic byte'a göre döndür.
- * Tanınmıyor / desteklenmeyen format ise null.
- */
+/** Detect real MIME from magic bytes; null if unrecognized. */
 export function detectImageMime(buf: Buffer): string | null {
   for (const sig of SIGNATURES) {
     if (!bufferStartsWith(buf, sig.prefix)) continue;
@@ -79,12 +62,8 @@ export interface ValidatedImage {
 const MAX_DIMENSION = 8000;
 
 /**
- * Tam validation pipeline:
- *   1) Magic byte kontrolü → claim edilen MIME ile eşleşiyor mu?
- *   2) sharp ile metadata aç → bozuk / pixel-flood / vector format
- *      değilse ve boyutlar limit altındaysa OK.
- *
- * sharp dynamic import — bundle boyutu için sadece bu route'ta yükleniyor.
+ * Full validation: magic-byte check, sharp metadata (corrupt/pixel-bomb/format),
+ * dimension limits. sharp dynamically imported for bundle size.
  */
 export async function validateImageBuffer(
   buf: Buffer,

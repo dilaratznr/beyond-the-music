@@ -1,17 +1,8 @@
 import type { MetadataRoute } from 'next';
 
 /**
- * Web App Manifest.
- *
- * Served at `/manifest.webmanifest` and linked automatically by Next.js
- * from every page's `<head>`. Even if we never ship a full PWA, Lighthouse
- * dings sites that omit one, and the `theme_color` drives the browser
- * chrome tint on mobile Chrome / Android installs.
- *
- * Icons: we only reference `/favicon.ico` here. When we add a proper
- * 192/512 set under `src/app/icon.png` / `apple-icon.png`, Next.js picks
- * them up via file-based conventions and exposes them through the
- * manifest automatically.
+ * Web App Manifest. Auto-linked by Next.js; theme_color drives mobile
+ * browser chrome. Icons auto-discovered from src/app/icon.png conventions.
  */
 export default function manifest(): MetadataRoute.Manifest {
   return {
@@ -23,8 +14,7 @@ export default function manifest(): MetadataRoute.Manifest {
     display: 'standalone',
     background_color: '#0a0a0b',
     theme_color: '#0a0a0b',
-    // Locales cycle through TR + EN at the route level; the manifest
-    // itself defaults to TR because that's the primary audience.
+    // Default to TR (primary audience); routes cycle TR/EN.
     lang: 'tr',
     dir: 'ltr',
     orientation: 'portrait-primary',

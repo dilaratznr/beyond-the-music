@@ -3,16 +3,9 @@ import prisma from '@/lib/prisma';
 import { requireAuth } from '@/lib/auth-guard';
 
 /**
- * GET /api/admin/reviews
- *   Onay kuyruğundaki içeriklerin sayfalanmış listesi. Super Admin only.
- *
- *   Query params:
- *     ?status=PENDING | APPROVED | REJECTED   (default: PENDING)
- *     ?page=1                                   (default: 1)
- *     ?limit=20                                 (default: 15, max: 100)
- *
- *   Response:
- *     { items: Review[], total, page, totalPages }
+ * GET /api/admin/reviews — Onay kuyruğunun sayfalanmış listesi (Super Admin).
+ * Query: ?status=PENDING|APPROVED|REJECTED (default PENDING), ?page=1, ?limit=15 (max 100).
+ * Response: { items, total, page, totalPages }
  */
 export async function GET(request: NextRequest) {
   const { error } = await requireAuth('SUPER_ADMIN');
@@ -23,8 +16,7 @@ export async function GET(request: NextRequest) {
   const page = Math.max(1, parseInt(searchParams.get('page') || '1'));
   const limit = Math.min(Math.max(1, parseInt(searchParams.get('limit') || '15')), 100);
 
-  // db:push henüz çalışmadıysa contentReview tablosu DB'de yok;
-  // panel komple kırılmasın diye sessizce boş dizi dönüyoruz.
+  // If db:push hasn't run, table might not exist; gracefully return empty.
   try {
     const [items, total] = await Promise.all([
       prisma.contentReview.findMany({

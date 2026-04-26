@@ -1,14 +1,6 @@
 /**
- * Audit log helper — kritik admin aksiyonları için kalıcı kayıt.
- *
- * Tasarım kararları:
- *   - PII minimize: IP'yi SHA-256'la hash'leyip yazıyoruz, raw IP DB'ye
- *     girmiyor. Aynı IP'den gelen kayıtlar aynı hash'e sahip → trend
- *     analizi mümkün ama exfiltrate'de bile reverse zor.
- *   - Best-effort: log yazımı başarısız olursa app akışını bozmaz, sadece
- *     console.error'a düşer. Audit log critical-path'i bloke etmemeli.
- *   - Async fire-and-forget: caller `await` etmek zorunda değil; ama
- *     etmesi de zarar vermez (await'te bile DB latency düşük).
+ * Audit log: critical admin actions. IP hashed (PII minimize), best-effort
+ * (non-blocking), fire-and-forget async.
  */
 import crypto from 'crypto';
 import prisma from './prisma';
@@ -30,10 +22,7 @@ function hashIp(ip: string | null | undefined): string | null {
 
 export async function audit(entry: AuditEntry): Promise<void> {
   try {
-    // `prisma.auditLog` Prisma client schema'da var — ama generate'i
-    // çalıştırmadan editor type'ları bunu bilmiyor. Cast'le geçiyoruz;
-    // runtime'da `npm run db:generate` (build script'i otomatik yapar)
-    // sonrasında çalışır. Tablo yoksa try/catch yakalar.
+    // Cast (auditLog unknown to editor until db:generate runs).
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const db = prisma as any;
     await db.auditLog.create({

@@ -32,9 +32,18 @@ type IconComp = ComponentType<{ size?: number; className?: string }>;
 interface UserPerms {
   role: string;
   name: string;
+  username?: string;
+  email?: string | null;
   isSuperAdmin: boolean;
   sections: Record<string, { canCreate: boolean; canEdit: boolean; canDelete: boolean; canPublish: boolean }>;
 }
+
+// Rol → kullanıcıya gösterilen TR etiket
+const ROLE_LABEL_TR: Record<string, string> = {
+  SUPER_ADMIN: 'Super Admin',
+  ADMIN: 'Admin',
+  EDITOR: 'Editor',
+};
 
 const contentItems: { href: string; label: string; icon: IconComp; section: string }[] = [
   { href: '/admin/genres', label: 'Türler', icon: IconGenre, section: 'GENRE' },
@@ -380,28 +389,80 @@ export default function Sidebar() {
 
       {/* Footer: user + actions */}
       <div className="p-2.5 border-t border-zinc-900 space-y-1.5">
-        {!collapsed && session?.user && (
-          <div className="flex items-center gap-2 px-1.5 py-1.5 rounded-md">
-            <div
-              className={cn(
-                'w-7 h-7 rounded-full flex items-center justify-center text-[11px] font-semibold flex-shrink-0 text-white',
-                isSuperAdmin
-                  ? 'bg-gradient-to-br from-zinc-700 to-zinc-900 ring-1 ring-white/10'
-                  : 'bg-zinc-800 ring-1 ring-white/5'
-              )}
-            >
-              {session.user.name?.charAt(0) || '?'}
+        {/* Kullanıcı bilgisi: önce perms (`/api/users/me`)'den, yoksa
+            session'dan oku — session NextAuth'un client tarafındaki
+            populate'ine bağımlı, perms direct fetch ile daha hızlı geliyor.
+            İkisi de yoksa hiç render etme (login öncesi loading state). */}
+        {(() => {
+          const displayName = perms?.name ?? session?.user?.name ?? null;
+          const displayUsername = perms?.username ?? null;
+          const displayEmail =
+            perms?.email ??
+            (session?.user as { email?: string } | undefined)?.email ??
+            null;
+          const displayRole =
+            perms?.role ??
+            (session?.user as { role?: string } | undefined)?.role ??
+            null;
+          // Sub-line: tercihen username, yoksa email
+          const subLine = displayUsername ?? displayEmail ?? null;
+          if (!displayName && !subLine) return null;
+
+          const initial = (displayName ?? subLine ?? '?').charAt(0).toUpperCase();
+          const roleLabel = displayRole ? ROLE_LABEL_TR[displayRole] ?? displayRole : null;
+
+          if (collapsed) {
+            // Daraltılmış: sadece avatar dairesi, hover'da rol tooltip.
+            return (
+              <div
+                title={`${displayName ?? subLine}${roleLabel ? ` · ${roleLabel}` : ''}`}
+                className="flex items-center justify-center px-1.5 py-1.5"
+              >
+                <div
+                  className={cn(
+                    'w-7 h-7 rounded-full flex items-center justify-center text-[11px] font-semibold text-white',
+                    isSuperAdmin
+                      ? 'bg-gradient-to-br from-zinc-700 to-zinc-900 ring-1 ring-white/10'
+                      : 'bg-zinc-800 ring-1 ring-white/5',
+                  )}
+                >
+                  {initial}
+                </div>
+              </div>
+            );
+          }
+
+          return (
+            <div className="flex items-center gap-2.5 px-1.5 py-2 rounded-md bg-zinc-900/40 border border-zinc-800/60">
+              <div
+                className={cn(
+                  'w-8 h-8 rounded-full flex items-center justify-center text-[12px] font-semibold flex-shrink-0 text-white',
+                  isSuperAdmin
+                    ? 'bg-gradient-to-br from-zinc-700 to-zinc-900 ring-1 ring-white/10'
+                    : 'bg-zinc-800 ring-1 ring-white/5',
+                )}
+                aria-hidden="true"
+              >
+                {initial}
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-[12px] font-semibold text-zinc-100 truncate leading-tight">
+                  {displayName ?? subLine}
+                </p>
+                {displayUsername && (
+                  <p className="text-[10px] font-mono text-zinc-500 truncate leading-tight mt-0.5">
+                    @{displayUsername}
+                  </p>
+                )}
+                {roleLabel && (
+                  <p className="text-[9px] uppercase tracking-[0.18em] text-zinc-500 mt-0.5 font-medium">
+                    {roleLabel}
+                  </p>
+                )}
+              </div>
             </div>
-            <div className="min-w-0 flex-1">
-              <p className="text-[12px] font-medium text-zinc-100 truncate leading-tight">
-                {session.user.name}
-              </p>
-              <p className="text-[10px] text-zinc-500 truncate mt-0.5">
-                {(session.user as { role: string }).role?.replace('_', ' ')}
-              </p>
-            </div>
-          </div>
-        )}
+          );
+        })()}
         <div className="flex gap-1">
           <Link
             href="/tr"

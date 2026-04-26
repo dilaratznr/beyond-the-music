@@ -31,7 +31,8 @@ function passwordStrength(pw: string): { score: number; label: string; color: st
 }
 
 interface InviteInfo {
-  email: string;
+  username: string;
+  email: string | null;
   name: string;
   expiresAt: string;
 }
@@ -216,8 +217,17 @@ function AcceptInviteForm() {
           Hoş geldin, {info?.name?.split(' ')[0] ?? 'editör'}
         </h1>
         <p className="text-sm text-zinc-500 mt-1.5">
-          <span className="font-mono text-zinc-300">{info?.email}</span> adresiyle hesabın
-          oluşturuldu. Devam etmek için bir şifre belirle.
+          Kullanıcı adın:{' '}
+          <span className="font-mono text-zinc-300">{info?.username}</span>
+          {info?.email && (
+            <>
+              {' · '}
+              <span className="font-mono text-zinc-400">{info.email}</span>
+            </>
+          )}
+          <br />
+          Devam etmek için bir şifre belirle. Login&apos;de bu kullanıcı adını
+          {info?.email ? ' veya e-postanı' : ''} kullanacaksın.
         </p>
       </div>
 

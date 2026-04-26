@@ -6,16 +6,8 @@ import { audit, extractContext } from '@/lib/audit-log';
 import { rateLimit } from '@/lib/rate-limit';
 
 /**
- * POST /api/admin/2fa/regenerate-codes
- *
- * Body: { code: "123456" }   ← güncel TOTP kodu (proof of possession)
- *
- * Yeni 10 backup kodu üretir, eski kodları siler. Kullanıcı "kodlarımı
- * kaybettim" senaryosunda kullanır — ama bunu yapması için TOTP
- * uygulamasına hâlâ erişimi olmalı (kod ile doğrulanır).
- *
- * Saldırgan parolayı çalsa bile bu endpoint'e gelemez (TOTP kod gerekli).
- * Yedek kodlar leaked olduysa, kullanıcı bu endpoint'le hepsini sıfırlar.
+ * Regenerate backup codes. Requires valid TOTP (proof of possession).
+ * Clears old codes, generates 10 new ones. Safe if backup codes leaked.
  */
 export async function POST(request: NextRequest) {
   const { error, user } = await requireAuth('EDITOR');
@@ -24,7 +16,7 @@ export async function POST(request: NextRequest) {
   const userId = (user as { id: string }).id;
   const ctx = extractContext(request);
 
-  // Brute force koruması — TOTP doğrulaması olduğu için bu da rate limited
+  // Rate limit (TOTP verification provides baseline defense).
   const rl = rateLimit(`2fa:regen:${userId}`, 5, 60_000);
   if (!rl.success) {
     return NextResponse.json({ error: 'Çok fazla deneme.' }, { status: 429 });

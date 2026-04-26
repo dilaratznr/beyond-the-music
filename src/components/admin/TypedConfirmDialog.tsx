@@ -3,26 +3,8 @@
 import { useEffect, useRef, useState } from 'react';
 
 /**
- * Yıkıcı işlemler için "entity adını yaz ve onayla" modal'ı.
- *
- * Native `window.confirm` reflexive tıklamayla atlanabiliyor — özellikle
- * bir sanatçı silindiğinde 50 albüm + 500 şarkı cascade ile gittiği için
- * bu risk büyük. Kullanıcıdan entity adını bire bir yazmasını isteyerek
- * pratikte "kafa kaldırmadan ENTER'a basma" hatalarını engelliyoruz.
- *
- * Kullanım:
- *   <TypedConfirmDialog
- *     open={openState}
- *     title="Sanatçı Silinecek"
- *     entityName="The Beatles"
- *     impact={[
- *       { label: 'Albüm', count: 12 },
- *       { label: 'Şarkı', count: 287 },
- *     ]}
- *     confirmLabel="Sanatçıyı ve içeriklerini sil"
- *     onConfirm={handleForceDelete}
- *     onCancel={() => setOpen(false)}
- *   />
+ * Typed-confirm modal for destructive ops. Requires entity name to match,
+ * preventing accidental cascade deletes. Shows impact (affected child counts).
  */
 
 export interface ImpactItem {
@@ -67,15 +49,11 @@ export default function TypedConfirmDialog({
   onConfirm,
   onCancel,
 }: Props) {
-  // Input state'i her mount'ta sıfırdan başlar — parent conditional
-  // render ile (`{conflict && <TypedConfirmDialog />}`) modal kapanınca
-  // component unmount olur, sonraki açılışta fresh state gelir.
+  // Input resets on mount (parent unmounts modal on close).
   const [input, setInput] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // İlk render sonrası input'a fokus ver — setTimeout modal animasyonu
-  // için küçük bir breathing room. Effect içinde setState yok, lint'e
-  // uygun.
+  // Focus input after modal animation.
   useEffect(() => {
     if (!open) return;
     const t = setTimeout(() => inputRef.current?.focus(), 50);
@@ -96,7 +74,7 @@ export default function TypedConfirmDialog({
 
   const matches = input.trim().toLowerCase() === entityName.trim().toLowerCase();
   const totalImpact = impact?.reduce((sum, i) => sum + i.count, 0) ?? 0;
-  // Typed confirm zorunlu değilse her zaman "silebilir" durumundayız.
+  // If typed confirm disabled, always allow (no matching required).
   const canConfirm = requireTypedConfirm ? matches : true;
 
   return (
@@ -106,7 +84,7 @@ export default function TypedConfirmDialog({
       aria-labelledby="typed-confirm-title"
       className="fixed inset-0 z-[100] flex items-center justify-center px-4"
     >
-      {/* Backdrop — tıklanınca iptal (loading sırasında değil) */}
+      {/* Backdrop — click cancels (unless loading). */}
       <button
         type="button"
         tabIndex={-1}
@@ -115,9 +93,7 @@ export default function TypedConfirmDialog({
         className="absolute inset-0 bg-black/70 backdrop-blur-sm"
       />
 
-      {/* Panel — editoryal ton: zinc çerçeve, renk ikonda değil uyarı
-          metninde. Modal zaten "dikkatli ol" demek için açıldı, renk
-          blokları gereksiz. */}
+      {/* Zinc frame; color in warning icon/text, not button. */}
       <div className="relative w-full max-w-md bg-zinc-950 border border-zinc-800 rounded-xl shadow-2xl overflow-hidden">
         <div className="px-5 pt-5 pb-4 border-b border-zinc-900">
           <div className="flex items-start gap-3">
@@ -131,8 +107,7 @@ export default function TypedConfirmDialog({
               <h2 id="typed-confirm-title" className="text-[15px] font-semibold text-zinc-100 tracking-tight">
                 {title}
               </h2>
-              {/* Subtitle opsiyonel — entityName ve/veya description yoksa
-                  boş nokta / asılı karakter göstermemek için koşullu render. */}
+              {/* Subtitle optional; conditional render avoids stray punctuation. */}
               {(entityName || description) && (
                 <p className="text-[12px] text-zinc-400 mt-1">
                   {entityName && (
@@ -217,9 +192,7 @@ export default function TypedConfirmDialog({
             type="button"
             onClick={onConfirm}
             disabled={!canConfirm || loading}
-            // Aktif primary action — bilinçli beyaz, site genelindeki
-            // "Kaydet / Yayına Al" butonlarıyla aynı görünüm. Destructive
-            // anlamı ikon/uyarı metni + typed confirm ile zaten kurulmuş.
+            // Primary action white; destructive intent conveyed by icon + warning + typed confirm.
             className="px-4 py-2 text-[12px] font-semibold rounded-md bg-white text-zinc-950 hover:bg-zinc-200 disabled:bg-zinc-800 disabled:text-zinc-500 disabled:cursor-not-allowed transition-colors"
           >
             {loading ? 'Siliniyor…' : confirmLabel}

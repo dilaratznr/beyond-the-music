@@ -23,7 +23,8 @@ interface ApiPermission {
 interface ApiUser {
   id: string;
   name: string;
-  email: string;
+  username: string;
+  email: string | null;
   role: Role;
   isActive: boolean;
   createdAt: string;
@@ -163,7 +164,9 @@ export default function EditUserPage() {
         <div>
           <h1 className="text-xl font-semibold text-zinc-100 tracking-tight">Kullanıcıyı Düzenle</h1>
           <p className="text-[13px] text-zinc-500 mt-0.5">
-            {user.email} · {ROLE_INFO[user.role]?.labelTr} · {user.isActive ? 'Aktif' : 'Pasif'}
+            <span className="font-mono">@{user.username}</span>
+            {user.email && <> · {user.email}</>} ·{' '}
+            {ROLE_INFO[user.role]?.labelTr} · {user.isActive ? 'Aktif' : 'Pasif'}
           </p>
         </div>
         {editingSelf && (
@@ -281,7 +284,7 @@ export default function EditUserPage() {
 
             {resendResult && (
               <div className="p-4 rounded-md border bg-zinc-900/60 border-zinc-800">
-                {resendResult.emailSent ? (
+                {resendResult.emailSent && user.email ? (
                   <p className="flex items-center gap-2 text-sm text-zinc-200">
                     <span
                       className="w-1.5 h-1.5 rounded-full bg-emerald-400 flex-shrink-0"

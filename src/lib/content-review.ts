@@ -2,26 +2,15 @@ import prisma from './prisma';
 import { getUserPermissions } from './permissions';
 
 /**
- * İçerik onay akışı.
- *
- * Mantık:
- *   - Kullanıcının ilgili bölümde `canPublish` yetkisi varsa → direkt
- *     yayınlar, hiçbir review kaydı oluşturulmaz.
- *   - `canPublish` yoksa ama "yayınla" / "zamanla" istedi → içerik
- *     PENDING_REVIEW durumuna çekilir ve ContentReview kuyruğuna atılır.
- *
- * Faz 1'de sadece ARTICLE için kullanılıyor. Faz 2'de diğer bölümler
- * de aynı helper'ı kullanacak şekilde genişletilecek.
+ * Content review flow: canPublish → direct publish; no canPublish → queue to
+ * ContentReview (PENDING_REVIEW status). Phase 1: ARTICLE only.
  */
 
 export type ReviewSection = 'ARTICLE' | 'ARTIST' | 'ALBUM' | 'GENRE' | 'ARCHITECT' | 'LISTENING_PATH' | 'THEORY' | 'AI_MUSIC' | 'MEDIA';
 
 export type ChangeType = 'CREATE' | 'EDIT';
 
-/**
- * Kullanıcının bir bölümde yayın yetkisi (canPublish) olup olmadığını
- * döndürür. Super Admin'ler her zaman true.
- */
+/** Check if user has publish permission for a section (Super Admin always true). */
 export async function canUserPublish(
   userId: string,
   section: ReviewSection,
@@ -32,11 +21,7 @@ export async function canUserPublish(
   return perms.sections[section]?.canPublish ?? false;
 }
 
-/**
- * Mevcut bir kayıt için açık (PENDING) bir review var mı kontrol eder.
- * Admin aynı makale için iki kez "Onaya Gönder" tıklarsa çift kayıt
- * oluşmasın diye.
- */
+/** Check for existing PENDING review (prevent duplicate submission). */
 export async function findPendingReview(section: ReviewSection, entityId: string) {
   return prisma.contentReview.findFirst({
     where: { section, entityId, status: 'PENDING' },
@@ -164,19 +149,9 @@ export async function maybeCreateReviewOnCreate(params: {
 }
 
 /**
- * Var olan bir entity üzerinde düzenleme — canPublish'e göre bir
- * sonraki status'u döndürür ve gerekiyorsa review kuyruğuna EDIT
- * kaydı ekler.
- *
- *   - canPublish=true  → her zaman PUBLISHED, review yok
- *   - canPublish=false:
- *       - currentStatus=DRAFT          → DRAFT (yayına almaz)
- *       - currentStatus=PENDING_REVIEW → PENDING_REVIEW (review yeniler)
- *       - currentStatus=PUBLISHED      → PENDING_REVIEW (yayından düşer)
- *
- * Caller entity'yi `{ status: nextStatus }` ile güncellemeli; review
- * kaydı bu helper tarafından yönetilir. `changeType: CREATE/EDIT` farkı
- * review listesinde görünür.
+ * Edit akışında bir sonraki status'u döndürür ve gerekirse review kuyruğuna
+ * EDIT kaydı ekler. canPublish=true → PUBLISHED. canPublish=false: DRAFT
+ * kalır, PUBLISHED/PENDING ise PENDING_REVIEW'a düşer (yayından çekilir).
  */
 export async function resolveEditStatus(params: {
   section: ReviewSection;
@@ -212,19 +187,10 @@ export async function resolveEditStatus(params: {
 }
 
 /**
- * Song/ArtistGenre gibi alt kayıtlar — kendi status'u olmayan ama parent
- * entity'nin yayın durumunu etkileyen operasyonlar için.
- *
- * Örnek: editör canPublish=false iken yayındaki bir Album'e şarkı
- * ekliyor. Song'un kendi status'u yok, ama parent Album PUBLISHED.
- * Bu durumda:
- *   - Album status → PENDING_REVIEW (public'ten düşer)
- *   - ContentReview kuyruğuna ALBUM/EDIT kaydı
- *
- * Eğer Album zaten DRAFT/PENDING_REVIEW ise hiçbir şey yapmaz
- * (zaten public'te değil, editör rahat çalışabilir).
- *
- * canPublish=true ise no-op.
+ * Song gibi alt kayıt değişikliklerinde parent Album'ün yayın durumunu
+ * korur: canPublish=false bir editör yayındaki Album'e şarkı eklerse
+ * Album PENDING_REVIEW'a düşer + ALBUM/EDIT review kaydı açılır. Album
+ * zaten DRAFT/PENDING ise no-op. canPublish=true ise no-op.
  */
 export async function maybeFlipAlbumOnSongChange(params: {
   albumId: string;

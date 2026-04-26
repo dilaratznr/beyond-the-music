@@ -42,9 +42,10 @@ export default function Navbar({ locale, sections, brand }: NavbarProps) {
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
 
-  // Aynı sayfaya tekrar tıklama davranışı (Dilara: "anasayfadayken
-  // logoya ya da Ana Sayfa'ya basınca yukarı çıkmalı"). Router-level'da
-  // aynı route'a tıklamak zaten noop — kullanıcı scroll pozisyonunda
+  // Aynı sayfaya tekrar tıklama davranışı: anasayfadayken logoya veya
+  // "Ana Sayfa"ya basınca sayfanın yukarı çıkması bekleniyor. Router
+  // seviyesinde aynı route'a tıklamak zaten noop — kullanıcı scroll
+  // pozisyonunda
   // kalıyor. Bunun yerine preventDefault edip smooth scroll ile en
   // tepeye çıkıyoruz. Mobile menü ise kapanıyor.
   function scrollToTop(e: React.MouseEvent<HTMLAnchorElement>) {

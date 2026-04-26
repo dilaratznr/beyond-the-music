@@ -27,8 +27,8 @@ const TYPE_LABEL: Record<string, string> = {
   DEEP: 'Derin',
 };
 
-// Type renkleri kaldırıldı (Dilara geri bildirimi: "çok AI duruyor").
-// Her type için ayrı renkli pill dergi/editoryal tona uymuyordu.
+// Type renkleri kaldırıldı — yoğun renk şeması "AI üretimi" hissi
+// veriyordu. Her type için ayrı renkli pill dergi/editoryal tona uymuyor.
 // Artık tek ton, ince border, uppercase tracking — kategori rengiyle
 // değil metniyle okunuyor.
 const TYPE_PILL_CLASSNAME =

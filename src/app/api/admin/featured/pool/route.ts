@@ -3,16 +3,9 @@ import prisma from '@/lib/prisma';
 import { requireAuth } from '@/lib/auth-guard';
 
 /**
- * Search pool for the featured-items picker. Returns up to 20 matches for
- * a kind (article | album), optionally filtered by a text query.
- *
- * Notes:
- *   - We intentionally do NOT exclude already-featured rows server-side.
- *     The admin UI hides them in the picker based on the current in-memory
- *     list, which keeps the UX snappy when you're drag-dropping without
- *     having to re-fetch the pool after every change.
- *   - Articles are shown regardless of status so the editor can schedule a
- *     draft to appear as featured once it's published.
+ * Featured-items picker search pool (article | album). Returns up to 20 matches.
+ * Doesn't exclude already-featured (UI hides them); articles shown regardless
+ * of status (allows scheduling drafts).
  */
 export async function GET(request: NextRequest) {
   const { error } = await requireAuth('EDITOR');

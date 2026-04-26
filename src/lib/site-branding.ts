@@ -4,22 +4,8 @@ import prisma from '@/lib/prisma';
 import { CACHE_TAGS } from '@/lib/db-cache';
 
 /**
- * Super-admin tarafından yönetilen marka kimliği: logo görselleri ve
- * site adı. SiteSetting key-value tablosunda tutulur ve tüm public
- * sayfalarda (Navbar + Footer) kullanılır.
- *
- * Keys:
- *   - site_logo_url:        Header ve (fallback olarak) Footer logosu.
- *                           Koyu arka plan üzerinde okunabilecek bir görsel
- *                           olmalı (beyaz/açık renk logo tercih edilir).
- *   - site_logo_footer_url: Opsiyonel ayrı footer logosu. Boşsa header
- *                           logosu kullanılır.
- *   - site_name:            Logonun yanında/altında görünen metin. Boşsa
- *                           varsayılan "Beyond The Music" kullanılır.
- *
- * Settings cache tag'i (`settings`) zaten `/api/settings` PUT'unda
- * `revalidateTag` ile temizleniyor — buradaki okuma otomatik olarak
- * tazelenir, ek bir kablolama gerekmez.
+ * Site branding (logo URLs, name) from SiteSetting key-value table.
+ * Cached; settings tag invalidation on PUT /api/settings.
  */
 
 export const SITE_BRANDING_KEYS = {

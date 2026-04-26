@@ -4,6 +4,12 @@ import prisma from '@/lib/prisma';
 import { requireAuth } from '@/lib/auth-guard';
 import { CACHE_TAGS } from '@/lib/db-cache';
 import { audit, extractContext } from '@/lib/audit-log';
+import {
+  sanitizePermissionsInput,
+  type SanitizedPermission,
+} from '@/lib/permissions';
+
+const VALID_ROLES = new Set(['SUPER_ADMIN', 'ADMIN', 'EDITOR']);
 
 export async function GET(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { error } = await requireAuth('SUPER_ADMIN');
@@ -12,7 +18,16 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
   const { id } = await params;
   const user = await prisma.user.findUnique({
     where: { id },
-    select: { id: true, email: true, name: true, role: true, isActive: true, createdAt: true, permissions: true },
+    select: {
+      id: true,
+      username: true,
+      email: true,
+      name: true,
+      role: true,
+      isActive: true,
+      createdAt: true,
+      permissions: true,
+    },
   });
 
   if (!user) return NextResponse.json({ error: 'User not found' }, { status: 404 });
@@ -35,6 +50,25 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
   // Yeniden Gönder" akışı kullanılır (/api/users/[id]/resend-invite).
   const { name, email, role, isActive, permissions } = body;
 
+  // Role enum whitelist (body'den gelen serbest string Prisma'da 500'e
+  // dönüşmesin diye burada keseriz).
+  if (role !== undefined && !VALID_ROLES.has(role)) {
+    return NextResponse.json({ error: 'Geçersiz rol' }, { status: 400 });
+  }
+
+  // Permissions sanitize — section whitelist + strict boolean coerce.
+  // Body'de permissions hiç gelmediyse (undefined) iz bırakmaz; gelirse
+  // sertleştirilip ileri geçirilir.
+  const permsProvided = permissions !== undefined;
+  let safePermissions: SanitizedPermission[] = [];
+  if (permsProvided) {
+    const result = sanitizePermissionsInput(permissions);
+    if (!result.ok) {
+      return NextResponse.json({ error: result.error }, { status: 400 });
+    }
+    safePermissions = result.sanitized;
+  }
+
   // Self-lockout koruması: Super Admin kendi rolünü düşüremez ve
   // kendini pasife çekemez (aksi halde sistemi yönetemez hale gelir).
   // Başka Super Admin'ler başkasını değiştirebilir — sadece self-edit
@@ -55,28 +89,38 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
 
   const updateData: Record<string, unknown> = {};
   if (name) updateData.name = name;
-  if (email) updateData.email = email;
+  // Email opsiyonel: boş string null'a düşer (alanı temizleme niyeti). undefined
+  // gelirse hiç dokunma. Format kontrolü değer varsa zorunlu.
+  if (email !== undefined) {
+    const trimmed = String(email).trim().toLowerCase();
+    if (trimmed && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)) {
+      return NextResponse.json({ error: 'Geçerli bir e-posta gir' }, { status: 400 });
+    }
+    updateData.email = trimmed || null;
+  }
   if (role) updateData.role = role;
   if (typeof isActive === 'boolean') updateData.isActive = isActive;
 
   const user = await prisma.user.update({
     where: { id },
     data: updateData,
-    select: { id: true, email: true, name: true, role: true, isActive: true },
+    select: { id: true, username: true, email: true, name: true, role: true, isActive: true },
   });
 
-  // Update permissions if provided
-  if (permissions && Array.isArray(permissions)) {
+  // Update permissions if provided — sanitize edilmiş `safePermissions`
+  // kullanılıyor (section whitelist + strict boolean). `permsProvided`
+  // false ise hiç dokunmuyoruz; mevcut permissions korunur.
+  if (permsProvided) {
     await prisma.userPermission.deleteMany({ where: { userId: id } });
-    if (permissions.length > 0) {
+    if (safePermissions.length > 0) {
       await prisma.userPermission.createMany({
-        data: permissions.map((p: { section: string; canCreate: boolean; canEdit: boolean; canDelete: boolean; canPublish: boolean }) => ({
+        data: safePermissions.map((p) => ({
           userId: id,
           section: p.section,
-          canCreate: p.canCreate ?? false,
-          canEdit: p.canEdit ?? false,
-          canDelete: p.canDelete ?? false,
-          canPublish: p.canPublish ?? false,
+          canCreate: p.canCreate,
+          canEdit: p.canEdit,
+          canDelete: p.canDelete,
+          canPublish: p.canPublish,
         })),
       });
     }
@@ -106,7 +150,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
       userAgent: ctx.userAgent,
     });
   }
-  if (permissions && Array.isArray(permissions)) {
+  if (permsProvided) {
     await audit({
       event: 'PERMISSIONS_CHANGED',
       actorId: actor.id,
@@ -114,7 +158,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
       targetType: 'USER',
       ip: ctx.ip,
       userAgent: ctx.userAgent,
-      detail: `${permissions.length} sections`,
+      detail: `${safePermissions.length} sections`,
     });
   }
 

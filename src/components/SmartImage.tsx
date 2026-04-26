@@ -1,35 +1,7 @@
 /**
- * SmartImage — our single site-wide wrapper around a plain `<img>` tag.
- *
- * Why NOT `next/image`?
- *   We originally tried it, but `fill` mode subtly broke several of our
- *   card / hero layouts (images stopped covering the full container even
- *   with `relative` parents). Since the perf win we actually care about
- *   comes from the WebP/AVIF *bytes* (handled at upload time by
- *   `src/lib/image-processing.ts` and the `media:migrate` script), not
- *   from the next/image runtime, a plain `<img>` gives us identical
- *   pre-migration layout with zero regressions.
- *
- * What SmartImage still gives us over a raw `<img>`:
- *   - Null/empty-src guard → renders `fallback` (default: nothing) without
- *     a broken-image frame. 90% of our DB image fields are nullable, so
- *     this collapses `{src && <img ...>}` to a one-liner.
- *   - Graceful onError → same fallback path on 404/CORS failures.
- *   - Two ergonomic modes that match the two shapes `<img>` takes across
- *     this codebase:
- *        fill-pattern : `absolute inset-0 w-full h-full object-cover`
- *        sized-pattern: `w-full h-40 object-cover` (or width/height attrs)
- *   - `loading="lazy"` + `decoding="async"` by default; `priority` flips
- *     them to `eager` + sync for the single LCP image per page.
- *
- * Usage:
- *   // Fill mode — parent must be `position: relative` and sized.
- *   <SmartImage src={album.coverImage} alt={album.title} fill
- *               className="object-cover" />
- *
- *   // Sized mode — fixed intrinsic dimensions.
- *   <SmartImage src={r.image} alt="" width={40} height={40}
- *               className="rounded-lg object-cover" />
+ * Site-wide `<img>` wrapper. Plain img (not next/image) for layout
+ * control; WebP/AVIF bytes handled at upload time. Null-src guard +
+ * graceful error fallback; two modes: fill (absolute inset-0) and sized.
  */
 
 "use client";

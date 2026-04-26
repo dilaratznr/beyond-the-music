@@ -3,19 +3,11 @@
 import { useSyncExternalStore } from 'react';
 
 /**
- * Admin paneli tek dillidir ama "Sitede aç" gibi önizleme linklerinin
- * hangi dile gitmesi gerektiğini burada belirliyoruz.
- *
- * Öncelik sırası:
- * 1. NEXT_LOCALE cookie'si (next-intl ve çoğu i18n aracının kullandığı isim)
- * 2. Tarayıcı `navigator.language` öneki
- * 3. `tr` default
- *
- * `useSyncExternalStore` kullanıyoruz: sunucuda 'tr' döner, istemcide hydrate
- * sonrası gerçek değere geçer. Cascading render yok.
+ * Admin locale for preview links. Priority: NEXT_LOCALE cookie >
+ * navigator.language > tr default. useSyncExternalStore avoids hydration mismatch.
  */
 function subscribe(): () => void {
-  // Cookie/Navigator dilinde değişiklik için subscribe yok; tek atış okuma.
+  // Cookie/Navigator changes not subscribed; single read.
   return () => {};
 }
 

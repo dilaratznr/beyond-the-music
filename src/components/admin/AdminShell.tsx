@@ -5,22 +5,12 @@ import Sidebar from './Sidebar';
 import CommandPalette from './CommandPalette';
 
 /**
- * Admin layout chrome. Public admin routes (login / forgot-password /
- * reset-password) get the bare content — no sidebar — so a logged-out user
- * never sees navigation to places they can't access.
- *
- * The authenticated shell is a dark, Vercel / GitHub-style surface:
- *   - zinc-950 page background
- *   - zinc-900 sticky sidebar
- *   - zinc-50 foreground text
- * Inputs and surfaces inside the main region layer on top of this with
- * zinc-900/zinc-800 borders.
+ * Admin layout: public routes (login, accept-invite) bare, no sidebar.
+ * Authenticated shell is dark Vercel/GitHub style (zinc-950 bg, z-900 sidebar).
  */
 const PUBLIC_ADMIN_PREFIXES = [
   '/admin/login',
-  // Davet linkini açan kişi henüz login değil ve sidebar'a ihtiyacı yok —
-  // Aktivasyon ekranı tek başına AuthLayout içinde görünsün.
-  '/admin/accept-invite',
+  '/admin/accept-invite', // No sidebar for unauth users activating invites
 ];
 
 export default function AdminShell({ children }: { children: React.ReactNode }) {

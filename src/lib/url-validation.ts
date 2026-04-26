@@ -1,18 +1,6 @@
 /**
- * URL alanları (image, featuredImage, link href) için server-side
- * validation. Saldırgan admin paneline form post ederken `javascript:`,
- * `data:`, veya kendi domain'ini başkasının yerine yazabilir → render
- * katmanı bunu DOM'a basarsa XSS / phishing / SSRF.
- *
- * Kabul edilen format'lar:
- *   - `/relative/path`         (kendi domain'imiz, upload'lar buradan gelir)
- *   - `https://...`            (CDN, R2 public domain)
- *   - `http://...`             (sadece localhost dev için; production'da
- *                              CSP `upgrade-insecure-requests` zaten zorlar)
- *
- * Reddedilen:
- *   - `javascript:`, `data:`, `vbscript:`, `file:` → XSS / desktop-app SSRF
- *   - Protocol-relative `//evil.com` → hostname kaçırma
+ * Server-side URL validation (images, links). Allows relative paths and
+ * http(s) URLs; blocks javascript:, data:, protocol-relative (//evil.com).
  */
 
 export interface UrlValidation {
@@ -30,15 +18,13 @@ export function validateImageUrl(input: unknown): UrlValidation {
 
   const trimmed = input.trim();
 
-  // Protocol-relative URL (//evil.com/x.png) → reddet, çünkü
-  // tarayıcı current scheme ile birleştirir ve kontrolü kaybederiz.
+  // Protocol-relative (//evil.com) — browser inherits current scheme.
   if (trimmed.startsWith('//')) {
     return { ok: false, error: 'Protocol-relative URL kabul edilmiyor.' };
   }
 
-  // Relative path (/uploads/x.png) → OK, kendi sunucumuzdaki içerik.
+  // Relative path → OK (own server). Prevent path traversal (../).
   if (trimmed.startsWith('/')) {
-    // Path traversal'i kes — `/../etc/passwd` gibi
     if (trimmed.includes('..')) {
       return { ok: false, error: 'Geçersiz yol.' };
     }
@@ -64,9 +50,8 @@ export function validateImageUrl(input: unknown): UrlValidation {
 }
 
 /**
- * Login callback URL'i için sıkı kontrol — açık-redirect koruması.
- * Sadece `/admin/...` veya `/[locale]/...` formundaki INTERNAL path'lere
- * izin var. Protocol-relative ve absolute URL hep reddediliyor.
+ * Open-redirect protection: login callback URL must be internal path (/).
+ * Blocks protocol-relative, absolute URLs, traversal, backslash/control chars.
  */
 export function validateInternalRedirect(input: string): string {
   const FALLBACK = '/admin/dashboard';
@@ -74,15 +59,10 @@ export function validateInternalRedirect(input: string): string {
   if (typeof input !== 'string') return FALLBACK;
 
   const trimmed = input.trim();
-  // Protocol-relative — `//attacker.com/...` tarayıcıda absolute olur
-  if (trimmed.startsWith('//')) return FALLBACK;
-  // Mutlak path olmalı
-  if (!trimmed.startsWith('/')) return FALLBACK;
-  // Path traversal koruması
-  if (trimmed.includes('..')) return FALLBACK;
-  // Backslash injection (bazı browser'larda `/\evil.com` `//evil.com`'a normalize olur)
-  if (trimmed.includes('\\')) return FALLBACK;
-  // Newline / control char injection
-  if (/[\x00-\x1f]/.test(trimmed)) return FALLBACK;
+  if (trimmed.startsWith('//')) return FALLBACK;  // Protocol-relative
+  if (!trimmed.startsWith('/')) return FALLBACK;   // Must be absolute path
+  if (trimmed.includes('..')) return FALLBACK;      // Path traversal
+  if (trimmed.includes('\\')) return FALLBACK;      // Backslash injection
+  if (/[\x00-\x1f]/.test(trimmed)) return FALLBACK; // Control chars
   return trimmed;
 }

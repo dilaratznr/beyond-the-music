@@ -1,23 +1,7 @@
 /**
- * Şifre politikası — admin paneline özel.
- *
- * Tasarım: NIST SP 800-63B'nin pratik formu. Karmaşıklık (büyük/küçük/
- * özel-karakter) tek başına işe yaramaz; en kritik koruma "common
- * password" reddi ve uzunluk. Burada her ikisini de uyguluyoruz.
- *
- *   - Min 12 karakter: bcrypt 12-round + 12 char ≈ offline brute force
- *     için pratikte çatlak değil. 8 karakter modern GPU ile saatlerde
- *     çatlatılabilir; ekibe biraz yük bindirmek karşılığında bunu kabul
- *     ediyoruz.
- *   - Max 200: bcrypt 72 byte sonrasında truncate eder (silent risk).
- *     200'e cap koymak DoS'i + bcrypt'in beklenmedik davranışını keser.
- *   - Common password reddi: top-50 listenin küçük kopyası. Tam ROCKYOU
- *     listesi 14M kayıtlı; runtime'da yüklemek mantıksız. Top-50 + isim/
- *     email içerme kontrolü %95 sözlük saldırılarını keser.
- *   - Karmaşıklık ZORUNLU DEĞİL: 12+ uzun ve common-değil ise yeterli;
- *     "must contain symbol" kuralları kullanıcıyı kötü pattern'lere
- *     iter (P@ssw0rd!). Yine de min 1 harf + 1 rakam istiyoruz çünkü
- *     "111111111111" gibi şeyler sözlük listesinde olmayabilir.
+ * Admin password policy per NIST SP 800-63B. Min 12 char (bcrypt-safe),
+ * max 200 (truncation safety), no common passwords, no email/name.
+ * Soft complexity: 2+ character classes (not required, discourages bad patterns).
  */
 
 const COMMON_PASSWORDS = new Set([
@@ -42,15 +26,13 @@ export interface PasswordValidation {
 
 export function validatePassword(
   pw: unknown,
-  context: { email?: string; name?: string } = {},
+  context: { email?: string | null; username?: string | null; name?: string } = {},
 ): PasswordValidation {
   if (typeof pw !== 'string') return { ok: false, error: 'Geçersiz şifre' };
   if (pw.length < 12) return { ok: false, error: 'Şifre en az 12 karakter olmalı' };
   if (pw.length > 200) return { ok: false, error: 'Şifre çok uzun (max 200 karakter)' };
 
-  // Yumuşak karmaşıklık: en azından farklı karakter sınıflarından 2'si.
-  // (P@ssw0rd! tarzı zorlamalar yerine, kullanıcının doğal cümle ya da
-  // passphrase yazmasına izin veriyoruz.)
+  // Soft complexity: min 2 character classes (allow natural passphrases).
   const classes = [
     /[a-z]/.test(pw),
     /[A-Z]/.test(pw),
@@ -69,7 +51,7 @@ export function validatePassword(
     return { ok: false, error: 'Bu şifre çok yaygın, başka bir tane seç.' };
   }
 
-  // Kullanıcının email / adının şifrede geçmesi
+  // Reject if email local part or name appears in password.
   const lower = pw.toLowerCase();
   if (context.email) {
     const localPart = context.email.split('@')[0]?.toLowerCase() ?? '';
@@ -83,8 +65,14 @@ export function validatePassword(
       return { ok: false, error: 'Şifre adınızı içeremez.' };
     }
   }
+  if (context.username) {
+    const u = context.username.toLowerCase();
+    if (u.length >= 4 && lower.includes(u)) {
+      return { ok: false, error: 'Şifre kullanıcı adınızı içeremez.' };
+    }
+  }
 
-  // Sadece tek karakterden oluşan şifre (bbbbbbbbbbbb)
+  // Reject trivial repetition (e.g., "bbbbbbbbbbbb").
   if (new Set(pw).size < 4) {
     return { ok: false, error: 'Şifre çok az farklı karakter içeriyor.' };
   }

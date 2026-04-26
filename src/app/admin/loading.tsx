@@ -1,14 +1,7 @@
 /**
- * Admin navigation iskeleti.
- *
- * Next.js App Router sayfa geçişlerinde bu dosyayı otomatik olarak
- * sonraki route hazır olana kadar fallback gösterir. Yoksa tarayıcıda
- * "tıkladım ama bir şey olmuyor" hissi oluşuyordu — server component
- * fetch'leri bittiğinde sayfa tek seferde jump ediyordu.
- *
- * İskeleti bilinçli olarak dashboard-like yapıyoruz: başlık alanı + 4'lü
- * grid + liste satırları. Gerçek sayfa ne olursa olsun yakın bir boyutta
- * ilk paint yapıyor, layout shift minimum.
+ * Admin loading skeleton. Auto-shown by Next.js during route transitions.
+ * Dashboard-like layout (header + grid + list) with consistent dimensions
+ * to minimize layout shift.
  */
 export default function AdminLoading() {
   return (
@@ -20,7 +13,7 @@ export default function AdminLoading() {
         <div className="h-3 w-72 bg-zinc-800/40 rounded-sm mt-4 animate-pulse" />
       </div>
 
-      {/* Stat strip skeleton — 4 kart */}
+      {/* Stat strip skeleton (4 cards) */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         {[0, 1, 2, 3].map((i) => (
           <div
@@ -48,7 +41,7 @@ export default function AdminLoading() {
         ))}
       </div>
 
-      {/* Liste skeleton */}
+      {/* List skeleton */}
       <div className="bg-zinc-900/40 rounded-lg border border-zinc-800 overflow-hidden">
         <div className="px-4 py-3 border-b border-zinc-800">
           <div className="h-3 w-36 bg-zinc-800/60 rounded animate-pulse" />

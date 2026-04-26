@@ -68,3 +68,69 @@ export function canAccessSection(
   if (!perm) return false;
   return perm.canCreate || perm.canEdit || perm.canDelete || perm.canPublish;
 }
+
+/**
+ * API'den gelen permissions array'ini sertleştir:
+ *   - section ALL_SECTIONS whitelist'inde olmalı (typo / custom string DB'ye yazılmasın)
+ *   - aynı section iki kez gönderilmişse en son geçerli olur (UI bug toleransı)
+ *   - canCreate/canEdit/canDelete/canPublish strict boolean'a coerce edilir
+ *     (truthy "yes"/"1" gibi sürpriz değerler false'a düşer)
+ *
+ * Geçersiz girişte `{ ok: false, error }` döner; caller 400'le dönmeli.
+ * Boş array veya undefined → ok=true, sanitized=[].
+ */
+export interface IncomingPermission {
+  section: string;
+  canCreate?: unknown;
+  canEdit?: unknown;
+  canDelete?: unknown;
+  canPublish?: unknown;
+}
+
+export interface SanitizedPermission {
+  section: Section;
+  canCreate: boolean;
+  canEdit: boolean;
+  canDelete: boolean;
+  canPublish: boolean;
+}
+
+export function sanitizePermissionsInput(
+  raw: unknown,
+):
+  | { ok: true; sanitized: SanitizedPermission[] }
+  | { ok: false; error: string } {
+  if (raw === undefined || raw === null) {
+    return { ok: true, sanitized: [] };
+  }
+  if (!Array.isArray(raw)) {
+    return { ok: false, error: 'permissions bir dizi olmalı' };
+  }
+
+  const validSections = new Set<string>(ALL_SECTIONS);
+  const bySection = new Map<Section, SanitizedPermission>();
+
+  for (const item of raw) {
+    if (!item || typeof item !== 'object') {
+      return { ok: false, error: 'permissions girdileri obje olmalı' };
+    }
+    const p = item as IncomingPermission;
+    if (typeof p.section !== 'string' || !validSections.has(p.section)) {
+      return {
+        ok: false,
+        error: `Geçersiz section: ${String(p.section)}. İzin verilenler: ${ALL_SECTIONS.join(', ')}`,
+      };
+    }
+    bySection.set(p.section as Section, {
+      section: p.section as Section,
+      // === true ile strict coerce — "true" string'i, 1, "yes" gibi
+      // truthy ama beklenmeyen değerler false'a düşer.
+      canCreate: p.canCreate === true,
+      canEdit: p.canEdit === true,
+      canDelete: p.canDelete === true,
+      canPublish: p.canPublish === true,
+    });
+  }
+
+  return { ok: true, sanitized: Array.from(bySection.values()) };
+}

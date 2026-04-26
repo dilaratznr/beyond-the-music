@@ -135,30 +135,28 @@ URL'yi kendi reponun URL'i ile değiştir. Terminalden kimlik doğrulama kafa ka
 
 ## Aşama 6 — İlk admin kullanıcısını oluştur
 
-Deploy başarılı olduktan sonra:
+Deploy başarılı olduktan sonra ilk Super Admin'i `prisma/seed.ts` ile oluşturuyoruz. Seed script'i, **güçlü bir şifre env'i olmadan çalışmıyor** (hardcoded default şifre yok — `password-policy.ts`'in yasakladığı değerlerle çelişme olmasın diye).
 
-1. Vercel dashboard → projen → **Settings** → **Functions** → **Logs** (veya üstteki **"Runtime Logs"**)
-2. Yeni tab'da sitene git: `https://beyond-the-music.vercel.app/tr/admin/login`
-3. Kayıt için Neon'a direkt erişmek gerekiyor — **Neon dashboard → SQL Editor**'ü aç
-4. Şu SQL'i çalıştır (ilk admin hesabı için):
+1. Lokalde bir kez çalıştırmak için (terminal):
 
-   ```sql
-   -- Şifre: admin123 (değiştirebilirsin, bcrypt hash)
-   INSERT INTO "User" (id, email, "passwordHash", name, role, "createdAt", "updatedAt")
-   VALUES (
-     gen_random_uuid()::text,
-     'your-email@example.com',
-     '$2b$10$rVpKjgN7bJZxL/3QHZ0CQu7r0vY8YB.zwYuL0xJlXHMqDcwjGaOQK',
-     'Dilara',
-     'OWNER',
-     NOW(),
-     NOW()
-   );
+   ```bash
+   SEED_ADMIN_USERNAME="admin" \
+   SEED_ADMIN_NAME="Adın Soyadın" \
+   SEED_ADMIN_PASSWORD="<en az 12 karakter, güçlü>" \
+   # Email opsiyonel; SMTP/domain hazır değilse boş bırak:
+   # SEED_ADMIN_EMAIL="your-email@example.com" \
+   npx prisma db seed
    ```
 
-   E-posta adresini değiştir, sonra admin/login'den `your-email@example.com` + `admin123` ile gir. Girdikten sonra Settings → kendi şifreni değiştir.
+   Username zorunlu (login'de kullanılacak); 3-30 karakter, küçük harf + rakam + `_` veya `-`.
+   Script idempotent: DB'de zaten kullanıcı varsa atlar.
 
-> Alternatif: prisma/seed.ts dosyanı Vercel'de tek seferlik çalıştırabiliriz — bu yöntem daha temiz ama biraz daha teknik. İstersen Claude'a "seed'i çalıştır" de, o yapar.
+2. Production'da (Vercel) çalıştırmak için:
+   - Vercel → projen → **Settings** → **Environment Variables** → `SEED_ADMIN_USERNAME`, `SEED_ADMIN_NAME`, `SEED_ADMIN_PASSWORD` ekle (Production scope, Sensitive olarak). Email opsiyonel.
+   - Local terminalde: `npx vercel env pull && SEED_ADMIN_PASSWORD="..." npx prisma db seed`
+   - Seed başarılı olunca env'leri Vercel'den **silebilirsin** — bir daha gerek yok.
+
+3. Sonrasında `https://beyond-the-music.vercel.app/tr/admin/login` adresinden gir (kullanıcı adınla), **Settings → Şifre Değiştir**'den şifreni rotate et.
 
 ---
 

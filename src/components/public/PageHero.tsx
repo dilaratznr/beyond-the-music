@@ -1,25 +1,14 @@
 /**
- * Editorial page hero — liste/top-level sayfalar için tutarlı header.
- *
- * Dil: homepage hero + detay sayfaları hero'larıyla aynı ritim —
- *   [eyebrow çizgi + küçük CAPS]
- *   [büyük Fraunces(→ Manrope) başlık]
- *   [italik subtitle — dergi taglinesi]
- *   [meta satırı: sayı/durum etiketleri]
- *
- * Neden ayrı komponent: 6 liste sayfası (genre/artist/architects/theory/
- * ai-music/listening-paths) aynı pattern'i kullanıyor. Inline yazınca
- * 6 kopya olacak, düzeltme gerekirse hepsini ayrı ayrı dokunmak gerekir.
+ * Editorial page hero (list pages). Consistent eyebrow/title/subtitle/meta
+ * pattern across 6 pages; centralized for maintenance.
  */
 
 interface PageHeroProps {
   eyebrow: string;
   title: string;
   subtitle?: string;
-  /** Altta küçük meta/stat satırı — "12 sanatçı · 5 alt tür" gibi */
-  meta?: React.ReactNode;
-  /** Opsiyonel arka plan görseli — varsa düşük opacity + gradient ile basılır */
-  backgroundImage?: string | null;
+  meta?: React.ReactNode;          // Bottom meta row (e.g., "12 artists · 5 subgenres")
+  backgroundImage?: string | null; // Optional bg (low opacity + gradient overlay)
 }
 
 export default function PageHero({
@@ -31,10 +20,7 @@ export default function PageHero({
 }: PageHeroProps) {
   return (
     <section className="relative w-full min-h-[30vh] md:min-h-[38vh] flex items-end overflow-hidden border-b border-white/5">
-      {/* Arka plan — görsel varsa + gradient, yoksa sadece karanlık
-          nötr bg. Detay hero'larına göre daha kısa (min-h-[55vh]) —
-          bu sayfalar liste içeriğini hemen göstermeli, hero tam bir
-          kapak olmamalı. */}
+      {/* Bg image + gradient (if present) or dark neutral. Shorter than detail heroes. */}
       <div className="absolute inset-0">
         {backgroundImage ? (
           <>
@@ -48,9 +34,9 @@ export default function PageHero({
         ) : (
           <>
             {/* Sade arka plan — önceden sağ kenarda büyük tek-harf
-                watermark ve yatay çizgi ızgarası vardı; Dilara "çok
-                saçma / çok kötü duruyor" dedi, ikisi de kaldırıldı.
-                Şimdi sadece siyah + çok hafif köşe radial gradient
+                watermark ve yatay çizgi ızgarası vardı; ikisi de
+                editoryal tona uymadığı için kaldırıldı. Şimdi sadece
+                siyah + çok hafif köşe radial gradient
                 (hafif hacim, sessiz). */}
             <div className="absolute inset-0 bg-[#0a0a0b]" />
             <div className="absolute inset-0 bg-[radial-gradient(circle_at_15%_85%,rgba(255,255,255,0.03),transparent_55%)]" />

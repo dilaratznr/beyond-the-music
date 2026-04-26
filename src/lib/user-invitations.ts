@@ -2,21 +2,13 @@ import crypto from 'crypto';
 import prisma from './prisma';
 
 /**
- * Davet token'ları. PasswordResetToken ile birebir aynı pattern:
- *   - `crypto.randomBytes(32)` → base64url raw token (kullanıcıya gider)
- *   - SHA-256 hash DB'de saklanır — raw token asla DB'ye yazılmaz
- *   - Belirli süre geçerli (INVITE_TTL_HOURS, default 48 saat)
- *   - tek kullanımlık (usedAt set olunca geçersiz)
- *
- * Email gönderimi SMTP env'leri yapılandırılmışsa nodemailer üzerinden
- * olur. Yoksa `sendInviteEmail` `{ emailSent: false }` döndürür ve
- * caller raw URL'i kullanıcıya (Super Admin UI'ına) manuel iletmek
- * üzere döndürür.
+ * Invite tokens: random base64url raw token + SHA-256 hash in DB.
+ * TTL-limited (48h), single-use. Email via nodemailer if SMTP configured,
+ * else return raw token for manual sharing.
  */
 
 const TOKEN_BYTES = 32;
-// Davet token'ının geçerlilik süresi. Burayı değiştirirsen hem TTL
-// hem email metnindeki "X saat geçerli" ifadeleri otomatik güncellenir.
+// Invite TTL (updates auto in email text).
 export const INVITE_TTL_HOURS = 48;
 const TOKEN_TTL_MS = INVITE_TTL_HOURS * 60 * 60 * 1000;
 
@@ -24,11 +16,7 @@ export function hashToken(raw: string): string {
   return crypto.createHash('sha256').update(raw).digest('hex');
 }
 
-/**
- * Davet oluştur: token üret, DB'ye yaz, kullanıcının diğer bekleyen
- * davetlerini geçersiz kıl. Raw token'ı döndürür — caller bunu url'e
- * koyup email'de/UI'da gösterir.
- */
+/** Create invite: generate token, invalidate old pending invites, return raw token. */
 export async function createInvitation(params: {
   userId: string;
   invitedById: string;
@@ -38,9 +26,7 @@ export async function createInvitation(params: {
   const expiresAt = new Date(Date.now() + TOKEN_TTL_MS);
 
   await prisma.$transaction([
-    // Aynı kullanıcı için eski PENDING davetleri geçersiz kıl — yalnız en
-    // yeni link aktif olsun. Super Admin "resend invite" tıkladığında
-    // eski link öldürülür ki kimse eski URL'le giremesin.
+    // Invalidate old pending invites for user (only latest link active).
     prisma.userInvitation.updateMany({
       where: { userId: params.userId, usedAt: null },
       data: { usedAt: new Date() },
@@ -164,16 +150,31 @@ Eğer bu daveti beklemiyorsan bu e-postayı yok sayabilirsin.`,
     });
     return { emailSent: true };
   } catch (err) {
+    // Tam stack/message'ı server log'una yaz — Super Admin'in deploy
+    // ortamında debugging için kritik.
     console.error('[invite-email] gönderim hatası:', err);
-    // Gerçek hata mesajını response'a koyuyoruz — bu endpoint sadece
-    // SUPER_ADMIN tarafından çağrılıyor, leak değil. Debugging için
-    // kritik (auth-failed / from-not-verified / sandbox-mode vb.).
-    const detail =
-      err instanceof Error
-        ? err.message
-        : typeof err === 'string'
-          ? err
-          : 'unknown error';
-    return { emailSent: false, error: `Email gönderilemedi: ${detail}` };
+
+    // Response'a generic kategori döner — nodemailer hata mesajları SMTP
+    // host/credentials hint'leri içerebilir, UI'da detay sızdırılmaz.
+    // Detay için server log'una bakılır; davet linki manuel iletim için
+    // response body'sinde zaten dönüyor.
+    let category: 'auth' | 'connection' | 'config' | 'unknown' = 'unknown';
+    if (err instanceof Error) {
+      const msg = err.message.toLowerCase();
+      if (msg.includes('auth') || msg.includes('credentials') || msg.includes('535')) {
+        category = 'auth';
+      } else if (msg.includes('connect') || msg.includes('timeout') || msg.includes('enotfound')) {
+        category = 'connection';
+      } else if (msg.includes('from') || msg.includes('verify')) {
+        category = 'config';
+      }
+    }
+    const friendly: Record<typeof category, string> = {
+      auth: 'SMTP kimlik doğrulama başarısız (kullanıcı/şifre hatalı olabilir)',
+      connection: 'SMTP sunucusuna bağlanılamadı',
+      config: 'SMTP yapılandırması eksik veya doğrulanmamış',
+      unknown: 'Email gönderilemedi (detay server log\'una yazıldı)',
+    };
+    return { emailSent: false, error: friendly[category] };
   }
 }

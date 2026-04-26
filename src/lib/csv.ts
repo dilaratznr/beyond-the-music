@@ -1,14 +1,7 @@
 /**
- * Minimal RFC-4180-ish CSV helpers with no external dependency. We
- * handle quoted values (including embedded commas and escaped quotes,
- * e.g. "foo ""bar""") and strip a BOM if one is present — that last
- * detail matters because Excel saves CSVs with a leading \uFEFF on
- * Windows, which would otherwise break the first column name.
- *
- * Not goal: full RFC compliance. Fields like binary blobs, UTF-16, or
- * multi-line quoted values with Windows newlines in the middle of a
- * row are out of scope; for our admin import use case (pasting small
- * discographies) this is plenty.
+ * Minimal RFC-4180-like CSV parse: handles quotes, embedded commas,
+ * escaped quotes, BOM strip. Not full RFC (no binary/UTF-16/multiline);
+ * sufficient for admin import (small discographies).
  */
 
 export function parseCsv(text: string): string[][] {
@@ -25,7 +18,7 @@ export function parseCsv(text: string): string[][] {
 
     if (inQuotes) {
       if (ch === '"') {
-        // Escaped double-quote ("") within a quoted field.
+        // Escaped quote ("") in quoted field.
         if (src[i + 1] === '"') {
           field += '"';
           i += 2;

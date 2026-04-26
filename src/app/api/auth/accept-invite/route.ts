@@ -23,6 +23,7 @@ export async function GET(request: NextRequest) {
   }
 
   return NextResponse.json({
+    username: record.user.username,
     email: record.user.email,
     name: record.user.name,
     expiresAt: record.expiresAt,
@@ -52,10 +53,10 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  // Validation token doğrulamadan SONRA — context (email/name) için
-  // kullanıcı bilgisi gerekiyor.
+  // Validation token doğrulamadan SONRA — context için kullanıcı bilgisi gerek.
   const pwResult = validatePassword(password, {
     email: record.user.email,
+    username: record.user.username,
     name: record.user.name,
   });
   if (!pwResult.ok) {

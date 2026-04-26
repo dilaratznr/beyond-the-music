@@ -85,7 +85,13 @@ enum MediaType {
 
 model User {
   id          String           @id @default(cuid())
-  email       String           @unique
+  /// Login için birincil tanımlayıcı. Format: `^[a-z0-9_-]{3,30}$`
+  /// (lowercase + rakam + `_` + `-`). Zorunlu, unique. Email opsiyonel
+  /// olduğu için davet linkleri ve login bu alana bağlı.
+  username    String           @unique
+  /// İsteğe bağlı — SMTP yapılandırılmışsa davet/notification için kullanılır,
+  /// ayrıca login formunda alternatif tanımlayıcı (kullanıcı adı veya email).
+  email       String?          @unique
   /// Bcrypt hash. Davet akışında Super Admin kullanıcı oluştururken
   /// şifre vermiyor — yerine rastgele bir placeholder hash kaydediyoruz
   /// ve `mustSetPassword=true` ile login'i bloke ediyoruz. Kullanıcı

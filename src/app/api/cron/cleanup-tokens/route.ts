@@ -2,45 +2,25 @@ import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 
 /**
- * Periyodik temizlik: süresi geçmiş veya kullanılmış davet ve şifre-reset
- * token'larını kalıcı olarak siler.
- *
- * Neden gerekli: invitation/reset token'larının `usedAt` alanı set
- * olduğunda kayıt artık işlevsiz; ayrıca süresi geçmiş ama kullanılmamış
- * tokenlar da DB'de birikiyor. Otomatik silme olmadan tablolar zamanla
- * şişer ve `findFirst({ where: { tokenHash } })` sorgu performansını
- * yavaş yavaş kötüleştirir.
- *
- * Kim çağırır:
- *   - Production: `vercel.json` → cron, günde bir.
- *   - Local: `curl -H "Authorization: Bearer $CRON_SECRET" \
- *            http://localhost:3000/api/cron/cleanup-tokens`
- *
- * Auth: CRON_SECRET env'ine göre Authorization header doğrulanır.
- * Vercel Cron `Authorization: Bearer <CRON_SECRET>` header'ını
- * otomatik gönderir (https://vercel.com/docs/cron-jobs/manage-cron-jobs#securing-cron-jobs).
- *
- * Kasıtlı olarak `force-dynamic`: ISR veya cache lobby'sine girmesin,
- * her invokasyonda DB'ye yazsın.
+ * Cron job: deletes expired/used invitation and password reset tokens daily.
+ * Auth via CRON_SECRET bearer token (Vercel Cron sends auto). force-dynamic
+ * to always write to DB.
  */
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
-// Kullanılmış token'ları kaç gün sonra silelim. 7 gün → debug/audit
-// için kısa bir pencere; daha uzun tutmak isterse env'le override edilebilir.
+// 7-day debug/audit window; override via env if needed.
 const USED_TOKEN_RETENTION_DAYS = 7;
 
 function isAuthorized(request: NextRequest): boolean {
   const expected = process.env.CRON_SECRET;
   if (!expected) {
-    // CRON_SECRET set edilmemişse ENDPOINT TAMAMEN KAPALI olur — yanlış
-    // konfigürasyonun açık endpoint'e dönüşmesini engellemek için fail-closed.
+    // Fail-closed if CRON_SECRET unset (prevent misconfiguration exposure).
     return false;
   }
   const auth = request.headers.get('authorization') || '';
   const token = auth.startsWith('Bearer ') ? auth.slice(7) : '';
-  // Constant-time karşılaştırma — auth secret'ı timing attack'e açık
-  // bırakmamak için. String length'leri farklıysa false döner.
+  // Constant-time comparison to prevent timing attacks.
   if (token.length !== expected.length) return false;
   let mismatch = 0;
   for (let i = 0; i < token.length; i++) {
@@ -59,9 +39,7 @@ export async function GET(request: NextRequest) {
     now.getTime() - USED_TOKEN_RETENTION_DAYS * 24 * 60 * 60 * 1000,
   );
 
-  // İki kriterle sil:
-  //   1) expiresAt < now  → süresi geçmiş, kullanılmamış olsa bile geçersiz
-  //   2) usedAt < cutoff  → zaten kullanılmış, audit penceresinden çıkmış
+  // Delete if: expiresAt < now OR usedAt < retention cutoff.
   const [invitations, resets] = await Promise.all([
     prisma.userInvitation.deleteMany({
       where: {

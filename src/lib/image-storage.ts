@@ -1,17 +1,6 @@
 /**
- * Storage adapter for image variants.
- *
- * One pipeline produces many `ImageVariant`s; we need to persist each one
- * to either S3 (preferred on serverless hosts like Vercel where the FS is
- * ephemeral) or the local `public/uploads` directory. The upload route and
- * the one-off migration script both need this logic, so it lives in its
- * own module.
- *
- * Detection rule: if `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY` and
- * `AWS_S3_BUCKET_NAME` are all set we use S3. Otherwise we fall back to
- * local disk. Any S3 failure is caught by the caller and they decide
- * whether to fall back — this module never silently switches backends,
- * because callers need to know which URL format they'll get back.
+ * Storage adapter for image variants (S3 or local disk). Persists variants
+ * to one backend per batch (fail-once, then fallback to local).
  */
 
 import { writeFile, mkdir } from "fs/promises";
@@ -39,11 +28,8 @@ export function hasS3Config(): boolean {
 }
 
 /**
- * Persist every variant to the configured backend.
- *
- * On S3 errors we fall back to local disk *once* and log — the rest of the
- * batch stays on local disk so the DB row stays consistent (we never want
- * half the variants on S3 and half on disk for the same image).
+ * Persist all variants to one backend. On S3 failure, fallback to local
+ * (entire batch for consistency; never split).
  */
 export async function storeVariants(
   variants: ImageVariant[],
@@ -53,11 +39,8 @@ export async function storeVariants(
       const stored = await Promise.all(variants.map(storeToS3));
       return { stored, backend: "s3" };
     } catch (err) {
-      console.error(
-        "[image-storage] S3 batch failed, falling back to local:",
-        err,
-      );
-      // Fall through to local path below.
+      console.error("[image-storage] S3 batch failed, falling back to local:", err);
+      // Fall through to local.
     }
   }
 

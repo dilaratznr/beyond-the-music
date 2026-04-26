@@ -5,17 +5,8 @@ import { requireSectionAccess } from '@/lib/auth-guard';
 import { CACHE_TAGS } from '@/lib/db-cache';
 
 /**
- * POST /api/articles/bulk-status
- * Body: { ids: string[], status: 'PUBLISHED' | 'DRAFT' }
- *
- * The single-article PUT handler carefully preserves the original
- * publishedAt when a piece is already live; the bulk version keeps that
- * invariant by fetching the current rows first and then writing each
- * update individually inside a transaction. For DRAFT we null out
- * publishedAt so the row no longer surfaces on the site.
- *
- * SCHEDULED is deliberately excluded — each article needs its own
- * target date which doesn't make sense as a bulk action.
+ * Bulk article status update. Preserves original publishedAt for PUBLISHED
+ * articles; nulls it for DRAFT. SCHEDULED excluded (needs per-article dates).
  */
 export async function POST(request: NextRequest) {
   const { error } = await requireSectionAccess('ARTICLE', 'canPublish');

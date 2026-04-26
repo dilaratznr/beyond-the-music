@@ -1,14 +1,6 @@
 /**
- * Client-side helpers for automatic TR → EN (or EN → TR) translation in admin
- * forms. These are invoked from handleSubmit: when the target-language field
- * is empty but the source-language one has content, we call /api/translate
- * and merge the result into the submit payload.
- *
- * Design notes:
- *  - Failures are swallowed (returns the original empty string). Auto-translate
- *    is a convenience; we never want a Gemini hiccup to block an admin save.
- *  - `translatePairs` fans out translations in parallel — one settings save
- *    may need 7+ translations, and serialising them would be slow.
+ * Client-side auto-translate helper (TR ↔ EN). Called on submit if target
+ * field empty. Failures swallowed (convenience only). Parallel fetches.
  */
 
 export interface TranslateOptions {

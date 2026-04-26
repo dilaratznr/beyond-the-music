@@ -7,23 +7,10 @@ import { slugify } from '@/lib/utils';
 import { parseCsv, rowsToRecords, parseBool, parseReleaseDate, parseTrackNumber } from '@/lib/csv';
 
 /**
- * POST /api/admin/import/discography
- * Body: { artistId: string, csv: string, dryRun?: boolean }
- *
- * Parses a CSV of the shape:
- *   album_title, album_year, album_cover, track_number, song_title,
- *   duration, is_deep_cut, spotify_url, youtube_url
- * …and creates every missing album + song for the given artist in a
- * single transaction. Re-importing the same CSV is safe: albums are
- * matched by (artistId, slug), songs by (albumId, title).
- *
- * dryRun=true validates + returns the plan without writing; the admin
- * UI uses this to render a preview step before the user commits.
- *
- * Required columns: album_title. Everything else is optional. A row
- * with an empty song_title produces an "album-only" entry — useful
- * when the artist has a release you want to register without the
- * track list yet.
+ * POST /api/admin/import/discography — Body: { artistId, csv, dryRun? }.
+ * Bir artist için CSV'den album + song oluşturur (tek transaction).
+ * Idempotent: album (artistId, slug) ile, song (albumId, title) ile match'lenir.
+ * dryRun=true ise sadece plan döner (UI preview için). Zorunlu kolon: album_title.
  */
 type PlanAction = 'create' | 'update' | 'skip';
 interface SongPlan {
@@ -45,10 +32,7 @@ interface AlbumPlan {
 }
 
 export async function POST(request: NextRequest) {
-  // Toplu CSV import sadece Super Admin'e açık — editörün `canPublish`
-  // yoksa bile yüzlerce albümü bypass ile yayınlamasını engeller. Tek
-  // seferde 100+ kayıt yazan bir endpoint onay kuyruğunda mantıklı
-  // görünmüyor; import kısıtlaması daha temiz çözüm.
+  // Bulk import → SUPER_ADMIN only (bypass canPublish + 100+ records).
   const { error } = await requireAuth('SUPER_ADMIN');
   if (error) return error;
 
@@ -78,9 +62,7 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  // Validate headers up-front. We accept either lower_snake or bare
-  // (case-insensitive) header cells so that copy-paste from a
-  // spreadsheet doesn't force a specific capitalization.
+  // Accept lower_snake or bare (case-insensitive) headers for copy-paste flexibility.
   const firstRecord = records[0];
   const keys = Object.keys(firstRecord).map((k) => k.toLowerCase());
   const hasAlbumTitle = keys.some((k) => k === 'album_title' || k === 'album' || k === 'albüm');

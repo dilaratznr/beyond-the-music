@@ -4,16 +4,8 @@ import { useState, type ReactNode } from 'react';
 import { useConfirm } from './useConfirm';
 
 /**
- * Sticky toolbar that appears at the top of a list page when at least one
- * row is selected. Renders a "N seçildi" label, a configurable set of
- * primary actions, and a "Sil" button that triggers a POST to the given
- * bulk-delete endpoint. The caller supplies the endpoint and the selected
- * IDs; we handle confirmation, pending state, and errors in one place.
- *
- * Editoryal ton: nötr zinc bar + sadece aktif seçimde small dot vurgusu.
- * Amber gradient bloklar "amator goruyor" — ton'u sadeleştirildi, silme
- * butonu da kendi destructive ton'undan çıkarıldı (onay modal'i zaten
- * destructive niyeti taşıyor).
+ * Sticky bulk action toolbar (appears when rows selected). Handles
+ * confirmation, pending state, errors. Neutral zinc + small dot emphasis.
  */
 export default function BulkActionBar({
   count,

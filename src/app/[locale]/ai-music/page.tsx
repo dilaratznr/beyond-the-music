@@ -67,9 +67,8 @@ export default async function AiMusicPage({ params }: { params: Promise<{ locale
                 <Link key={a.id} href={`/${locale}/article/${a.slug}`}
                   className="group bg-white/[0.02] border border-white/5 rounded-xl overflow-hidden hover:bg-white/[0.05] hover-lift transition-colors">
                   {/* Görsel yoksa boş alan yerine CardImage fallback
-                      (gradient + watermark). Dilara geri bildirimi:
-                      "bazi seylerde gorsel yok, onlara da gorsel
-                      koysun". */}
+                      (gradient + watermark) — görselsiz kayıtlar için
+                      tutarlı bir görsel doldurma. */}
                   <div className="relative w-full h-44 overflow-hidden bg-zinc-900 img-zoom">
                     <CardImage
                       src={a.featuredImage}

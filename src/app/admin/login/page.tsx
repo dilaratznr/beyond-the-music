@@ -1,34 +1,22 @@
 /**
- * Admin login — Server Component + Server Action.
- *
- * Neden client component değil: /admin/login'de React hidrasyonu bazı
- * ağlarda / Vercel Deployment Protection'ın araya girdiği durumlarda
- * çalışmıyordu — form native POST ile gitmeye çalışıp credentials'ları
- * URL'ye döküyor, hiçbir hata da görünmüyordu. Server Action kullanınca
- * form JavaScript'e hiç ihtiyaç duymadan çalışıyor: tarayıcı direkt
- * POST atar, Next.js sunucuda action'u çalıştırır, session cookie'sini
- * kurup dashboard'a redirect eder.
- *
- * NextAuth'un /api/auth/callback/credentials akışı yerine burada
- * doğrudan `next-auth/jwt` encode'ları ile aynı formatta session
- * cookie'si kuruyoruz — siteneki diğer sayfalar (middleware, session
- * okuyan API'ler) aynen NextAuth'u kullandığı için değişiklik gerektirmiyor.
+ * Admin login via Server Action (not client). Form works without JS;
+ * server sets session cookie directly (NextAuth-compatible format).
  */
 
 import { redirect } from 'next/navigation';
 import { cookies, headers } from 'next/headers';
 import bcrypt from 'bcryptjs';
 import { encode } from 'next-auth/jwt';
-import prisma from '@/lib/prisma';
 import AuthLayout from '@/components/admin/AuthLayout';
 import { rateLimit } from '@/lib/rate-limit';
 import { validateInternalRedirect } from '@/lib/url-validation';
 import { audit } from '@/lib/audit-log';
+import { findUserByIdentifier } from '@/lib/user-lookup';
 
 const inputCls =
   'w-full px-3.5 py-2.5 text-sm bg-zinc-950 border border-zinc-800 rounded-md text-zinc-100 placeholder:text-zinc-600 outline-none transition-colors hover:border-zinc-700 focus:border-zinc-500 focus:ring-2 focus:ring-zinc-500/20';
 
-// NextAuth v4 — HTTPS deployments (Vercel dahil) __Secure- öneki kullanır.
+// HTTPS deployments use __Secure- prefix (NextAuth v4).
 function getCookieName() {
   const useSecure =
     process.env.NEXTAUTH_URL?.startsWith('https://') ||
@@ -41,24 +29,19 @@ function getCookieName() {
 async function loginAction(formData: FormData) {
   'use server';
 
-  const email = String(formData.get('email') ?? '').trim().toLowerCase();
+  // Single input: kullanıcı adı veya e-posta. `@` varlığına göre branch
+  // edilir (findUserByIdentifier içinde). Trim + lowercase ile normalize.
+  const identifier = String(formData.get('identifier') ?? '').trim().toLowerCase();
   const password = String(formData.get('password') ?? '');
   const callbackUrl = String(formData.get('callbackUrl') ?? '/admin/dashboard');
 
-  if (!email || !password) {
+  if (!identifier || !password) {
     redirect('/admin/login?error=missing');
   }
 
-  // Brute-force koruması: iki katman.
-  //
-  // 1) IP başına 20 deneme / 10 dk — script kiddie tarama'sını keser.
-  // 2) Email başına 5 deneme / 10 dk — bilinen bir admin hesabını
-  //    rotating proxy ile döven saldırı hâlâ engellenir, çünkü email
-  //    sabit kalır.
-  //
-  // Pencere içinde başarısız + başarılı tüm denemeler sayılır; başarılı
-  // login'den sonra ikinci aynı login zaten cookie'yle gelir, bu sayaç
-  // yumuşak (10 dk pencerede 5 deneme, normal kullanıcı sınıra hiç değmez).
+  // Brute-force koruması (iki katman): IP başına 20/10dk + identifier başına
+  // 5/10dk. Identifier (username veya email) sabit kaldığı sürece rotating-proxy
+  // saldırısını da yakalar.
   const hdrs = await headers();
   const ip =
     hdrs.get('x-forwarded-for')?.split(',')[0].trim() ||
@@ -66,15 +49,15 @@ async function loginAction(formData: FormData) {
     'unknown';
 
   const ipLimit = rateLimit(`login:ip:${ip}`, 20, 10 * 60 * 1000);
-  const emailLimit = rateLimit(`login:email:${email}`, 5, 10 * 60 * 1000);
+  const idLimit = rateLimit(`login:id:${identifier}`, 5, 10 * 60 * 1000);
   const userAgent = hdrs.get('user-agent') ?? null;
 
-  if (!ipLimit.success || !emailLimit.success) {
+  if (!ipLimit.success || !idLimit.success) {
     await audit({
       event: 'LOGIN_BLOCKED_RATE_LIMIT',
       ip,
       userAgent,
-      detail: `email=${email}`,
+      detail: `identifier=${identifier}`,
     });
     redirect('/admin/login?error=too-many');
   }
@@ -85,18 +68,11 @@ async function loginAction(formData: FormData) {
     redirect('/admin/login?error=config');
   }
 
-  const user = await prisma.user.findUnique({ where: { email } });
+  const user = await findUserByIdentifier(identifier);
 
-  // Username enumeration koruması: kullanıcı bulunmasa bile bcrypt'i
-  // çalıştırıyoruz. bcrypt.compare ~80ms; user yoksa hemen `redirect`
-  // edersek bu bir timing leak — saldırgan yanıt süresine bakıp hangi
-  // email'lerin DB'de olduğunu çıkarabilir. Sabit bir dummy hash'le
-  // compare çalıştırıp süreyi normalize ediyoruz.
-  //
-  // Dummy hash, "this-password-will-never-match" stringinin saltlı
-  // bcrypt çıktısı; bcrypt.compare onunla geçen şifreyi karşılaştırır,
-  // her zaman false döner ve gerçek user.password compare'ı kadar
-  // CPU harcar.
+  // Username enumeration koruması: user yoksa da bcrypt.compare'i sabit
+  // bir DUMMY_HASH'le çalıştırıyoruz ki yanıt süresi (~80ms) normalize
+  // olsun, saldırgan timing'le DB'de hangi email var çıkaramasın.
   const DUMMY_HASH =
     '$2a$12$abcdefghijklmnopqrstuuogf04zU82MgjlnRcCfg4S5tRaqQRPhNu';
   const passwordHash = user?.password ?? DUMMY_HASH;
@@ -112,7 +88,7 @@ async function loginAction(formData: FormData) {
       actorId: user?.id ?? null,
       ip,
       userAgent,
-      detail: `email=${email}`,
+      detail: `identifier=${identifier}`,
     });
     redirect('/admin/login?error=invalid');
   }
@@ -130,15 +106,24 @@ async function loginAction(formData: FormData) {
     redirect('/admin/login?error=disabled');
   }
 
-  // 2FA kontrolü: kullanıcı 2FA enabled ise, ÖNCE pending-cookie verip
-  // /admin/login/2fa'ya at. Tam JWT yok — kullanıcı admin sayfalarına
-  // bu pending durumda eremez (middleware proxy.ts kontrol ediyor).
+  // 2FA durumu:
+  //   - Aktif → 'verify' (pending JWT, sadece /admin/login/2fa'ya gidebilir)
+  //   - Aktif değil ve kullanıcı promptu daha önce atlamamış → 'enroll'
+  //     (onboarding setup ekranı, "Şimdi atla" butonu var)
+  //   - Aktif değil ve atlamış → null (full session, 2FA opsiyonel kalır)
   //
-  // 2FA enabled DEĞİLSE: tüm admin rolleri için zorunlu olduğu için
-  // pending-cookie verip enrollment'a yönlendiriyoruz.
+  // "Atladım" sinyali `btm-2fa-prompted` cookie'sinde kullanıcı id'siyle
+  // saklanıyor; başka tarayıcıda yeniden girince yine prompt gösterilir
+  // ki kullanıcı mevcut cihazını güvenceye alma fırsatını kaçırmasın.
+  const cookieStore = await cookies();
+  const promptedFor = cookieStore.get('btm-2fa-prompted')?.value;
+  const alreadyPrompted = promptedFor === user.id;
+
   const tfaPending: 'verify' | 'enroll' | null = user.twoFactorEnabledAt
     ? 'verify'
-    : 'enroll';
+    : alreadyPrompted
+      ? null
+      : 'enroll';
 
   // Pending JWT — sadece tfa endpoint'lerine erişim sağlar. 5 dakika
   // geçerli (kullanıcı sayfada oyalanmasın diye kısa). Kod doğrulanınca
@@ -150,7 +135,8 @@ async function loginAction(formData: FormData) {
     token: {
       sub: user.id,
       id: user.id,
-      email: user.email,
+      email: user.email ?? undefined,
+      username: user.username,
       name: user.name ?? undefined,
       role: user.role,
       tfaPending: tfaPending ?? undefined,
@@ -201,9 +187,9 @@ async function loginAction(formData: FormData) {
 function errorMessage(code?: string): string | null {
   switch (code) {
     case 'missing':
-      return 'E-posta ve şifre gerekli.';
+      return 'Kullanıcı adı (veya e-posta) ve şifre gerekli.';
     case 'invalid':
-      return 'E-posta veya şifre hatalı.';
+      return 'Kullanıcı adı/e-posta veya şifre hatalı.';
     case 'config':
       return 'Sunucu yapılandırması eksik (NEXTAUTH_SECRET). Yöneticiye bildirin.';
     case 'invite-pending':
@@ -259,19 +245,22 @@ export default async function AdminLoginPage({
 
         <div>
           <label
-            htmlFor="admin-login-email"
+            htmlFor="admin-login-identifier"
             className="block text-[11px] font-semibold text-zinc-400 mb-1.5 uppercase tracking-wider"
           >
-            E-posta
+            Kullanıcı adı veya e-posta
           </label>
           <input
-            id="admin-login-email"
-            name="email"
-            type="email"
-            autoComplete="email"
+            id="admin-login-identifier"
+            name="identifier"
+            type="text"
+            inputMode="email"
+            autoComplete="username"
+            autoCapitalize="none"
+            spellCheck={false}
             autoFocus
             defaultValue=""
-            placeholder="ornek@beyondthemusic.com"
+            placeholder="kullanıcı adı"
             className={inputCls}
             required
           />

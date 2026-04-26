@@ -19,7 +19,8 @@ interface Permission {
 
 interface User {
   id: string;
-  email: string;
+  username: string;
+  email: string | null;
   name: string;
   role: string;
   isActive: boolean;
@@ -90,7 +91,12 @@ export default function UsersPage() {
       if (roleFilter !== 'all' && u.role !== roleFilter) return false;
       if (statusFilter === 'active' && !u.isActive) return false;
       if (statusFilter === 'inactive' && u.isActive) return false;
-      if (q && !u.name.toLowerCase().includes(q) && !u.email.toLowerCase().includes(q))
+      if (
+        q &&
+        !u.name.toLowerCase().includes(q) &&
+        !u.username.toLowerCase().includes(q) &&
+        !(u.email?.toLowerCase().includes(q) ?? false)
+      )
         return false;
       return true;
     });
@@ -201,7 +207,7 @@ export default function UsersPage() {
             type="search"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="İsim veya e-posta ara…"
+            placeholder="İsim, kullanıcı adı veya e-posta ara…"
             aria-label="Kullanıcı ara"
             className="w-full pl-9 pr-3 py-1.5 text-sm bg-zinc-900 border border-zinc-700 rounded-md text-zinc-100 placeholder:text-zinc-500 outline-none hover:border-zinc-600 focus:border-zinc-500 focus:ring-2 focus:ring-zinc-500/20 transition-colors"
           />
@@ -298,7 +304,15 @@ export default function UsersPage() {
                         </span>
                       )}
                     </div>
-                    <p className="text-xs text-zinc-500 truncate">{user.email}</p>
+                    <p className="text-xs text-zinc-500 truncate">
+                      <span className="font-mono">@{user.username}</span>
+                      {user.email && (
+                        <>
+                          {' · '}
+                          {user.email}
+                        </>
+                      )}
+                    </p>
                     <p className="text-[10px] text-zinc-600 mt-0.5">
                       {permissionSummary(user)} · Kayıt: {formatDate(user.createdAt)}
                     </p>

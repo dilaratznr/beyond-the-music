@@ -5,28 +5,8 @@ import { useState, useEffect, useRef } from 'react';
 interface Video { id: string; url: string; duration: number; }
 
 /**
- * Hero video carousel.
- *
- * Dilara geri bildirim evrimi:
- *   1. (2026-04-23) "site acilirken bi gorsel geliyo 1 sn lik orda bug
- *      var" — <video poster={...}> Unsplash default'unu ~1s flash
- *      ediyordu. Çözüm: poster'ı kaldır, altta siyah bg bırak, video
- *      geldiğinde üste biniyor.
- *   2. (2026-04-24) "video takiliyor anasayfadaki bir sey olmus
- *      bozulmus" — önceki iterasyonda `videoReady` state + opacity
- *      toggling + `preload="auto"` koymuştum; state güncellemeleri
- *      video oynatma pipeline'ına müdahale ediyor, re-render'lar
- *      playhead'i resetliyor ve stutter hissi yaratıyordu. Kaldırıldı.
- *
- * Şimdiki minimal kural:
- *   - poster YOK → flash yok
- *   - altta bg-[#0a0a0b] div → video hazır olmadan önce görünen şey
- *     sahne rengiyle aynı, kullanıcı fark etmiyor
- *   - opacity sadece carousel geçişinde fade için (fading state) —
- *     loading ile ilgili JS yok, browser'ın kendi video akışına
- *     müdahale etmiyoruz
- *   - preload default (metadata) — `auto` bant genişliğini aç gözlü
- *     tüketip stutter'a yol açıyordu.
+ * Hero video carousel. No poster (flash prevention); background color
+ * hides load delay; opacity fade on transitions; preload=metadata.
  */
 export default function HeroVideoCarousel({ videos, fallbackImage }: { videos: Video[]; fallbackImage: string }) {
   const [current, setCurrent] = useState(0);
@@ -54,9 +34,7 @@ export default function HeroVideoCarousel({ videos, fallbackImage }: { videos: V
     return () => clearTimeout(timerRef.current);
   }, [current, activeVideos.length]);
 
-  // Carousel current değiştiğinde video kaynağı değiştiği için yeniden
-  // load + play çağrılıyor. Tek video varsa current zaten değişmez, bu
-  // effect sadece mount'ta çalışır → play kick-start.
+  // Reload & play on current change; mount-only for single video.
   useEffect(() => {
     if (videoRef.current) {
       videoRef.current.load();
@@ -72,8 +50,7 @@ export default function HeroVideoCarousel({ videos, fallbackImage }: { videos: V
 
   return (
     <>
-      {/* Video yüklenmeden önce görünen siyah arka plan — sahne rengiyle
-          aynı olduğu için "yüklendi mi?" hissi vermiyor. */}
+      {/* Loading placeholder: matches scene color, hides load delay. */}
       <div className="absolute inset-0 bg-[#0a0a0b]" aria-hidden="true" />
       <video
         ref={videoRef}

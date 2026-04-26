@@ -28,11 +28,35 @@ async function main() {
   await prisma.genre.deleteMany();
   await prisma.mediaItem.deleteMany();
 
-  const hashedPassword = await bcrypt.hash('admin123', 12);
+  // İlk Super Admin'in şifresi env'den okunur. Hardcoded default yok —
+  // operatörü güçlü bir şifre seçmeye zorlar. Username zorunlu, email opsiyonel.
+  const seedPassword = process.env.SEED_ADMIN_PASSWORD;
+  if (!seedPassword || seedPassword.length < 12) {
+    throw new Error(
+      'SEED_ADMIN_PASSWORD env değişkeni gerekli (en az 12 karakter). ' +
+        'Örn: SEED_ADMIN_USERNAME="admin" SEED_ADMIN_PASSWORD="<güçlü-şifre>" npm run db:seed',
+    );
+  }
+  const seedUsername = (process.env.SEED_ADMIN_USERNAME ?? 'admin').toLowerCase();
+  if (!/^[a-z0-9_-]{3,30}$/.test(seedUsername)) {
+    throw new Error(
+      `SEED_ADMIN_USERNAME geçersiz: "${seedUsername}". Format: 3-30 karakter, küçük harf+rakam+_-.`,
+    );
+  }
+  const seedEmail = process.env.SEED_ADMIN_EMAIL || null;
+  const seedName = process.env.SEED_ADMIN_NAME ?? 'Super Admin';
+
+  const hashedPassword = await bcrypt.hash(seedPassword, 12);
   const superAdmin = await prisma.user.upsert({
-    where: { email: 'admin@beyondthemusic.com' },
+    where: { username: seedUsername },
     update: {},
-    create: { email: 'admin@beyondthemusic.com', password: hashedPassword, name: 'Ziya Burak Erol', role: 'SUPER_ADMIN' },
+    create: {
+      username: seedUsername,
+      email: seedEmail,
+      password: hashedPassword,
+      name: seedName,
+      role: 'SUPER_ADMIN',
+    },
   });
 
   // ─── GENRES ───
@@ -44,7 +68,7 @@ async function main() {
   const rap = await prisma.genre.create({ data: { slug: 'rap', nameTr: 'Rap', nameEn: 'Rap', order: 6, image: 'https://images.unsplash.com/photo-1483412033650-1015ddeb83d1?w=800&q=80', descriptionTr: 'Hip-hop kültürünün müzikal ifadesi olan rap, 1970\'lerin Bronx\'unda doğdu. Ritmik konuşma, sampling ve beat yapımı üzerine kurulu bu tür, günümüzün en etkili müzik formlarından biridir.', descriptionEn: 'Rap, the musical expression of hip-hop culture, was born in the Bronx in the 1970s. Built on rhythmic speech, sampling, and beat-making, this genre is one of today\'s most influential music forms.' } });
   const classical = await prisma.genre.create({ data: { slug: 'classical', nameTr: 'Klasik', nameEn: 'Classical', order: 7, image: 'https://images.unsplash.com/photo-1507838153414-b4b713384a76?w=800&q=80', descriptionTr: 'Batı klasik müziği, yaklaşık bin yıllık bir geleneğe sahiptir. Barok, Klasik, Romantik ve Modern dönemlerden geçerek evrilmiş; orkestral, oda müziği ve solo eser formlarında zengin bir repertuvar oluşturmuştur.', descriptionEn: 'Western classical music has a tradition spanning roughly a thousand years. It evolved through the Baroque, Classical, Romantic, and Modern periods, creating a rich repertoire in orchestral, chamber music, and solo forms.' } });
   const funk = await prisma.genre.create({ data: { slug: 'funk', nameTr: 'Funk', nameEn: 'Funk', order: 8, image: 'https://images.unsplash.com/photo-1501612780327-45045538702b?w=800&q=80' } });
-  const disco = await prisma.genre.create({ data: { slug: 'disco', nameTr: 'Disco', nameEn: 'Disco', order: 9, image: 'https://images.unsplash.com/photo-1501612780327-45045538702b?w=800&q=80' } });
+  const disco = await prisma.genre.create({ data: { slug: 'disco', nameTr: 'Disco', nameEn: 'Disco', order: 9, image: 'https://images.unsplash.com/photo-1545128485-c400e7702796?w=800&q=80' } });
   const pop = await prisma.genre.create({ data: { slug: 'pop', nameTr: 'Pop', nameEn: 'Pop', order: 10, image: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=800&q=80' } });
   const rnb = await prisma.genre.create({ data: { slug: 'rnb', nameTr: 'R&B', nameEn: 'R&B', order: 11, image: 'https://images.unsplash.com/photo-1485579149621-3123dd979885?w=800&q=80' } });
   const gospel = await prisma.genre.create({ data: { slug: 'gospel', nameTr: 'Gospel', nameEn: 'Gospel', order: 12 } });

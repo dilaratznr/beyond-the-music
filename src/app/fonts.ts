@@ -1,24 +1,8 @@
 /**
- * Build-time self-hosted fonts for the site. Every family the super-admin
- * can pick from `FONT_OPTIONS` is loaded through `next/font/google` here,
- * which downloads the woff2 files into `_next/static/media` at build time,
- * injects metric-matched fallbacks (so the primary → real font swap does
- * not cause a visible size shift), and removes all runtime requests to
- * `fonts.googleapis.com`.
- *
- * Only the family whose `.variable` className is actually applied to the
- * rendered tree ends up with a `<link rel="preload">` in the HTML — the
- * other ~19 stay on disk but never hit the wire. Build time grows a
- * little; perceived performance on refresh jumps.
- *
- * ─── IMPORTANT ──────────────────────────────────────────────────────────
- * Next.js' `next/font` SWC plugin statically analyses each loader call.
- * Its options object must be a PLAIN OBJECT LITERAL with literal string
- * values — no helpers, no spread, no property access into other consts.
- * That's why `variable: '--font-...'` is spelled out inline for every
- * family, and `FONT_CSS_VARS` below mirrors those exact strings for any
- * caller that needs to read them back (e.g. to alias `--font-body`).
- * Keep the two tables in sync.
+ * Build-time self-hosted fonts (next/font/google). SWC plugin requires
+ * plain object literals with inline literal strings — no refactoring.
+ * Only preloaded family hits the wire; others load on-demand. FONT_CSS_VARS
+ * table mirrors `variable:` values below (keep in sync).
  */
 import {
   Bricolage_Grotesque,
@@ -43,10 +27,7 @@ import {
   Work_Sans,
 } from 'next/font/google';
 
-// ─── Font loader calls ────────────────────────────────────────────────
-// Each call is assigned to its own module-scope const with an inline,
-// fully-literal options object. Don't refactor these to share a helper
-// or pull `variable` from another const — the SWC plugin will reject it.
+// Font loader calls — inline literals only (SWC plugin limitation).
 
 // ── Sans ───────────────────────────────────────────────────────────────
 const fontInter = Inter({
@@ -101,9 +82,7 @@ const fontLora = Lora({
   display: 'swap',
   variable: '--font-lora',
 });
-// Cormorant Garamond is not a variable font — bundle the weights the app
-// actually uses (body 400, UI 600, bold 700). Omitting `weight` would fail
-// the build.
+// Non-variable font — explicitly bundle used weights (400, 600, 700).
 const fontCormorantGaramond = Cormorant_Garamond({
   subsets: ['latin'],
   display: 'swap',
@@ -142,9 +121,7 @@ const fontSyne = Syne({
   display: 'swap',
   variable: '--font-syne',
 });
-// Instrument Serif ships a single 400 weight only. Hero text uses
-// `font-black` → the browser synthesises bold; same trade-off as the old
-// runtime Google Fonts path.
+// Single 400 weight; browser synthesises bold (same as old runtime path).
 const fontInstrumentSerif = Instrument_Serif({
   subsets: ['latin'],
   display: 'swap',
