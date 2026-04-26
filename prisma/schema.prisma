@@ -98,10 +98,17 @@ model User {
   /// true ise NextAuth authorize() login'e izin vermez. Davet kabul
   /// edilince false'a çekilir.
   mustSetPassword Boolean      @default(false) @map("must_set_password")
+  /// 2FA (TOTP) secret — AES-256-GCM ile şifrelenmiş base32 string.
+  /// Format: `iv:ciphertext:authTag` (hex). Encryption key NEXTAUTH_SECRET'tan
+  /// türetiliyor (HKDF). twoFactorEnabledAt set olmamışsa setup yarım kalmış
+  /// (kullanıcı QR taradı ama hiç doğrulamadı).
+  twoFactorSecret    String?    @map("two_factor_secret")
+  twoFactorEnabledAt DateTime?  @map("two_factor_enabled_at")
   createdAt   DateTime         @default(now())
   updatedAt   DateTime         @updatedAt
   articles    Article[]
   permissions UserPermission[]
+  backupCodes BackupCode[]
   // Onay kuyruğu ilişkileri — bir user hem kendi gönderdiklerini
   // ("submittedReviews"), hem de Super Admin'se karar verdiklerini
   // ("reviewedReviews") görür. İkisi ayrı relation name ile.
@@ -113,6 +120,31 @@ model User {
   // Audit log: bu kullanıcının yaptığı işlemler. Kullanıcı silinince
   // kayıt korunsun (forensic) — actorId null'a düşer, log korunur.
   auditLogs        AuditLog[]       @relation("AuditActor")
+}
+
+/// Tek kullanımlık 2FA recovery kodları — kullanıcı telefonunu kaybedince
+/// TOTP yerine bunlardan birini girer. Her kod sadece bir kez kullanılır.
+///
+/// Tasarım:
+///   - Raw kod ASLA DB'de tutulmaz, sadece SHA-256 hash. Kullanıcıya bir
+///     kez gösterilir (setup tamamlanırken / regenerate'te).
+///   - Kullanıldığında kayıt SİLİNMEZ — `usedAt` set edilir → audit
+///     amaçlı geçmiş tutulur.
+///   - Yeni set generate edildiğinde tüm eski kodlar silinir (atomik).
+///
+/// 10 kod = endüstri standardı (GitHub, Google). Telefon kaybı +
+/// bilgisayar kaybı gibi peş peşe sorunlara karşı yumuşak rezerv.
+model BackupCode {
+  id        String    @id @default(cuid())
+  userId    String    @map("user_id")
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  /// SHA-256(raw_code). Raw 8 karakter base32 (`A1B2-C3D4` formatında
+  /// gösterilir, hash öncesi tire'lar strip'lenir).
+  codeHash  String    @unique @map("code_hash")
+  usedAt    DateTime? @map("used_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+
+  @@index([userId])
 }
 
 /// Super Admin tarafından yeni hesap oluşturulduğunda üretilen davet

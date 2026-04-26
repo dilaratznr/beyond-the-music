@@ -131,10 +131,22 @@ async function loginAction(formData: FormData) {
     redirect('/admin/login?error=disabled');
   }
 
-  // NextAuth JWT payload'ı — authOptions callbacks.jwt'nin ürettiğiyle
-  // birebir aynı alan isimleri (id, role, email, name, sub) kullanılıyor
-  // ki middleware ve getServerSession aynı session'ı çözsün.
-  const maxAge = 24 * 60 * 60; // 24 saat, authOptions.session.maxAge ile eşit
+  // 2FA kontrolü: kullanıcı 2FA enabled ise, ÖNCE pending-cookie verip
+  // /admin/login/2fa'ya at. Tam JWT yok — kullanıcı admin sayfalarına
+  // bu pending durumda eremez (middleware proxy.ts kontrol ediyor).
+  //
+  // 2FA enabled DEĞİLSE: tüm admin rolleri için zorunlu olduğu için
+  // pending-cookie verip enrollment'a yönlendiriyoruz.
+  const tfaPending: 'verify' | 'enroll' | null = user.twoFactorEnabledAt
+    ? 'verify'
+    : 'enroll';
+
+  // Pending JWT — sadece tfa endpoint'lerine erişim sağlar. 5 dakika
+  // geçerli (kullanıcı sayfada oyalanmasın diye kısa). Kod doğrulanınca
+  // bu cookie tam JWT ile değiştirilir.
+  const pendingMaxAge = 5 * 60;
+  const fullMaxAge = 24 * 60 * 60;
+  const maxAge = tfaPending ? pendingMaxAge : fullMaxAge;
   const token = await encode({
     token: {
       sub: user.id,
@@ -142,6 +154,7 @@ async function loginAction(formData: FormData) {
       email: user.email,
       name: user.name ?? undefined,
       role: user.role,
+      tfaPending: tfaPending ?? undefined,
     },
     secret,
     maxAge,
@@ -159,15 +172,30 @@ async function loginAction(formData: FormData) {
   });
 
   await audit({
-    event: 'LOGIN_SUCCESS',
+    event:
+      tfaPending === 'verify'
+        ? 'LOGIN_PASSWORD_OK_AWAITING_2FA'
+        : tfaPending === 'enroll'
+          ? 'LOGIN_PASSWORD_OK_AWAITING_2FA_ENROLL'
+          : 'LOGIN_SUCCESS',
     actorId: user.id,
     ip,
     userAgent,
   });
 
-  // Açık redirect koruması: validateInternalRedirect, protocol-relative
-  // (`//evil.com`), backslash-trick, control-char injection ve absolute URL'i
-  // reddedip /admin/dashboard fallback'ine düşer.
+  // 2FA pending → ilgili sayfaya at, callbackUrl'i query'de tut.
+  // 2FA verify sonrası callback'e döneriz.
+  if (tfaPending === 'verify') {
+    const target = `/admin/login/2fa?next=${encodeURIComponent(
+      validateInternalRedirect(callbackUrl),
+    )}`;
+    redirect(target);
+  }
+  if (tfaPending === 'enroll') {
+    redirect('/admin/security/2fa/setup?onboarding=1');
+  }
+
+  // 2FA yok ya da zaten doğrulanmış → tam yetki, callback'e git.
   redirect(validateInternalRedirect(callbackUrl));
 }
 

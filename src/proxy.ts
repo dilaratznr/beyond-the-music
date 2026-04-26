@@ -166,6 +166,24 @@ export async function proxy(request: NextRequest) {
         loginUrl.searchParams.set('error', 'unauthorized');
         return NextResponse.redirect(loginUrl);
       }
+
+      // 2FA gate: parola OK ama henüz TOTP kodu doğrulanmadı.
+      // Sadece /admin/login/2fa ve /admin/security/2fa/setup'a izin var.
+      const tfaPending = token.tfaPending as string | undefined;
+      if (tfaPending === 'verify') {
+        const allowed = pathname.startsWith('/admin/login/2fa');
+        if (!allowed) {
+          return NextResponse.redirect(new URL('/admin/login/2fa', request.url));
+        }
+      } else if (tfaPending === 'enroll') {
+        // Onboarding: 2FA kurulumunu bitirmeden başka admin sayfasına geçemez.
+        const allowed = pathname.startsWith('/admin/security/2fa/setup');
+        if (!allowed) {
+          return NextResponse.redirect(
+            new URL('/admin/security/2fa/setup?onboarding=1', request.url),
+          );
+        }
+      }
     }
 
     // Public admin path'ler nonce CSP'den muaf — yukarıdaki açıklamaya
