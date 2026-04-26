@@ -31,7 +31,7 @@ export default function HeroVideosPage() {
   const { toast } = useToast();
   const { confirm, dialog: confirmDialog } = useConfirm();
 
-  const { data: videos, mutate: mutateVideos, isLoading: videosLoading } = useSWR<HeroVideo[]>(
+  const { data: videos = [], mutate: mutateVideos, isLoading: videosLoading } = useSWR<HeroVideo[]>(
     '/api/hero-videos',
   );
   const { data: settings, mutate: mutateSettings } = useSWR<Record<string, string>>(
@@ -243,7 +243,7 @@ export default function HeroVideosPage() {
       {/* Video list */}
       {videosLoading ? (
         <TableSkeleton rows={3} showHeader={false} />
-      ) : !videos || videos.length === 0 ? (
+      ) : videos.length === 0 ? (
         <div className="text-center py-12 bg-zinc-900/40 rounded-lg border border-zinc-800">
           <p className="text-sm text-zinc-100 font-medium">Henüz video eklenmedi</p>
           <p className="text-xs text-zinc-500 mt-1">Yukarıdan .mp4 URL&apos;si ekleyin</p>
