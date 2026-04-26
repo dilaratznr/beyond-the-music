@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import useSWR from 'swr';
 import { IconArticle, IconAlbum } from '@/components/admin/Icons';
 import { TableSkeleton } from '@/components/admin/Loading';
 
@@ -43,7 +44,6 @@ const TABS: { kind: Kind; label: string; Icon: typeof IconArticle }[] = [
  */
 export default function FeaturedPage() {
   const [tab, setTab] = useState<Kind>('article');
-  const [loading, setLoading] = useState(true);
   const [max, setMax] = useState(12);
   const [articleItems, setArticleItems] = useState<Item[]>([]);
   const [albumItems, setAlbumItems] = useState<Item[]>([]);
@@ -59,30 +59,22 @@ export default function FeaturedPage() {
   const setDirty = tab === 'article' ? setArticleDirty : setAlbumDirty;
 
   // Initial fetch — both kinds at once so switching tabs is instant.
+  const { data: featuredData, isLoading } = useSWR<{
+    max?: number;
+    articles: ArticleHit[];
+    albums: AlbumHit[];
+  }>('/api/admin/featured');
+
   useEffect(() => {
-    let cancelled = false;
-    fetch('/api/admin/featured')
-      .then((r) => r.json())
-      .then((d) => {
-        if (cancelled) return;
-        setMax(d.max ?? 12);
-        setArticleItems(
-          (d.articles as ArticleHit[]).map((a) => ({ kind: 'article' as const, ...a })),
-        );
-        setAlbumItems(
-          (d.albums as AlbumHit[]).map((a) => ({ kind: 'album' as const, ...a })),
-        );
-        setLoading(false);
-      })
-      .catch(() => {
-        if (cancelled) return;
-        setError('Liste yüklenemedi');
-        setLoading(false);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+    if (!featuredData) return;
+    setMax(featuredData.max ?? 12);
+    setArticleItems(
+      (featuredData.articles as ArticleHit[]).map((a) => ({ kind: 'article' as const, ...a })),
+    );
+    setAlbumItems(
+      (featuredData.albums as AlbumHit[]).map((a) => ({ kind: 'album' as const, ...a })),
+    );
+  }, [featuredData]);
 
   // Warn before navigating away with unsaved changes.
   useEffect(() => {
@@ -219,7 +211,7 @@ export default function FeaturedPage() {
         })}
       </div>
 
-      {loading ? (
+      {isLoading ? (
         <TableSkeleton rows={6} />
       ) : (
         <div className="grid lg:grid-cols-5 gap-4">

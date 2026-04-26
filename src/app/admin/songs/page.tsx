@@ -1,7 +1,8 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import Link from 'next/link';
+import useSWR from 'swr';
 import Pagination from '@/components/admin/Pagination';
 import DeleteButton from '@/components/admin/DeleteButton';
 import { IconExternal } from '@/components/admin/Icons';
@@ -34,60 +35,43 @@ interface AlbumOption {
 const PER_PAGE = 20;
 
 export default function SongsPage() {
-  const [songs, setSongs] = useState<Song[]>([]);
-  const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
-  const [loading, setLoading] = useState(true);
-  const [reloadToken, setReloadToken] = useState(0);
   const [albumId, setAlbumId] = useState('');
   const [deepCutOnly, setDeepCutOnly] = useState(false);
-  const [albums, setAlbums] = useState<AlbumOption[]>([]);
 
-  useEffect(() => {
-    fetch('/api/albums?page=1&limit=500')
-      .then((r) => r.json())
-      .then((d) => {
-        const list = Array.isArray(d) ? d : d.items || [];
-        setAlbums(list);
-      });
-  }, []);
+  const { data: albumsResponse } = useSWR<
+    { items?: AlbumOption[]; total?: number } | AlbumOption[]
+  >('/api/albums?page=1&limit=500');
+  const albums: AlbumOption[] = Array.isArray(albumsResponse)
+    ? albumsResponse
+    : albumsResponse?.items ?? [];
 
-  useEffect(() => {
-    let cancelled = false;
-    const params = new URLSearchParams({ page: String(page), limit: String(PER_PAGE) });
-    if (albumId) params.set('albumId', albumId);
-    if (deepCutOnly) params.set('isDeepCut', 'true');
-    fetch(`/api/songs?${params}`)
-      .then((r) => r.json())
-      .then((d) => {
-        if (cancelled) return;
-        setSongs(d.items || []);
-        setTotal(d.total || 0);
-        setLoading(false);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [page, albumId, deepCutOnly, reloadToken]);
+  const params = new URLSearchParams({ page: String(page), limit: String(PER_PAGE) });
+  if (albumId) params.set('albumId', albumId);
+  if (deepCutOnly) params.set('isDeepCut', 'true');
+  const queryString = params.toString();
+
+  const { data: response, mutate, isLoading } = useSWR<{ items: Song[]; total: number }>(
+    `/api/songs?${queryString}`,
+  );
+  const songs = response?.items ?? [];
+  const total = response?.total ?? 0;
 
   const reload = useCallback(() => {
-    setLoading(true);
-    setReloadToken((t) => t + 1);
-  }, []);
+    mutate();
+  }, [mutate]);
 
   const goToPage = useCallback((p: number) => {
-    setLoading(true);
     setPage(p);
   }, []);
 
+  // Filter değişince page'i 1'e çek; SWR key değiştiği için fetch otomatik tetiklenir.
   const applyAlbum = useCallback((v: string) => {
-    setLoading(true);
     setAlbumId(v);
     setPage(1);
   }, []);
 
   const toggleDeepCut = useCallback(() => {
-    setLoading(true);
     setDeepCutOnly((v) => !v);
     setPage(1);
   }, []);
@@ -195,7 +179,7 @@ export default function SongsPage() {
         onCleared={onBulkCleared}
       />
 
-      {loading ? (
+      {isLoading ? (
         <div className="bg-zinc-900/40 rounded-lg border border-zinc-800 overflow-hidden">
           {Array.from({ length: PER_PAGE }).map((_, i) => (
             <div

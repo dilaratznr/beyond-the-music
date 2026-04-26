@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
+import useSWR from 'swr';
 import { useToast } from '@/components/admin/Toast';
 import { PERMISSION_SECTIONS, ROLE_INFO } from '@/lib/user-admin-constants';
 import { InlineLoading, TableSkeleton } from '@/components/admin/Loading';
@@ -58,51 +59,37 @@ function formatDate(iso: string): string {
 export default function UsersPage() {
   const router = useRouter();
   const { data: session, status } = useSession();
-  const [users, setUsers] = useState<User[]>([]);
-  const [loading, setLoading] = useState(true);
   const [expandedUser, setExpandedUser] = useState<string | null>(null);
   const [search, setSearch] = useState('');
   const [roleFilter, setRoleFilter] = useState<RoleFilter>('all');
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
-  // useSession() bazen stale data döndürür (ör. tarayıcı tab cache). `me`
-  // /api/users/me'den taze fetch'lenir → "Siz" badge ve self-action
-  // korumaları her zaman gerçek aktif kullanıcıya bağlı.
-  const [me, setMe] = useState<{ id: string; role: string } | null>(null);
   const { toast } = useToast();
   const { confirm, dialog: confirmDialog } = useConfirm();
 
-  // Session'dan başlangıç değeri (page yüklenirken loading skeleton'a düşmesin),
-  // me yüklenince override edilir.
+  // /api/users/me — taze user bilgisi (session bazen stale döner). SWR
+  // sayesinde aynı endpoint'i kullanan diğer component'lerle (ör. Sidebar)
+  // dedupe oluyor, gereksiz network çağrısı yok.
+  const { data: me } = useSWR<{ id: string; role: string }>('/api/users/me');
+
+  // Session başlangıç değeri (sayfa ilk yüklenirken), me gelince override
   const sessionUserId = (session?.user as { id?: string } | undefined)?.id;
   const sessionRole = (session?.user as { role?: string } | undefined)?.role;
   const isSuperAdmin = (me?.role ?? sessionRole) === 'SUPER_ADMIN';
   const currentUserId = me?.id ?? sessionUserId;
 
+  // Users list — sadece super admin'se fetch et. SWR conditional fetching:
+  // key null ise istek atılmaz.
+  const {
+    data: users = [],
+    mutate: mutateUsers,
+    isLoading,
+  } = useSWR<User[]>(isSuperAdmin ? '/api/users' : null);
+
   useEffect(() => {
     if (status === 'loading') return;
-    // Session henüz oturmadıysa me'yi bekle
     if (!sessionRole && !me) return;
     if (!isSuperAdmin) router.replace('/admin/dashboard');
   }, [status, isSuperAdmin, sessionRole, me, router]);
-
-  useEffect(() => {
-    fetch('/api/users/me')
-      .then((r) => (r.ok ? r.json() : null))
-      .then((data) => {
-        if (data?.id) setMe({ id: data.id, role: data.role });
-      })
-      .catch(() => {});
-  }, []);
-
-  useEffect(() => {
-    if (!isSuperAdmin) return;
-    fetch('/api/users')
-      .then((r) => r.json())
-      .then((data) => {
-        if (Array.isArray(data)) setUsers(data);
-        setLoading(false);
-      });
-  }, [isSuperAdmin]);
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -138,16 +125,22 @@ export default function UsersPage() {
       return;
     }
     const next = !user.isActive;
+    // Optimistic update — anında UI güncelle, başarısızsa SWR otomatik
+    // re-fetch'le geri alır.
+    mutateUsers(
+      (prev) => prev?.map((u) => (u.id === user.id ? { ...u, isActive: next } : u)),
+      false,
+    );
     const res = await fetch(`/api/users/${user.id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ isActive: next }),
     });
     if (res.ok) {
-      setUsers((prev) => prev.map((u) => (u.id === user.id ? { ...u, isActive: next } : u)));
       toast(next ? 'Kullanıcı aktif edildi' : 'Kullanıcı pasife alındı');
     } else {
       toast('İşlem başarısız', 'error');
+      mutateUsers(); // gerçek state'i geri al
     }
   }
 
@@ -164,7 +157,8 @@ export default function UsersPage() {
     if (!ok) return;
     const res = await fetch(`/api/users/${user.id}`, { method: 'DELETE' });
     if (res.ok) {
-      setUsers((prev) => prev.filter((u) => u.id !== user.id));
+      // Optimistic delete: filter'lı array'i hemen göster, arka planda revalidate
+      mutateUsers((prev) => prev?.filter((u) => u.id !== user.id));
       toast('Kullanıcı silindi');
     } else {
       toast('Silme başarısız', 'error');
@@ -280,7 +274,7 @@ export default function UsersPage() {
       </div>
 
       {/* List */}
-      {loading ? (
+      {isLoading ? (
         <TableSkeleton rows={4} showHeader={false} />
       ) : filtered.length === 0 ? (
         <div className="bg-zinc-900/40 border border-zinc-800 rounded-lg py-16 text-center">

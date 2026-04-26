@@ -1,7 +1,8 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useState } from 'react';
 import Link from 'next/link';
+import useSWR from 'swr';
 import Pagination from '@/components/admin/Pagination';
 import DeleteButton from '@/components/admin/DeleteButton';
 import { IconExternal } from '@/components/admin/Icons';
@@ -35,34 +36,21 @@ const TYPE_PILL_CLASSNAME =
   'inline-flex items-center px-2 py-0.5 rounded-full border border-zinc-700 bg-zinc-900/40 text-[10px] uppercase tracking-[0.15em] font-medium text-zinc-400';
 
 export default function ListeningPathsPage() {
-  const [paths, setPaths] = useState<LP[]>([]);
-  const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
-  const [loading, setLoading] = useState(true);
-  const [reloadToken, setReloadToken] = useState(0);
 
-  useEffect(() => {
-    let cancelled = false;
-    fetch(`/api/listening-paths?page=${page}&limit=${PER_PAGE}`)
-      .then((r) => r.json())
-      .then((d) => {
-        if (cancelled) return;
-        setPaths(d.items || []);
-        setTotal(d.total || 0);
-        setLoading(false);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [page, reloadToken]);
+  const { data: response, mutate, isLoading } = useSWR<{ items: LP[]; total: number }>(
+    `/api/listening-paths?page=${page}&limit=${PER_PAGE}`,
+  );
+  // total ve paths SWR cache'inden derive — state'te tutmaya gerek yok
+  // (önceki sürümde setTotal render sırasında çağrılıp sonsuz loop yapıyordu).
+  const paths = response?.items ?? [];
+  const total = response?.total ?? 0;
 
   const reload = useCallback(() => {
-    setLoading(true);
-    setReloadToken((t) => t + 1);
-  }, []);
+    mutate();
+  }, [mutate]);
 
   const goToPage = useCallback((p: number) => {
-    setLoading(true);
     setPage(p);
   }, []);
 
@@ -80,7 +68,7 @@ export default function ListeningPathsPage() {
           + Yeni Rota
         </Link>
       </div>
-      {loading ? (
+      {isLoading ? (
         <TableSkeleton rows={PER_PAGE} />
       ) : (
         <>

@@ -1,6 +1,7 @@
 import SessionProvider from '@/components/admin/SessionProvider';
 import AdminShell from '@/components/admin/AdminShell';
 import AdminAuthGate from '@/components/admin/AdminAuthGate';
+import SwrProvider from '@/components/admin/SwrProvider';
 import { ToastProvider } from '@/components/admin/Toast';
 
 // Search engine'ler admin paneli index'lemesin — link paylaşıldığında
@@ -17,11 +18,13 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   // protected olanlar için session yoksa /admin/login'e redirect.
   return (
     <SessionProvider>
-      <ToastProvider>
-        <AdminAuthGate>
-          <AdminShell>{children}</AdminShell>
-        </AdminAuthGate>
-      </ToastProvider>
+      <SwrProvider>
+        <ToastProvider>
+          <AdminAuthGate>
+            <AdminShell>{children}</AdminShell>
+          </AdminAuthGate>
+        </ToastProvider>
+      </SwrProvider>
     </SessionProvider>
   );
 }

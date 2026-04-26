@@ -1,7 +1,8 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
+import useSWR from 'swr';
 import DeleteButton from '@/components/admin/DeleteButton';
 import { IconChevronDown, IconExternal, IconPlus } from '@/components/admin/Icons';
 import { Skeleton } from '@/components/admin/Loading';
@@ -21,10 +22,6 @@ interface Genre {
 }
 
 export default function GenresPage() {
-  const [genres, setGenres] = useState<Genre[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [reloadToken, setReloadToken] = useState(0);
   const [query, setQuery] = useState('');
   const [expanded, setExpanded] = useState<string | null>(null);
   const searchRef = useRef<HTMLInputElement>(null);
@@ -32,33 +29,11 @@ export default function GenresPage() {
 
   useSearchShortcut(searchRef, { onClear: () => setQuery('') });
 
-  useEffect(() => {
-    let cancelled = false;
-    fetch('/api/genres?all=true')
-      .then((r) => {
-        if (!r.ok) throw new Error(`HTTP ${r.status}`);
-        return r.json();
-      })
-      .then((d) => {
-        if (cancelled) return;
-        setGenres(Array.isArray(d) ? d : d.items || []);
-        setLoading(false);
-      })
-      .catch((err) => {
-        if (cancelled) return;
-        setError(err instanceof Error ? err.message : 'Yükleme başarısız');
-        setLoading(false);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [reloadToken]);
+  const { data: genres = [], mutate, isLoading, error } = useSWR<Genre[]>('/api/genres?all=true');
 
   const reload = useCallback(() => {
-    setLoading(true);
-    setError(null);
-    setReloadToken((t) => t + 1);
-  }, []);
+    mutate();
+  }, [mutate]);
 
   const toggleExpand = useCallback((id: string) => {
     setExpanded((prev) => (prev === id ? null : id));
@@ -142,11 +117,11 @@ export default function GenresPage() {
         </div>
       </div>
 
-      {loading ? (
+      {isLoading ? (
         <GridSkeleton />
       ) : error ? (
         <div className="bg-red-500/5 rounded-lg border border-red-500/20 p-10 text-center">
-          <p className="text-xs text-red-300 mb-2">Veriler yüklenemedi: {error}</p>
+          <p className="text-xs text-red-300 mb-2">Veriler yüklenemedi: {error.message}</p>
           <button
             type="button"
             onClick={reload}

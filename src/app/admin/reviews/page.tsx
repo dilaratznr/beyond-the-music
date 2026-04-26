@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useSession } from 'next-auth/react';
+import useSWR from 'swr';
 import { useToast } from '@/components/admin/Toast';
 import Pagination from '@/components/admin/Pagination';
 
@@ -50,49 +51,33 @@ export default function ReviewsPage() {
   const isSuperAdmin = session?.user?.role === 'SUPER_ADMIN';
   const { toast } = useToast();
 
-  const [reviews, setReviews] = useState<Review[]>([]);
-  const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
-  const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<ReviewStatus>('PENDING');
-  const [reloadToken, setReloadToken] = useState(0);
   const [rejectingId, setRejectingId] = useState<string | null>(null);
   const [rejectNote, setRejectNote] = useState('');
   const [busyId, setBusyId] = useState<string | null>(null);
 
-  useEffect(() => {
-    let cancelled = false;
-    setLoading(true);
-    fetch(`/api/admin/reviews?status=${filter}&page=${page}&limit=${PER_PAGE}`)
-      .then((r) => r.json())
-      .then((data) => {
-        if (cancelled) return;
-        // API artık { items, total, page, totalPages } döndürüyor.
-        // Eski array response fallback'i de destekliyoruz (deploy anında
-        // race olursa sayfa kırılmasın).
-        if (Array.isArray(data)) {
-          setReviews(data);
-          setTotal(data.length);
-        } else {
-          setReviews(Array.isArray(data?.items) ? data.items : []);
-          setTotal(typeof data?.total === 'number' ? data.total : 0);
-        }
-        setLoading(false);
-      })
-      .catch(() => {
-        if (!cancelled) setLoading(false);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [filter, page, reloadToken]);
+  const { data: response, mutate, isLoading } = useSWR<{
+    items?: Review[];
+    total?: number;
+  } | Review[]>(
+    `/api/admin/reviews?status=${filter}&page=${page}&limit=${PER_PAGE}`,
+  );
+
+  // Eski (array) ve yeni (paginated) response format'ını ikisi de destekle.
+  // total ve reviews doğrudan response'tan derive ediliyor — render-time
+  // setState yok.
+  const reviews: Review[] = Array.isArray(response)
+    ? response
+    : response?.items ?? [];
+  const total = Array.isArray(response) ? response.length : response?.total ?? 0;
 
   // Filtre değişince sayfayı 1'e döndür — aksi halde boş sayfada kalabilirsin.
   useEffect(() => {
     setPage(1);
   }, [filter]);
 
-  const refresh = useCallback(() => setReloadToken((t) => t + 1), []);
+  const refresh = useCallback(() => mutate(), [mutate]);
 
   // Sidebar badge'inin güncel sayıyı hemen yakalaması için — sayfa
   // içindeki refresh zaten liste'yi tazeliyor, ama sidebar ayrı bir
@@ -183,7 +168,7 @@ export default function ReviewsPage() {
         ))}
       </div>
 
-      {loading ? (
+      {isLoading ? (
         <div className="space-y-3">
           {[0, 1, 2].map((i) => (
             <div key={i} className="h-20 bg-zinc-900/40 rounded-lg border border-zinc-800 animate-pulse" />

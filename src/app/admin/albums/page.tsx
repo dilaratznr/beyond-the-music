@@ -1,7 +1,8 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import Link from 'next/link';
+import useSWR from 'swr';
 import Pagination from '@/components/admin/Pagination';
 import DeleteButton from '@/components/admin/DeleteButton';
 import BulkActionBar, { BulkCheckbox } from '@/components/admin/BulkActionBar';
@@ -12,34 +13,19 @@ interface Album { id: string; title: string; slug: string; coverImage: string | 
 const PER_PAGE = 15;
 
 export default function AlbumsPage() {
-  const [albums, setAlbums] = useState<Album[]>([]);
-  const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
-  const [loading, setLoading] = useState(true);
-  const [reloadToken, setReloadToken] = useState(0);
 
-  useEffect(() => {
-    let cancelled = false;
-    fetch(`/api/albums?page=${page}&limit=${PER_PAGE}`)
-      .then((r) => r.json())
-      .then((d) => {
-        if (cancelled) return;
-        setAlbums(d.items || []);
-        setTotal(d.total || 0);
-        setLoading(false);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [page, reloadToken]);
+  const { data: response, mutate, isLoading } = useSWR<{ items: Album[]; total: number }>(
+    `/api/albums?page=${page}&limit=${PER_PAGE}`,
+  );
+  const albums = response?.items ?? [];
+  const total = response?.total ?? 0;
 
   const reload = useCallback(() => {
-    setLoading(true);
-    setReloadToken((t) => t + 1);
-  }, []);
+    mutate();
+  }, [mutate]);
 
   const goToPage = useCallback((p: number) => {
-    setLoading(true);
     setPage(p);
   }, []);
 
@@ -121,7 +107,7 @@ export default function AlbumsPage() {
         onCleared={onBulkCleared}
       />
 
-      {loading ? (
+      {isLoading ? (
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
           {Array.from({ length: PER_PAGE }).map((_, i) => (
             <div

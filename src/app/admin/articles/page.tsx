@@ -1,8 +1,9 @@
 'use client';
 
-import { Suspense, useCallback, useEffect, useMemo, useState } from 'react';
+import { Suspense, useCallback, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
+import useSWR from 'swr';
 import Pagination from '@/components/admin/Pagination';
 import DeleteButton from '@/components/admin/DeleteButton';
 import { getArticleCategory } from '@/lib/article-categories';
@@ -71,44 +72,30 @@ function ArticlesPageInner() {
     const raw = searchParams?.get('status') ?? '';
     return ALLOWED_FILTERS.has(raw) ? raw : '';
   })();
-  const [articles, setArticles] = useState<Article[]>([]);
-  const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
-  const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState(initialFilter);
-  const [reloadToken, setReloadToken] = useState(0);
   const [bulkBusy, setBulkBusy] = useState(false);
   const [bulkErr, setBulkErr] = useState<string | null>(null);
 
-  useEffect(() => {
-    let cancelled = false;
-    const params = new URLSearchParams({ page: String(page), limit: String(PER_PAGE) });
-    if (filter) params.set('status', filter);
-    fetch(`/api/articles?${params}`)
-      .then((r) => r.json())
-      .then((d) => {
-        if (cancelled) return;
-        setArticles(d.items || []);
-        setTotal(d.total || 0);
-        setLoading(false);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [page, filter, reloadToken]);
+  const queryParams = new URLSearchParams({ page: String(page), limit: String(PER_PAGE) });
+  if (filter) queryParams.set('status', filter);
+  const queryString = queryParams.toString();
+
+  const { data: response, mutate, isLoading } = useSWR<{ items: Article[]; total: number }>(
+    `/api/articles?${queryString}`,
+  );
+  const articles = response?.items ?? [];
+  const total = response?.total ?? 0;
 
   const reload = useCallback(() => {
-    setLoading(true);
-    setReloadToken((t) => t + 1);
-  }, []);
+    mutate();
+  }, [mutate]);
 
   const goToPage = useCallback((p: number) => {
-    setLoading(true);
     setPage(p);
   }, []);
 
   const applyFilter = useCallback((v: string) => {
-    setLoading(true);
     setFilter(v);
     setPage(1);
   }, []);
@@ -230,7 +217,7 @@ function ArticlesPageInner() {
         </div>
       )}
 
-      {loading ? (
+      {isLoading ? (
         <TableSkeleton rows={PER_PAGE} />
       ) : (
         <>

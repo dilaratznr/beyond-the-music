@@ -1,7 +1,8 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useState } from 'react';
 import Link from 'next/link';
+import useSWR from 'swr';
 import Pagination from '@/components/admin/Pagination';
 import DeleteButton from '@/components/admin/DeleteButton';
 import { IconExternal } from '@/components/admin/Icons';
@@ -32,34 +33,19 @@ const TYPE_PILL_CLASSNAME =
   'absolute top-2 left-2 px-2 py-0.5 backdrop-blur-md bg-black/50 text-[10px] uppercase tracking-[0.15em] font-medium rounded-full ring-1 ring-inset ring-white/15 text-white/80';
 
 export default function ArtistsPage() {
-  const [artists, setArtists] = useState<Artist[]>([]);
-  const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
-  const [loading, setLoading] = useState(true);
-  const [reloadToken, setReloadToken] = useState(0);
 
-  useEffect(() => {
-    let cancelled = false;
-    fetch(`/api/artists?page=${page}&limit=${PER_PAGE}`)
-      .then((r) => r.json())
-      .then((d) => {
-        if (cancelled) return;
-        setArtists(d.items || []);
-        setTotal(d.total || 0);
-        setLoading(false);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [page, reloadToken]);
+  const { data: response, mutate, isLoading } = useSWR<{ items: Artist[]; total: number }>(
+    `/api/artists?page=${page}&limit=${PER_PAGE}`,
+  );
+  const artists = response?.items ?? [];
+  const total = response?.total ?? 0;
 
   const reload = useCallback(() => {
-    setLoading(true);
-    setReloadToken((t) => t + 1);
-  }, []);
+    mutate();
+  }, [mutate]);
 
   const goToPage = useCallback((p: number) => {
-    setLoading(true);
     setPage(p);
   }, []);
 
@@ -80,7 +66,7 @@ export default function ArtistsPage() {
         </Link>
       </div>
 
-      {loading ? (
+      {isLoading ? (
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
           {Array.from({ length: PER_PAGE }).map((_, i) => (
             <div

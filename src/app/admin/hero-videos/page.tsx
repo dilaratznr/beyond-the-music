@@ -1,6 +1,7 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useState } from 'react';
+import useSWR from 'swr';
 import { useToast } from '@/components/admin/Toast';
 import ImageUploader from '@/components/admin/ImageUploader';
 import { TableSkeleton } from '@/components/admin/Loading';
@@ -19,37 +20,31 @@ const inputCls =
   'w-full px-3 py-2 text-sm text-zinc-100 bg-zinc-950 border border-zinc-800 rounded-md outline-none transition-colors hover:border-zinc-700 focus:border-zinc-500 focus:ring-2 focus:ring-zinc-500/20 placeholder:text-zinc-600';
 
 export default function HeroVideosPage() {
-  const [videos, setVideos] = useState<HeroVideo[]>([]);
-  const [loading, setLoading] = useState(true);
   const [newUrl, setNewUrl] = useState('');
   const [newDuration, setNewDuration] = useState(10);
   const [newTitle, setNewTitle] = useState('');
   const [adding, setAdding] = useState(false);
-  const [reloadToken, setReloadToken] = useState(0);
-  const [posterUrl, setPosterUrl] = useState('');
+  // posterUrl: kullanıcı input'a yazarken local state, save sonrası
+  // settings'ten gelen değer ile sync olur (savePoster içinde mutate).
+  const [posterUrl, setPosterUrl] = useState<string | null>(null);
   const [posterSaving, setPosterSaving] = useState(false);
   const { toast } = useToast();
   const { confirm, dialog: confirmDialog } = useConfirm();
 
-  useEffect(() => {
-    let cancelled = false;
-    Promise.all([
-      fetch('/api/hero-videos').then((r) => r.json()),
-      fetch('/api/settings').then((r) => r.json()),
-    ]).then(([videosData, settings]) => {
-      if (cancelled) return;
-      if (Array.isArray(videosData)) setVideos(videosData);
-      setPosterUrl(settings?.hero_poster_url || '');
-      setLoading(false);
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, [reloadToken]);
+  const { data: videos, mutate: mutateVideos, isLoading: videosLoading } = useSWR<HeroVideo[]>(
+    '/api/hero-videos',
+  );
+  const { data: settings, mutate: mutateSettings } = useSWR<Record<string, string>>(
+    '/api/settings',
+  );
+
+  // posterUrl null ise henüz kullanıcı düzenlemedi, settings'ten derive et.
+  // Düzenlediği anda setPosterUrl ile state'e geçiriyoruz (controlled input).
+  const effectivePosterUrl = posterUrl ?? settings?.hero_poster_url ?? '';
 
   const loadVideos = useCallback(() => {
-    setReloadToken((t) => t + 1);
-  }, []);
+    mutateVideos();
+  }, [mutateVideos]);
 
   async function savePoster(url: string) {
     setPosterSaving(true);
@@ -60,7 +55,9 @@ export default function HeroVideosPage() {
     });
     setPosterSaving(false);
     if (res.ok) {
-      setPosterUrl(url);
+      // Local edit state'i temizle, SWR cache'inden derive olsun.
+      setPosterUrl(null);
+      mutateSettings();
       toast(url ? 'Arka plan görseli güncellendi' : 'Arka plan görseli kaldırıldı');
     } else {
       toast('Kaydetme hatası', 'error');
@@ -166,12 +163,12 @@ export default function HeroVideosPage() {
             <span className="text-[10px] text-zinc-500 italic">Kaydediliyor…</span>
           )}
         </div>
-        {loading ? (
+        {!settings ? (
           <div className="h-32 bg-zinc-800/40 rounded-lg animate-pulse" />
         ) : (
           <div className="max-w-sm">
             <ImageUploader
-              value={posterUrl}
+              value={effectivePosterUrl}
               onChange={(url) => savePoster(url || '')}
               category="hero"
               aspect="wide"
@@ -244,9 +241,9 @@ export default function HeroVideosPage() {
       </div>
 
       {/* Video list */}
-      {loading ? (
+      {videosLoading ? (
         <TableSkeleton rows={3} showHeader={false} />
-      ) : videos.length === 0 ? (
+      ) : !videos || videos.length === 0 ? (
         <div className="text-center py-12 bg-zinc-900/40 rounded-lg border border-zinc-800">
           <p className="text-sm text-zinc-100 font-medium">Henüz video eklenmedi</p>
           <p className="text-xs text-zinc-500 mt-1">Yukarıdan .mp4 URL&apos;si ekleyin</p>

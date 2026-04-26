@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useState, ComponentType } from 'react';
 import { signOut, useSession } from 'next-auth/react';
+import useSWR from 'swr';
 import { cn } from '@/lib/utils';
 import {
   IconDashboard,
@@ -122,66 +123,39 @@ function NavLink({
 export default function Sidebar() {
   const pathname = usePathname();
   const { data: session } = useSession();
-  const [perms, setPerms] = useState<UserPerms | null>(null);
   const [collapsed, setCollapsed] = useState(false);
-  const [pendingReviews, setPendingReviews] = useState(0);
 
-  useEffect(() => {
-    fetch('/api/users/me')
-      .then((r) => r.json())
-      .then((d) => {
-        if (d.sections) setPerms(d);
-      });
-  }, []);
+  // SWR ile /api/users/me — UsersPage ve diğer admin sayfalarıyla dedupe
+  // edilir. Tab focus'ta otomatik revalidate, navigasyon arası anında render.
+  const { data: perms } = useSWR<UserPerms>('/api/users/me');
 
-  // Super Admin için bekleyen onay sayısı. Üç tetikleyici:
-  //   1. Mount + her 60 saniyede bir otomatik refresh
-  //   2. Pathname değiştikçe (sayfaya girerken güncel gelsin)
-  //   3. Custom `btm:reviews-changed` event'i — reviews page approve/reject
-  //      sonrası yayınlıyor, badge aynı sayfada kalan kullanıcı için de
-  //      anında güncellensin.
+  // Pending reviews count — Super Admin için badge.
   const isSuperAdminNow = perms?.isSuperAdmin || perms?.role === 'SUPER_ADMIN';
+  const {
+    data: reviewsCountData,
+    mutate: mutateReviewsCount,
+  } = useSWR<{ count: number }>(
+    isSuperAdminNow ? '/api/admin/reviews/count?status=PENDING' : null,
+    {
+      // Her 60sn'de bir auto-refresh — biri yeni review submit ederse görünür.
+      refreshInterval: 60_000,
+    },
+  );
+  const pendingReviews = reviewsCountData?.count ?? 0;
+
+  // Reviews page approve/reject sonrası yayınlanan custom event — count'u
+  // anında güncellemek için manuel mutate tetikler.
   useEffect(() => {
-    if (!isSuperAdminNow) return;
-    let cancelled = false;
-
-    async function fetchCount() {
-      try {
-        // Dedicated count endpoint — listeyi çekmeye gerek yok, 200'de
-        // cap'lenmiyor, sayısal sonuç.
-        const r = await fetch('/api/admin/reviews/count?status=PENDING');
-        if (!r.ok) return;
-        const data = await r.json();
-        if (cancelled) return;
-        setPendingReviews(typeof data?.count === 'number' ? data.count : 0);
-      } catch {
-        // Sessizce geç — ağ hatası / migration eksik. Badge 0 kalsın.
-      }
-    }
-
-    fetchCount();
-    const interval = setInterval(fetchCount, 60_000);
-    // Manuel refresh signal — reviews page onay/red sonrası yayınlar.
-    const onReviewChange = () => fetchCount();
+    const onReviewChange = () => mutateReviewsCount();
     window.addEventListener('btm:reviews-changed', onReviewChange);
+    return () => window.removeEventListener('btm:reviews-changed', onReviewChange);
+  }, [mutateReviewsCount]);
 
-    return () => {
-      cancelled = true;
-      clearInterval(interval);
-      window.removeEventListener('btm:reviews-changed', onReviewChange);
-    };
-  }, [isSuperAdminNow]);
-
-  // Reviews sayfasındayken her pathname değişiminde refresh (o sayfadan
-  // çıkınca veya dönünce count güncel gelsin)
+  // Reviews sayfasına girdiğinde count'u taze çek.
   useEffect(() => {
     if (!isSuperAdminNow) return;
-    if (!pathname.startsWith('/admin/reviews')) return;
-    fetch('/api/admin/reviews/count?status=PENDING')
-      .then((r) => r.json())
-      .then((data) => setPendingReviews(typeof data?.count === 'number' ? data.count : 0))
-      .catch(() => {});
-  }, [pathname, isSuperAdminNow]);
+    if (pathname.startsWith('/admin/reviews')) mutateReviewsCount();
+  }, [pathname, isSuperAdminNow, mutateReviewsCount]);
 
   // Keyboard shortcut: ⌘\ (macOS) / Ctrl+\ (Linux/Win) toggles the sidebar —
   // skipped when focus is inside a text input so typing a backslash still works.

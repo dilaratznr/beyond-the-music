@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useSession } from 'next-auth/react';
+import useSWR from 'swr';
 import { useToast } from '@/components/admin/Toast';
 import ImageUploader from '@/components/admin/ImageUploader';
 import {
@@ -42,33 +43,19 @@ export default function SettingsPage() {
   const { toast } = useToast();
 
   const [settings, setSettings] = useState<Settings>({});
-  const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [dirty, setDirty] = useState(false);
-  const [reloadToken, setReloadToken] = useState(0);
   const [lang, setLang] = useState<Lang>('tr');
 
+  const { data: settingsData = {}, mutate, isLoading, error: fetchError } = useSWR<Settings>(
+    '/api/settings'
+  );
+
   useEffect(() => {
-    let cancelled = false;
-    fetch('/api/settings')
-      .then((r) => r.json())
-      .then((data: Settings) => {
-        if (cancelled) return;
-        setSettings(data || {});
-        setLoading(false);
-        setDirty(false);
-      })
-      .catch(() => {
-        if (!cancelled) {
-          setLoading(false);
-          setError('Ayarlar yüklenemedi');
-        }
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [reloadToken]);
+    setSettings(settingsData || {});
+    setDirty(false);
+  }, [settingsData]);
 
   const update = useCallback((key: string, value: string) => {
     setSettings((prev) => ({ ...prev, [key]: value }));
@@ -104,7 +91,7 @@ export default function SettingsPage() {
       } else {
         toast('Ayarlar kaydedildi');
         setDirty(false);
-        setReloadToken((t) => t + 1);
+        mutate();
       }
     } catch {
       setError('Kaydetme hatası');
@@ -114,7 +101,7 @@ export default function SettingsPage() {
     }
   }
 
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="max-w-4xl">
         <div className="mb-5">
