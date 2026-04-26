@@ -12,6 +12,12 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Prisma'nın `prisma generate`'le ürettiği client runtime — bizim
+    // yazdığımız kod değil, lint'te görünmesi gereksiz gürültü.
+    "src/generated/**",
+    // Test çıktıları
+    "test-results/**",
+    "playwright-report/**",
   ]),
 ]);
 
