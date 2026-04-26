@@ -1,9 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { cookies } from 'next/headers';
+import { encode } from 'next-auth/jwt';
 import prisma from '@/lib/prisma';
 import { requireAuth } from '@/lib/auth-guard';
 import { verifyTotpCode, generateBackupCodes } from '@/lib/two-factor';
 import { audit, extractContext } from '@/lib/audit-log';
 import { rateLimit } from '@/lib/rate-limit';
+
+function getCookieName() {
+  const useSecure =
+    process.env.NEXTAUTH_URL?.startsWith('https://') ||
+    process.env.VERCEL === '1';
+  return useSecure
+    ? '__Secure-next-auth.session-token'
+    : 'next-auth.session-token';
+}
 
 /**
  * POST /api/admin/2fa/verify
@@ -94,6 +105,33 @@ export async function POST(request: NextRequest) {
     ip: ctx.ip,
     userAgent: ctx.userAgent,
   });
+
+  // Cookie'yi taze JWT ile değiştir — eski cookie `tfaPending: 'enroll'`
+  // claim'i taşıyor, middleware o yüzden kullanıcıyı sürekli setup
+  // sayfasına atıyor. Setup başarılı olduğuna göre artık tam yetkili
+  // session'a geçişi yapıyoruz: tfaPending yok, 24h geçerli.
+  const secret = process.env.NEXTAUTH_SECRET;
+  if (secret) {
+    const fullToken = await encode({
+      token: {
+        sub: userId,
+        id: userId,
+        email: (user as { email: string }).email,
+        name: (user as { name?: string }).name ?? undefined,
+        role: (user as { role: string }).role,
+      },
+      secret,
+      maxAge: 24 * 60 * 60,
+    });
+    const cookieName = getCookieName();
+    (await cookies()).set(cookieName, fullToken, {
+      httpOnly: true,
+      sameSite: 'lax',
+      path: '/',
+      secure: cookieName.startsWith('__Secure-'),
+      maxAge: 24 * 60 * 60,
+    });
+  }
 
   // Raw kodları DÖN — kullanıcı bir kerelik görecek, indirip saklayacak.
   // Bir daha asla bu API'den dönmüyor (DB'de hash'li).
