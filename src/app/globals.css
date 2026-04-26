@@ -375,3 +375,17 @@ html { scroll-behavior: smooth; }
    gecikme yaratıyordu. Prefetch + generateStaticParams ile static rotalar
    zaten anında açılıyor; ekstra fade'e gerek yok. Özel bir efekt istenirse
    rota bazlı `<Suspense>` fallback'leriyle yapılmalı. */
+
+/* Admin route transition progress bar — Next.js'in `loading.tsx`'i
+   route segment async iş yaparken bu animasyonu üstte gösterir.
+   Sayfa içeriği eski sayfanın yerinde kalır (Next.js davranışı), bu ince
+   bar sadece "yükleniyor" sinyali verir. */
+@keyframes route-progress {
+  0% { transform: translateX(-100%); }
+  50% { transform: translateX(0%); }
+  100% { transform: translateX(100%); }
+}
+
+.animate-route-progress {
+  animation: route-progress 1.4s ease-in-out infinite;
+}
