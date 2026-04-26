@@ -294,13 +294,14 @@ export default function EditUserPage() {
                   <>
                     <p className="flex items-center gap-2 text-sm text-zinc-200 font-medium mb-1">
                       <span
-                        className="w-1.5 h-1.5 rounded-full bg-amber-400 flex-shrink-0"
+                        className="w-1.5 h-1.5 rounded-full bg-zinc-400 flex-shrink-0"
                         aria-hidden="true"
                       />
-                      Email gönderilemedi — linki manuel ilet.
+                      Davet linki hazır — kullanıcıya manuel ilet.
                     </p>
                     <p className="text-[11px] text-zinc-500 mb-3">
-                      {resendResult.emailError || 'SMTP yapılandırılmamış.'}
+                      Aşağıdaki linki kopyala, kullanıcıya güvenli kanaldan
+                      (Signal / WhatsApp / Slack) gönder. Link 48 saat geçerli.
                     </p>
                   </>
                 )}

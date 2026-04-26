@@ -139,14 +139,14 @@ export default function NewUserPage() {
           <div className="p-4 bg-zinc-900/60 border border-zinc-800 rounded-lg mb-4 space-y-2">
             <p className="flex items-center gap-2 text-sm text-zinc-200 font-medium">
               <span
-                className="w-1.5 h-1.5 rounded-full bg-amber-400 flex-shrink-0"
+                className="w-1.5 h-1.5 rounded-full bg-zinc-400 flex-shrink-0"
                 aria-hidden="true"
               />
-              Email gönderilemedi — SMTP yapılandırılmamış.
+              Davet linki hazır — kullanıcıya manuel ilet.
             </p>
             <p className="text-xs text-zinc-500 leading-relaxed">
-              Aşağıdaki linki kopyalayıp kullanıcıya manuel ilet. Link 48 saat geçerli.
-              Prod&apos;da SMTP kurarsan bu adım otomatikleşir.
+              Aşağıdaki linki kopyala, kullanıcıya güvenli kanaldan (Signal /
+              WhatsApp / Slack) gönder. Link 48 saat geçerli.
             </p>
           </div>
         )}
