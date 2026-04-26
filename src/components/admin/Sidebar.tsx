@@ -255,7 +255,7 @@ export default function Sidebar() {
       {/* Quick actions: search trigger (⌘K) + new article. When the sidebar
           is collapsed the row shrinks to two icon-only buttons. */}
       {collapsed ? (
-        <div className="p-2 space-y-1.5">
+        <div className="p-2 space-y-2.5">
           <button
             type="button"
             onClick={() => window.dispatchEvent(new CustomEvent('btm:open-palette'))}
@@ -277,7 +277,7 @@ export default function Sidebar() {
           </Link>
         </div>
       ) : (
-        <div className="p-3 space-y-1.5">
+        <div className="p-3 space-y-2.5">
           <button
             type="button"
             onClick={() => window.dispatchEvent(new CustomEvent('btm:open-palette'))}

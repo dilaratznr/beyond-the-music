@@ -66,30 +66,82 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
   return NextResponse.json({ ...genre, requiresReview });
 }
 
-export async function DELETE(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { error } = await requireSectionAccess('GENRE', 'canDelete');
   if (error) return error;
 
   const { id } = await params;
+  const force = new URL(request.url).searchParams.get('force') === 'true';
 
-  // Prevent deletion if it has children or linked content
+  const genre = await prisma.genre.findUnique({
+    where: { id },
+    select: { id: true, nameTr: true },
+  });
+  if (!genre) {
+    return NextResponse.json({ error: 'Genre not found' }, { status: 404 });
+  }
+
+  // Bağlantı sayıları — hem 409 mesajı için, hem force temizlik öncesi
+  // kullanıcıya gösterilen "neyi etkileyecek" özeti için.
   const [childCount, articleCount, artistCount] = await Promise.all([
     prisma.genre.count({ where: { parentId: id } }),
     prisma.article.count({ where: { relatedGenreId: id } }),
     prisma.artistGenre.count({ where: { genreId: id } }),
   ]);
 
-  if (childCount + articleCount + artistCount > 0) {
+  const inUse = childCount + articleCount + artistCount > 0;
+
+  // İlk tıklamada force=false → 409 + typed-confirm modal'ı açılır.
+  // Kullanıcı tür adını yazıp "Yine de sil" derse force=true ile yeniden
+  // çağrılır ve aşağıdaki transaction temizleyip siler.
+  if (inUse && !force) {
+    const parts: string[] = [];
+    if (artistCount > 0) parts.push(`${artistCount} sanatçı`);
+    if (articleCount > 0) parts.push(`${articleCount} makale`);
+    if (childCount > 0) parts.push(`${childCount} alt tür`);
+
     return NextResponse.json(
       {
         error: 'Genre in use',
-        details: { children: childCount, articles: articleCount, artists: artistCount },
+        requiresConfirmation: true,
+        impact: {
+          artists: artistCount,
+          articles: articleCount,
+          children: childCount,
+        },
+        message:
+          `"${genre.nameTr}" türü ${parts.join(', ')} ile ilişkili. ` +
+          `Silmeye devam edersen: sanatçılar bu etiketi kaybeder (kendileri silinmez), ` +
+          `makalelerin tür bağlantısı temizlenir (makale kalır), alt türler bağımsız ` +
+          `(parent'sız) kalır.`,
       },
-      { status: 409 }
+      { status: 409 },
     );
   }
 
-  await prisma.genre.delete({ where: { id } });
+  // Force=true (veya zaten boş) → temizlik + silme tek transaction'da.
+  // Sıra önemli: artist/article/children FK'larını çöz, sonra genre'ı sil.
+  await prisma.$transaction([
+    // 1) Sanatçı-tür bağlantılarını sil (sanatçılar kalır)
+    prisma.artistGenre.deleteMany({ where: { genreId: id } }),
+    // 2) Makalelerin tür tag'ini temizle (makaleler kalır)
+    prisma.article.updateMany({
+      where: { relatedGenreId: id },
+      data: { relatedGenreId: null },
+    }),
+    // 3) Alt türleri parent'sız bırak (silmiyoruz — bağımsız tür olarak yaşar)
+    prisma.genre.updateMany({
+      where: { parentId: id },
+      data: { parentId: null },
+    }),
+    // 4) Genre'ı sil
+    prisma.genre.delete({ where: { id } }),
+  ]);
+
   revalidateTag(CACHE_TAGS.genre, 'max');
+  // Article relatedGenreId temizlendiği için makale cache'ini de yenile.
+  if (articleCount > 0) revalidateTag(CACHE_TAGS.article, 'max');
+  if (artistCount > 0) revalidateTag(CACHE_TAGS.artist, 'max');
+
   return NextResponse.json({ success: true });
 }

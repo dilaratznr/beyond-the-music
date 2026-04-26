@@ -304,6 +304,8 @@ function GenreCard({
             endpoint={`/api/genres/${main.id}`}
             confirmMessage={`"${main.nameTr}" türünü silmek istediğinizden emin misiniz?`}
             onDeleted={onDeleted}
+            entityName={main.nameTr}
+            entityKind="Tür"
           />
         </div>
       </div>
@@ -377,6 +379,8 @@ function SubRow({
           endpoint={`/api/genres/${sub.id}`}
           confirmMessage={`"${sub.nameTr}" türünü silmek istediğinizden emin misiniz?`}
           onDeleted={onDeleted}
+          entityName={sub.nameTr}
+          entityKind="Alt Tür"
         />
       </div>
     </div>

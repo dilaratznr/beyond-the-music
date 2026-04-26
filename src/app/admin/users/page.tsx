@@ -64,16 +64,35 @@ export default function UsersPage() {
   const [search, setSearch] = useState('');
   const [roleFilter, setRoleFilter] = useState<RoleFilter>('all');
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
+  // useSession() bazen stale data döndürür (ör. tarayıcı tab cache). `me`
+  // /api/users/me'den taze fetch'lenir → "Siz" badge ve self-action
+  // korumaları her zaman gerçek aktif kullanıcıya bağlı.
+  const [me, setMe] = useState<{ id: string; role: string } | null>(null);
   const { toast } = useToast();
   const { confirm, dialog: confirmDialog } = useConfirm();
 
-  const isSuperAdmin = session?.user?.role === 'SUPER_ADMIN';
-  const currentUserId = (session?.user as { id?: string } | undefined)?.id;
+  // Session'dan başlangıç değeri (page yüklenirken loading skeleton'a düşmesin),
+  // me yüklenince override edilir.
+  const sessionUserId = (session?.user as { id?: string } | undefined)?.id;
+  const sessionRole = (session?.user as { role?: string } | undefined)?.role;
+  const isSuperAdmin = (me?.role ?? sessionRole) === 'SUPER_ADMIN';
+  const currentUserId = me?.id ?? sessionUserId;
 
   useEffect(() => {
     if (status === 'loading') return;
+    // Session henüz oturmadıysa me'yi bekle
+    if (!sessionRole && !me) return;
     if (!isSuperAdmin) router.replace('/admin/dashboard');
-  }, [status, isSuperAdmin, router]);
+  }, [status, isSuperAdmin, sessionRole, me, router]);
+
+  useEffect(() => {
+    fetch('/api/users/me')
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (data?.id) setMe({ id: data.id, role: data.role });
+      })
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     if (!isSuperAdmin) return;
