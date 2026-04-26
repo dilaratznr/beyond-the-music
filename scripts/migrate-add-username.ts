@@ -44,6 +44,35 @@ function deriveUsername(email: string | null | undefined, userId: string): strin
 async function main() {
   console.log('→ Migration başlıyor: User.username ekleniyor\n');
 
+  // 0) Fresh DB toleransı: User tablosu yoksa hiç işlem yapma. Bu durumda
+  //    `prisma db push` baştan doğru schema'yı (username NOT NULL UNIQUE)
+  //    oluşturacak ve migration'a gerek kalmayacak.
+  const tableCheck = await prisma.$queryRawUnsafe<Array<{ exists: boolean }>>(
+    `SELECT EXISTS (
+       SELECT 1 FROM information_schema.tables
+       WHERE table_schema = 'public' AND table_name = 'User'
+     ) AS exists`,
+  );
+  if (!tableCheck[0]?.exists) {
+    console.log('  • User tablosu henüz yok — fresh DB, migration atlandı.');
+    console.log('  ✓ db:push schema\'yı oluşturacak.');
+    return;
+  }
+
+  // 0.1) Kolon zaten varsa (önceki migration başarılı tamamlandı) bir
+  //      şey yapma. Bu erken çıkış build'in her seferinde script'i
+  //      çalıştırmasını ucuz yapar.
+  const colCheck = await prisma.$queryRawUnsafe<Array<{ exists: boolean }>>(
+    `SELECT EXISTS (
+       SELECT 1 FROM information_schema.columns
+       WHERE table_schema = 'public' AND table_name = 'User' AND column_name = 'username'
+     ) AS exists`,
+  );
+  if (colCheck[0]?.exists) {
+    console.log('  ✓ User.username zaten mevcut — migration atlandı.\n');
+    return;
+  }
+
   // 1) Kolonu nullable olarak ekle (idempotent)
   await prisma.$executeRawUnsafe(
     `ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "username" TEXT`,
