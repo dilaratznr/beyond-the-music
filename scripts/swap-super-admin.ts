@@ -43,7 +43,11 @@ async function main() {
       `  • Silinecek:        ${OLD_ADMIN_EMAIL}\n`,
   );
 
-  if (NEW_SUPER_ADMIN_EMAIL === OLD_ADMIN_EMAIL) {
+  // Defensive: constants iki sabit string olduğu için TS bunları literal
+  // tip olarak görür ve comparison'ı "asla true olamaz" der. `as string`
+  // cast'iyle widen ediyoruz; ileride biri copy-paste'le aynı maile set
+  // ederse runtime check yine devreye girer.
+  if ((NEW_SUPER_ADMIN_EMAIL as string) === (OLD_ADMIN_EMAIL as string)) {
     throw new Error('Yeni ve silinecek email aynı olamaz.');
   }
 
