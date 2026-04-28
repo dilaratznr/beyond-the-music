@@ -20,12 +20,12 @@ import { notFound } from 'next/navigation';
 import { buildPageMetadata, stripHtml, SITE_URL } from '@/lib/seo';
 import { JsonLd } from '@/components/JsonLd';
 // Makale HTML'i tiptap WYSIWYG'den geliyor, DB'de ham HTML olarak
-// tutuluyor. Ziyaretçiye basmadan önce DOMPurify ile sanitize ediyoruz —
-// admin hesabı ele geçirilse bile yerleştirilen <script>/onerror tarzı
-// payload render edilmesin diye (savunma-derinliği). isomorphic-dompurify
-// hem server hem browser'da çalışır, tiptap'in ürettiği <p>/<h*>/<a>/<img>
-// gibi gerçek markup'ı korurken zararlıyı atar.
-import DOMPurify from 'isomorphic-dompurify';
+// tutuluyor. Ziyaretçiye basmadan önce sanitize ediyoruz — admin hesabı
+// ele geçirilse bile yerleştirilen <script>/onerror tarzı payload render
+// edilmesin diye (savunma-derinliği). `sanitizeArticleHtml` tiptap'in
+// ürettiği <p>/<h*>/<a>/<img>/<iframe>(allowlisted host) markup'ını
+// korurken zararlıyı atar. Pure JS — jsdom yok, serverless'te güvenli.
+import { sanitizeArticleHtml } from '@/lib/sanitize-html';
 
 type Params = Promise<{ locale: string; slug: string }>;
 
@@ -213,14 +213,11 @@ export default async function ArticleDetailPage({ params }: { params: Params }) 
           <article
             className="prose article-body max-w-none"
             dangerouslySetInnerHTML={{
-              __html: DOMPurify.sanitize(content, {
-                // tiptap'in bastığı etiket seti — img/iframe özellikle
-                // izin veriyor: makale içi embed'ler (YouTube, vs.)
-                // çalışsın diye. JavaScript event'leri ve <script>
-                // varsayılan olarak atılıyor.
-                ADD_TAGS: ['iframe'],
-                ADD_ATTR: ['allow', 'allowfullscreen', 'frameborder', 'target'],
-              }),
+              // tiptap'in bastığı etiket seti — iframe izin veriyor
+              // (YouTube/Spotify embed'leri için, sadece allowlisted
+              // hostname'ler). JavaScript event'leri, <script>, <style>
+              // ve diğer tehlikeli etiketler atılıyor.
+              __html: sanitizeArticleHtml(content),
             }}
           />
         </div>
