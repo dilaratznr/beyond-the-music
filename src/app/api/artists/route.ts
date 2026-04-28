@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { revalidateTag } from 'next/cache';
 import prisma from '@/lib/prisma';
-import { requireSectionAccess } from '@/lib/auth-guard';
+import { requireSectionAccess, isAdminRequest } from '@/lib/auth-guard';
 import { CACHE_TAGS } from '@/lib/db-cache';
 import { slugify } from '@/lib/utils';
 import { resolveCreateStatus, maybeCreateReviewOnCreate } from '@/lib/content-review';
@@ -17,8 +17,11 @@ export async function GET(request: NextRequest) {
   const type = searchParams.get('type');
   const all = searchParams.get('all') === 'true';
 
+  // Public ↔ admin shared endpoint. Anonymous → PUBLISHED only; admin → all.
+  const isAdmin = await isAdminRequest();
   const where: Record<string, unknown> = {};
   if (type) where.type = type;
+  if (!isAdmin) where.status = 'PUBLISHED';
 
   if (all) {
     const artists = await prisma.artist.findMany({

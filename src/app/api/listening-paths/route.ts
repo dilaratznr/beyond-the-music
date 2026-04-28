@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { revalidateTag } from 'next/cache';
 import prisma from '@/lib/prisma';
-import { requireSectionAccess } from '@/lib/auth-guard';
+import { requireSectionAccess, isAdminRequest } from '@/lib/auth-guard';
 import { CACHE_TAGS } from '@/lib/db-cache';
 import { slugify } from '@/lib/utils';
 import { resolveCreateStatus, maybeCreateReviewOnCreate } from '@/lib/content-review';
@@ -15,9 +15,13 @@ export async function GET(request: NextRequest) {
   const page = parseInt(searchParams.get('page') || '1');
   const limit = parseInt(searchParams.get('limit') || '20');
 
+  // Public ↔ admin shared. Anonymous never sees DRAFT/PENDING_REVIEW paths.
+  const isAdmin = await isAdminRequest();
+  const where = isAdmin ? {} : { status: 'PUBLISHED' as const };
+
   const [items, total] = await Promise.all([
-    prisma.listeningPath.findMany({ include: { _count: { select: { items: true } } }, orderBy: { createdAt: 'desc' }, skip: (page - 1) * limit, take: limit }),
-    prisma.listeningPath.count(),
+    prisma.listeningPath.findMany({ where, include: { _count: { select: { items: true } } }, orderBy: { createdAt: 'desc' }, skip: (page - 1) * limit, take: limit }),
+    prisma.listeningPath.count({ where }),
   ]);
 
   return NextResponse.json({ items, total, page, totalPages: Math.ceil(total / limit) });

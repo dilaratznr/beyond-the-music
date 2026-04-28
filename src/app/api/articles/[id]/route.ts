@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { revalidateTag } from 'next/cache';
 import prisma from '@/lib/prisma';
-import { requireSectionAccess } from '@/lib/auth-guard';
+import { requireSectionAccess, isAdminRequest } from '@/lib/auth-guard';
 import { CACHE_TAGS } from '@/lib/db-cache';
 import { slugify } from '@/lib/utils';
 import { parseScheduledFor } from '@/lib/datetime-local';
@@ -22,6 +22,14 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
   });
 
   if (!article) return NextResponse.json({ error: 'Article not found' }, { status: 404 });
+
+  // Public endpoint — anonymous visitors should only see PUBLISHED articles.
+  // Admin panel calls this same endpoint with auth cookies for the edit page,
+  // so authenticated EDITOR+ sees DRAFT/SCHEDULED/PENDING_REVIEW too.
+  // Without this guard, anyone with a guessable cuid could read drafts via API.
+  if (article.status !== 'PUBLISHED' && !(await isAdminRequest())) {
+    return NextResponse.json({ error: 'Article not found' }, { status: 404 });
+  }
 
   // Son reddedilen review — editör neden reddedildiğini görsün diye.
   // Yalnızca REJECTED durumundaki en son review'i çekiyoruz; onay

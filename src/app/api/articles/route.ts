@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { revalidateTag } from 'next/cache';
 import prisma from '@/lib/prisma';
-import { requireSectionAccess } from '@/lib/auth-guard';
+import { requireSectionAccess, isAdminRequest } from '@/lib/auth-guard';
 import { CACHE_TAGS } from '@/lib/db-cache';
 import { slugify } from '@/lib/utils';
 import { publishDueArticles } from '@/lib/article-publishing';
@@ -25,9 +25,19 @@ export async function GET(request: NextRequest) {
   const category = searchParams.get('category');
   const status = searchParams.get('status');
 
+  // Public API shared between public site (anonymous) and admin panel.
+  // Anonymous → force PUBLISHED only; admin → respect optional ?status filter.
+  // Auth check via session cookie; tfaPending session counted as anonymous.
+  const isAdmin = await isAdminRequest();
   const where: Record<string, unknown> = {};
   if (category) where.category = category;
-  if (status) where.status = status;
+  if (isAdmin) {
+    if (status) where.status = status;
+  } else {
+    // User-supplied status param is ignored for anonymous — never trust it
+    // to expand visibility. Drafts/scheduled/pending stay hidden.
+    where.status = 'PUBLISHED';
+  }
 
   const [items, total] = await Promise.all([
     prisma.article.findMany({

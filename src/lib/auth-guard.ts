@@ -11,6 +11,26 @@ const ROLE_HIERARCHY: Record<Role, number> = {
   EDITOR: 1,
 };
 
+/**
+ * Public API endpoints (e.g. `/api/articles`) are shared between the
+ * public site and the admin panel. Anonymous visitors should only see
+ * PUBLISHED rows; an admin reading the same endpoint should see DRAFT /
+ * PENDING_REVIEW too. Use this helper to gate the difference: it
+ * returns true ONLY for an authenticated user with an admin-tier role
+ * AND no pending 2FA flow. Anything else (anonymous, half-logged-in,
+ * non-admin role) → false → caller forces `status: 'PUBLISHED'`.
+ */
+export async function isAdminRequest(): Promise<boolean> {
+  const session = await getServerSession(authOptions);
+  if (!session?.user) return false;
+  // Half-authenticated session (2FA pending) is treated as anonymous for
+  // public-API filtering — the user hasn't actually proven they're admin.
+  const tfaPending = (session.user as { tfaPending?: string }).tfaPending;
+  if (tfaPending) return false;
+  const role = (session.user as { role?: string }).role;
+  return role === 'EDITOR' || role === 'ADMIN' || role === 'SUPER_ADMIN';
+}
+
 interface AuthOptions {
   /**
    * Allow requests from a JWT that still carries `tfaPending`. ONLY the

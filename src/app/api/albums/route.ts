@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { revalidateTag } from 'next/cache';
 import prisma from '@/lib/prisma';
-import { requireSectionAccess } from '@/lib/auth-guard';
+import { requireSectionAccess, isAdminRequest } from '@/lib/auth-guard';
 import { CACHE_TAGS } from '@/lib/db-cache';
 import { slugify } from '@/lib/utils';
 import { resolveCreateStatus, maybeCreateReviewOnCreate } from '@/lib/content-review';
@@ -16,8 +16,12 @@ export async function GET(request: NextRequest) {
   const limit = parseInt(searchParams.get('limit') || '20');
   const artistId = searchParams.get('artistId');
 
+  // Anonymous visitors only see PUBLISHED. Admin panel uses the same endpoint
+  // for its album list page; auth cookie identifies them and they get all rows.
+  const isAdmin = await isAdminRequest();
   const where: Record<string, unknown> = {};
   if (artistId) where.artistId = artistId;
+  if (!isAdmin) where.status = 'PUBLISHED';
 
   const [items, total] = await Promise.all([
     prisma.album.findMany({ where, include: { artist: { select: { name: true, slug: true } }, _count: { select: { songs: true } } }, orderBy: { releaseDate: 'desc' }, skip: (page - 1) * limit, take: limit }),

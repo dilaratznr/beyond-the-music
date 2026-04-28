@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { revalidateTag } from 'next/cache';
 import prisma from '@/lib/prisma';
-import { requireSectionAccess } from '@/lib/auth-guard';
+import { requireSectionAccess, isAdminRequest } from '@/lib/auth-guard';
 import { CACHE_TAGS } from '@/lib/db-cache';
 import { slugify } from '@/lib/utils';
 import { resolveCreateStatus, maybeCreateReviewOnCreate } from '@/lib/content-review';
@@ -16,8 +16,14 @@ export async function GET(request: NextRequest) {
   const limit = parseInt(searchParams.get('limit') || '20');
   const all = searchParams.get('all') === 'true';
 
+  // Anonymous → PUBLISHED only; admin → all (admin/genres list page uses
+  // ?all=true and needs to see drafts).
+  const isAdmin = await isAdminRequest();
+  const statusWhere = isAdmin ? {} : { status: 'PUBLISHED' as const };
+
   if (all) {
     const genres = await prisma.genre.findMany({
+      where: statusWhere,
       include: { children: true, _count: { select: { artists: true, articles: true } } },
       orderBy: { order: 'asc' },
     });
@@ -26,12 +32,13 @@ export async function GET(request: NextRequest) {
 
   const [items, total] = await Promise.all([
     prisma.genre.findMany({
+      where: statusWhere,
       include: { children: true, _count: { select: { artists: true, articles: true } } },
       orderBy: { order: 'asc' },
       skip: (page - 1) * limit,
       take: limit,
     }),
-    prisma.genre.count(),
+    prisma.genre.count({ where: statusWhere }),
   ]);
 
   return NextResponse.json({ items, total, page, totalPages: Math.ceil(total / limit) });
