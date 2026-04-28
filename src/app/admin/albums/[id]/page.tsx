@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { useToast } from '@/components/admin/Toast';
 import DeleteButton from '@/components/admin/DeleteButton';
 import ImageUploader from '@/components/admin/ImageUploader';
+import DatePicker from '@/components/admin/DatePicker';
 import { FormSkeleton } from '@/components/admin/Loading';
 import {
   FieldLabel,
@@ -194,12 +195,10 @@ export default function EditAlbumPage({ params }: { params: Promise<{ id: string
                 </div>
                 <div>
                   <FieldLabel htmlFor="album-date">Yayın Tarihi</FieldLabel>
-                  <input
+                  <DatePicker
                     id="album-date"
-                    type="date"
                     value={form.releaseDate}
-                    onChange={(e) => update('releaseDate', e.target.value)}
-                    className="w-full px-3 py-2 text-sm text-zinc-900 bg-white border border-zinc-200 rounded-lg outline-none transition-colors focus:border-zinc-900 focus:ring-2 focus:ring-zinc-900/10"
+                    onChange={(v) => update('releaseDate', v)}
                   />
                 </div>
               </div>
