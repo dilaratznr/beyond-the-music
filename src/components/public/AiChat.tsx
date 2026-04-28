@@ -10,8 +10,17 @@ export default function AiChat({ locale }: { locale: string }) {
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const endRef = useRef<HTMLDivElement>(null);
+  // Inflight request — önceki yanıt henüz gelmeden kullanıcı yenisini
+  // gönderirse / sayfa kapanırsa abort edebilelim diye. Race condition
+  // önler ve mobil Safari'de askıda kalan request'leri keser.
+  const abortRef = useRef<AbortController | null>(null);
 
   useEffect(() => { endRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages]);
+
+  // Component unmount → pending request iptal.
+  useEffect(() => {
+    return () => abortRef.current?.abort();
+  }, []);
 
   async function send(text?: string) {
     const msg = (text || input).trim();
@@ -19,24 +28,59 @@ export default function AiChat({ locale }: { locale: string }) {
     setInput('');
     setMessages((p) => [...p, { role: 'user', content: msg }]);
     setLoading(true);
+
+    abortRef.current?.abort();
+    const controller = new AbortController();
+    abortRef.current = controller;
+
+    const errorMsg =
+      locale === 'tr'
+        ? 'Şu anda yanıt veremedim, lütfen tekrar dene.'
+        : "Couldn't respond just now, please try again.";
+
     try {
       const res = await fetch('/api/ai-chat', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ message: msg, locale, history: messages.slice(-6) }),
+        signal: controller.signal,
       });
-      const data = await res.json();
-      setMessages((p) => [...p, { role: 'assistant', content: data.response }]);
-    } catch { setMessages((p) => [...p, { role: 'assistant', content: 'Error.' }]); }
-    setLoading(false);
+      // Server bazen 502 / 504'te HTML dönüyor (Vercel function timeout).
+      // res.json() crash etmesin diye try/catch + tip kontrolü; fail-soft
+      // mesajla devam et — sayfayı çökertme.
+      let response: string | undefined;
+      try {
+        const data = await res.json();
+        if (typeof data?.response === 'string' && data.response.trim()) {
+          response = data.response;
+        }
+      } catch {
+        /* JSON parse fail — errorMsg gösterilecek */
+      }
+      setMessages((p) => [
+        ...p,
+        { role: 'assistant', content: response ?? errorMsg },
+      ]);
+    } catch (err) {
+      // AbortError sessizce yut — yeni mesaj zaten loading'i tetikleyecek.
+      if ((err as { name?: string })?.name === 'AbortError') return;
+      setMessages((p) => [...p, { role: 'assistant', content: errorMsg }]);
+    } finally {
+      if (abortRef.current === controller) setLoading(false);
+    }
   }
 
   // LLM çıktısı `dangerouslySetInnerHTML` ile render ediliyor → prompt-
-  // injection ile saldırgan modele `<script>` veya `<img onerror>` ürettirebilir.
-  // Bu yüzden ÖNCE tüm HTML'i escape ediyoruz, SONRA whitelist edilmiş
-  // markdown-vari işaretlemeyi (bold/italic/list/break) güvenli tag'lere
-  // çeviriyoruz. Escape sonrası gelen tüm `<` artık `&lt;` olduğu için
-  // attacker tag'leri DOM'a hiçbir zaman ulaşmıyor.
-  function escapeHtml(s: string) {
+  // injection ile saldırgan modele `<script>` veya `<img onerror>`
+  // ürettirebilir. Önce tüm HTML escape, sonra whitelist edilmiş markdown
+  // işaretlemeyi (bold/italic/list/link/break) güvenli tag'lere çeviriyoruz.
+  function escapeHtml(s: unknown): string {
+    // Defensive: caller bazen undefined/null verebiliyor (data.response
+    // yoksa). String'e zorlamak yerine boş string dön — render crash'i
+    // yerine sessiz boş çıktı. Bu, sayfayı koruyan KRİTİK bir güvenlik
+    // ağı: Safari iOS'da escape(undefined).replace patladığında tüm
+    // sayfa "page couldn't load" ile çöküyordu.
+    if (typeof s !== 'string') return '';
     return s
       .replace(/&/g, '&amp;')
       .replace(/</g, '&lt;')
@@ -45,13 +89,49 @@ export default function AiChat({ locale }: { locale: string }) {
       .replace(/'/g, '&#39;');
   }
 
-  function fmt(t: string) {
-    return escapeHtml(t)
+  /**
+   * Sadece uygulama içi (relative) path'lere veya beyaz listede
+   * tutulan harici hostname'lere link kurulmasına izin verir. AI bir
+   * başkasının URL'sine yönlendirip phishing zemini oluşturmasın diye.
+   */
+  function isSafeLinkHref(href: string): boolean {
+    if (!href) return false;
+    if (href.startsWith('/')) return true; // internal path — safe
+    try {
+      const u = new URL(href);
+      const allowed = new Set([
+        'open.spotify.com',
+        'youtube.com',
+        'www.youtube.com',
+        'youtu.be',
+      ]);
+      return (u.protocol === 'https:' || u.protocol === 'http:') && allowed.has(u.host);
+    } catch {
+      return false;
+    }
+  }
+
+  function fmt(t: unknown): string {
+    let html = escapeHtml(t);
+    // Markdown linkleri [text](url) — `[`, `(`, `)` escape'lenmiyor,
+    // pattern hâlâ matchleniyor. Yalnızca güvenli href'i <a>'ya çevir,
+    // gerisini düz metin bırak (label görünür kalır, link kurulmaz).
+    html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, (_full, label, rawHref) => {
+      const href = String(rawHref).trim();
+      if (!isSafeLinkHref(href)) return label;
+      const isExternal = !href.startsWith('/');
+      const attrs = isExternal
+        ? ' target="_blank" rel="noopener noreferrer nofollow"'
+        : '';
+      return `<a href="${href}" class="underline decoration-zinc-500 hover:decoration-white"${attrs}>${label}</a>`;
+    });
+    html = html
       .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
       .replace(/\*(.*?)\*/g, '<em>$1</em>')
       .replace(/\n- /g, '<br/>• ')
       .replace(/\n\n/g, '<br/><br/>')
       .replace(/\n/g, '<br/>');
+    return html;
   }
 
   const chips = locale === 'tr'

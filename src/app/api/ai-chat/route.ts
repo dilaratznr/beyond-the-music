@@ -7,17 +7,20 @@ const SYSTEM_PROMPT = `Sen "Beyond The Music" platformunun yapay zeka müzik asi
 
 Görevin:
 - Kullanıcılara müzik türleri, sanatçılar, albümler, prodüktörler, stüdyolar ve müzik teorisi hakkında bilgi vermek
-- Müzik keşfi için önerilerde bulunmak
+- Müzik keşfi için önerilerde bulunmak ve PLATFORMDAKİ ilgili sayfalara link vermek
 - Dinleme rotaları önermek
 - Müzik tarihi ve kültürel etkiler hakkında bilgi paylaşmak
 
 Kurallar:
 - Her zaman kibar, bilgili ve tutkulu ol
 - Yanıtlarını kısa ve öz tut (max 3-4 paragraf)
-- Platformdaki mevcut içeriklere referans ver mümkünse
+- Platformdaki mevcut içeriklere referans ver MÜMKÜNSE markdown link kullan: [Tür adı](/tr/genre/slug)
 - Hem Türkçe hem İngilizce yanıt verebilirsin, kullanıcının diline göre yanıt ver
 - Müzikle ilgisi olmayan sorulara nazikçe müziğe yönlendir
-- Markdown formatı kullanabilirsin (bold, italic, listeler)
+- Markdown formatı kullanabilirsin (bold, italic, listeler, linkler)
+- Bir tür/sanatçı/makale ÖNERİYORSAN ve listede varsa MUTLAKA link ver — kullanıcı tıklayıp keşfe başlasın
+- Listede olmayan bir içeriği ASLA link olarak verme (404 olur). Bahsedebilirsin ama link kurma.
+- Birden fazla seçenek sunarken liste formatında yaz, her satır link içersin
 
 Sen bir müzik ansiklopedisisin. Cevapların derinlikli ama anlaşılır olmalı.`;
 
@@ -113,13 +116,38 @@ export async function POST(request: NextRequest) {
       }),
     ]);
 
+    // AI'a gerçek slug'ları + URL pattern'ı veriyoruz ki cevabında
+    // markdown link'leri ([Rock](/tr/genre/rock)) doğru üretebilsin.
+    // Platform dışı / olmayan içerik için link uydurmasın diye system
+    // prompt'ta da kısıt var (aşağıda).
+    const genreLines = genres
+      .map((g) => `  - ${locale === 'tr' ? g.nameTr : g.nameEn} → /${locale}/genre/${g.slug}`)
+      .join('\n');
+    const artistLines = artists
+      .map((a) => `  - ${a.name} (${a.type}) → /${locale}/artist/${a.slug}`)
+      .join('\n');
+    const articleLines = articles
+      .map(
+        (a) =>
+          `  - "${locale === 'tr' ? a.titleTr : a.titleEn}" (${a.category}) → /${locale}/article/${a.slug}`,
+      )
+      .join('\n');
+
     const contextInfo = `
-Platformda mevcut türler: ${genres.map((g) => g.nameTr).join(', ')}
-Platformda mevcut sanatçılar: ${artists
-      .map((a) => `${a.name} (${a.type})`)
-      .join(', ')}
-Platformda mevcut makaleler: ${articles.map((a) => a.titleTr).join(', ')}
-Kullanıcı dili: ${locale}`;
+Platformdaki mevcut içerikler — bunların DIŞINA referans verme, sadece
+listedekilere link ver. Markdown link formatı: [Görünen ad](/tr/...)
+
+Türler:
+${genreLines}
+
+Sanatçılar:
+${artistLines}
+
+Makaleler:
+${articleLines}
+
+Kullanıcı dili: ${locale}
+Tüm link'leri "/${locale}/..." prefix'i ile ver. Listede olmayan bir tür/sanatçı/makale için ASLA link uydurma.`;
 
     const apiKey = process.env.GEMINI_API_KEY;
 
@@ -131,6 +159,10 @@ Kullanıcı dili: ${locale}`;
       });
       return NextResponse.json({ response: fallbackResponse, fallback: true });
     }
+
+    // Locale'e göre URL prefix — fallback ve AI ikisi de aynı pattern üretiyor.
+    // (Şu an sadece SYSTEM_PROMPT'a injekte ediyoruz; client tarafı güvenlik
+    // beyaz listesi de aynı pattern'a güveniyor.)
 
     const genAI = new GoogleGenerativeAI(apiKey);
     const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
@@ -182,13 +214,43 @@ function getFallbackResponse(
   message: string,
   locale: string,
   context: {
-    genres: { nameTr: string; nameEn: string }[];
-    artists: { name: string; type: string }[];
-    articles: { titleTr: string; titleEn: string; category: string }[];
+    genres: { nameTr: string; nameEn: string; slug: string }[];
+    artists: { name: string; type: string; slug: string }[];
+    articles: { titleTr: string; titleEn: string; category: string; slug: string }[];
   },
 ): string {
   const msg = message.toLowerCase();
   const tr = locale === 'tr';
+  const localePrefix = `/${locale}`;
+
+  // Helper'lar — gerçek DB slug'larından markdown link üret. AI yoksa
+  // fallback yine de tıklanabilir öneriler verir, kullanıcı kaybolmaz.
+  const findGenreLink = (...keywords: string[]): string | null => {
+    const found = context.genres.find((g) =>
+      keywords.some(
+        (k) =>
+          g.nameTr.toLowerCase().includes(k) ||
+          g.nameEn.toLowerCase().includes(k) ||
+          g.slug.includes(k),
+      ),
+    );
+    if (!found) return null;
+    const name = tr ? found.nameTr : found.nameEn;
+    return `[${name}](${localePrefix}/genre/${found.slug})`;
+  };
+  const findArticleLink = (...keywords: string[]): string | null => {
+    const found = context.articles.find((a) =>
+      keywords.some(
+        (k) =>
+          a.titleTr.toLowerCase().includes(k) ||
+          a.titleEn.toLowerCase().includes(k) ||
+          a.slug.includes(k),
+      ),
+    );
+    if (!found) return null;
+    const title = tr ? found.titleTr : found.titleEn;
+    return `[${title}](${localePrefix}/article/${found.slug})`;
+  };
 
   if (msg.includes('merhaba') || msg.includes('hello') || msg.includes('selam') || msg.includes('hi')) {
     return tr
@@ -197,15 +259,31 @@ function getFallbackResponse(
   }
 
   if (msg.includes('rock') || msg.includes('grunge') || msg.includes('punk')) {
+    const rockLink = findGenreLink('rock');
+    const grungeLink = findGenreLink('grunge');
+    const punkLink = findGenreLink('punk');
+    const ctaTr = rockLink
+      ? `Detaylar için ${rockLink} sayfasına göz at.`
+      : 'Hangi alt tür ilgini çekiyor?';
+    const ctaEn = rockLink
+      ? `Check the ${rockLink} page for details.`
+      : 'Which subgenre interests you?';
     return tr
-      ? `**Rock**, müzik tarihinin en etkili türlerinden biridir! 🎸\n\n1940'ların sonunda blues ve country'nin birleşiminden doğan rock, sürekli evrilmiştir:\n\n- **Grunge** - Seattle'ın karanlık sesi (Nirvana, Pearl Jam)\n- **Punk Rock** - DIY ve isyan (Ramones, Sex Pistols)\n- **Progressive Rock** - Deneysel ve karmaşık (Pink Floyd, Yes)\n- **Alternative Rock** - Ana akım dışı (Radiohead, Pixies)\n\nPlatformumuzda Rock hakkında detaylı makaleler bulabilirsin. Hangi alt tür ilgini çekiyor?`
-      : `**Rock** is one of the most influential genres in music history! 🎸\n\nBorn from the fusion of blues and country in the late 1940s, rock has continuously evolved:\n\n- **Grunge** - Seattle's dark sound (Nirvana, Pearl Jam)\n- **Punk Rock** - DIY and rebellion (Ramones, Sex Pistols)\n- **Progressive Rock** - Experimental and complex (Pink Floyd, Yes)\n- **Alternative Rock** - Outside the mainstream (Radiohead, Pixies)\n\nYou can find detailed articles about Rock on our platform. Which subgenre interests you?`;
+      ? `**Rock**, müzik tarihinin en etkili türlerinden biridir! 🎸\n\n1940'ların sonunda blues ve country'nin birleşiminden doğan rock, sürekli evrilmiştir:\n\n- ${grungeLink ?? '**Grunge**'} — Seattle'ın karanlık sesi\n- ${punkLink ?? '**Punk Rock**'} — DIY ve isyan\n- **Progressive Rock** — Deneysel ve karmaşık\n- **Alternative Rock** — Ana akım dışı\n\n${ctaTr}`
+      : `**Rock** is one of the most influential genres in music history! 🎸\n\nBorn from the fusion of blues and country in the late 1940s:\n\n- ${grungeLink ?? '**Grunge**'} — Seattle's dark sound\n- ${punkLink ?? '**Punk Rock**'} — DIY and rebellion\n- **Progressive Rock** — Experimental and complex\n- **Alternative Rock** — Outside the mainstream\n\n${ctaEn}`;
   }
 
   if (msg.includes('jazz') || msg.includes('blues') || msg.includes('miles')) {
+    const jazzLink = findGenreLink('jazz');
+    const modalArticleLink = findArticleLink('modal', 'jazz');
+    const tail = modalArticleLink
+      ? tr
+        ? `Modal Jazz hakkında detaylı bir makale var: ${modalArticleLink}.`
+        : `We have a detailed article on Modal Jazz: ${modalArticleLink}.`
+      : '';
     return tr
-      ? `**Jazz**, doğaçlamanın ve özgürlüğün müziğidir! 🎺\n\nNew Orleans'ta doğan jazz, birçok alt türe evrilmiştir:\n\n- **Bebop** - Hızlı ve karmaşık (Charlie Parker, Dizzy Gillespie)\n- **Cool Jazz** - Yumuşak ve minimal (Miles Davis, Chet Baker)\n- **Modal Jazz** - Harmonik özgürleşme (Kind of Blue)\n- **Free Jazz** - Sınırsız deneysellik (Ornette Coleman, John Coltrane)\n\n**Miles Davis**'in Kind of Blue albümü, jazz tarihinin en etkili eseridir. Platformumuzda Modal Jazz hakkında detaylı bir makale var!`
-      : `**Jazz** is the music of improvisation and freedom! 🎺\n\nBorn in New Orleans, jazz has evolved into many subgenres:\n\n- **Bebop** - Fast and complex (Charlie Parker, Dizzy Gillespie)\n- **Cool Jazz** - Soft and minimal (Miles Davis, Chet Baker)\n- **Modal Jazz** - Harmonic liberation (Kind of Blue)\n- **Free Jazz** - Unlimited experimentation (Ornette Coleman, John Coltrane)\n\n**Miles Davis**'s Kind of Blue is the most influential work in jazz history. We have a detailed article about Modal Jazz on our platform!`;
+      ? `**Jazz**, doğaçlamanın ve özgürlüğün müziğidir! 🎺\n\nNew Orleans'ta doğan jazz, birçok alt türe evrilmiştir:\n\n- **Bebop** — Hızlı ve karmaşık\n- **Cool Jazz** — Yumuşak ve minimal\n- **Modal Jazz** — Harmonik özgürleşme\n- **Free Jazz** — Sınırsız deneysellik\n\n${jazzLink ? `Tür sayfası: ${jazzLink}. ` : ''}${tail}`
+      : `**Jazz** is the music of improvisation and freedom! 🎺\n\nBorn in New Orleans:\n\n- **Bebop** — Fast and complex\n- **Cool Jazz** — Soft and minimal\n- **Modal Jazz** — Harmonic liberation\n- **Free Jazz** — Unlimited experimentation\n\n${jazzLink ? `Genre page: ${jazzLink}. ` : ''}${tail}`;
   }
 
   if (msg.includes('öner') || msg.includes('recommend') || msg.includes('dinle') || msg.includes('listen')) {
@@ -215,17 +293,28 @@ function getFallbackResponse(
   }
 
   if (msg.includes('tür') || msg.includes('genre') || msg.includes('kategori')) {
-    const genreList = context.genres.map((g) => (tr ? g.nameTr : g.nameEn)).join(', ');
+    // Linklerle dolu liste — kullanıcı tıklayıp anında tür sayfasına gitsin.
+    const genreList = context.genres
+      .map(
+        (g) =>
+          `- [${tr ? g.nameTr : g.nameEn}](${localePrefix}/genre/${g.slug})`,
+      )
+      .join('\n');
     return tr
-      ? `Platformumuzda şu ana türler mevcut:\n\n**${genreList}**\n\nHer tür altında alt türler, kültürel etki analizleri, alt kültür incelemeleri ve küratöryel hareketler bulabilirsin.\n\nHangi tür hakkında daha fazla bilgi almak istersin?`
-      : `Our platform currently features these genres:\n\n**${genreList}**\n\nUnder each genre you can find subgenres, cultural impact analyses, subculture studies, and curated movements.\n\nWhich genre would you like to learn more about?`;
+      ? `Platformumuzda şu ana türler mevcut:\n\n${genreList}\n\nHer tür altında alt türler, kültürel etki analizleri, alt kültür incelemeleri ve küratöryel hareketler bulabilirsin. Üstündeki bir adı tıkla, sayfa açılsın.`
+      : `Our platform currently features these genres:\n\n${genreList}\n\nUnder each genre you can find subgenres, cultural impact analyses, subculture studies, and curated movements. Click any name above to open the page.`;
   }
 
   if (msg.includes('sanatçı') || msg.includes('artist') || msg.includes('kimler')) {
-    const artistList = context.artists.map((a) => `${a.name} (${a.type})`).join(', ');
+    const artistList = context.artists
+      .map(
+        (a) =>
+          `- [${a.name}](${localePrefix}/artist/${a.slug}) (${a.type})`,
+      )
+      .join('\n');
     return tr
-      ? `Platformumuzda şu sanatçılar var:\n\n${artistList}\n\nHer sanatçının biyografisi, albümleri, deep cut'ları ve görsel arşivi mevcut. Kimi merak ediyorsun?`
-      : `Our platform features these artists:\n\n${artistList}\n\nEach artist has a biography, albums, deep cuts, and visual archive. Who are you curious about?`;
+      ? `Platformumuzda şu sanatçılar var:\n\n${artistList}\n\nHer sanatçının biyografisi, albümleri, deep cut'ları ve görsel arşivi mevcut. Adına tıkla, profil sayfasına gidesin.`
+      : `Our platform features these artists:\n\n${artistList}\n\nEach artist has a biography, albums, deep cuts, and visual archive. Click any name to open their profile.`;
   }
 
   return tr
