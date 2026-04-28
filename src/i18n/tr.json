@@ -2,6 +2,7 @@
   "nav": {
     "genre": "Tür",
     "artist": "Sanatçı",
+    "article": "Makaleler",
     "architects": "Mimarlar",
     "theory": "Teori",
     "listeningPaths": "Dinleme Rotaları",
@@ -67,6 +68,22 @@
     "contrast": "Gece ve gündüz kontrastları",
     "intro": "Yeni dinleyiciler için giriş",
     "deep": "İleri düzey derin dalışlar"
+  },
+  "article": {
+    "title": "Makaleler",
+    "subtitle": "Müziğin etrafındaki kültürel anlatılar — tür, sanatçı ve sahne üzerine yazılar.",
+    "all": "Tümü",
+    "categories": {
+      "GENRE": "Tür",
+      "CULTURAL_IMPACT": "Kültürel Etki",
+      "DEEP_CUT": "Derin Kesit",
+      "AI_MUSIC": "AI Müzik",
+      "THEORY": "Teori",
+      "FASHION": "Moda",
+      "SUBCULTURE": "Alt Kültür",
+      "ARTIST": "Sanatçı",
+      "ALBUM": "Albüm"
+    }
   },
   "common": {
     "readMore": "Devamını Oku",

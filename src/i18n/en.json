@@ -2,6 +2,7 @@
   "nav": {
     "genre": "Genre",
     "artist": "Artist",
+    "article": "Articles",
     "architects": "The Architects",
     "theory": "The Theory",
     "listeningPaths": "Listening Paths",
@@ -67,6 +68,22 @@
     "contrast": "Night and day listening contrasts",
     "intro": "Introductory pathways for new listeners",
     "deep": "Deep immersion routes for advanced listeners"
+  },
+  "article": {
+    "title": "Articles",
+    "subtitle": "Cultural narratives around music — pieces on genres, artists, and the wider scene.",
+    "all": "All",
+    "categories": {
+      "GENRE": "Genre",
+      "CULTURAL_IMPACT": "Cultural Impact",
+      "DEEP_CUT": "Deep Cut",
+      "AI_MUSIC": "AI Music",
+      "THEORY": "Theory",
+      "FASHION": "Fashion",
+      "SUBCULTURE": "Subculture",
+      "ARTIST": "Artist",
+      "ALBUM": "Album"
+    }
   },
   "common": {
     "readMore": "Read More",

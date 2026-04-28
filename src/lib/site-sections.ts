@@ -16,6 +16,7 @@ import { CACHE_TAGS } from '@/lib/db-cache';
 export const PUBLIC_SECTIONS = [
   { key: 'genre', settingKey: 'section_genre_enabled', labelKey: 'nav.genre', href: '/genre' },
   { key: 'artist', settingKey: 'section_artist_enabled', labelKey: 'nav.artist', href: '/artist' },
+  { key: 'article', settingKey: 'section_article_enabled', labelKey: 'nav.article', href: '/article' },
   { key: 'architects', settingKey: 'section_architects_enabled', labelKey: 'nav.architects', href: '/architects' },
   { key: 'theory', settingKey: 'section_theory_enabled', labelKey: 'nav.theory', href: '/theory' },
   { key: 'listeningPaths', settingKey: 'section_listening_paths_enabled', labelKey: 'nav.listeningPaths', href: '/listening-paths' },
