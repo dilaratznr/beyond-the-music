@@ -29,30 +29,6 @@ interface FooterProps {
   brand: FooterBrand;
 }
 
-/**
- * SVG icon set for social links — keeps the footer self-contained, no
- * extra icon library / image fetch. Each renders ~16px square, currentColor.
- */
-const SOCIAL_ICONS: Record<string, JSX.Element> = {
-  Instagram: (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
-      <rect x="3" y="3" width="18" height="18" rx="5" />
-      <circle cx="12" cy="12" r="4" />
-      <circle cx="17.5" cy="6.5" r="0.8" fill="currentColor" />
-    </svg>
-  ),
-  YouTube: (
-    <svg viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4">
-      <path d="M23.5 6.2a3 3 0 0 0-2.1-2.1C19.6 3.5 12 3.5 12 3.5s-7.6 0-9.4.6A3 3 0 0 0 .5 6.2C0 8 0 12 0 12s0 4 .5 5.8a3 3 0 0 0 2.1 2.1C4.4 20.5 12 20.5 12 20.5s7.6 0 9.4-.6a3 3 0 0 0 2.1-2.1C24 16 24 12 24 12s0-4-.5-5.8zM9.6 15.6V8.4l6.4 3.6-6.4 3.6z" />
-    </svg>
-  ),
-  Spotify: (
-    <svg viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4">
-      <path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.5 17.3c-.2.4-.7.5-1 .3-2.8-1.7-6.4-2.1-10.6-1.1-.4.1-.8-.2-.9-.6-.1-.4.2-.8.6-.9 4.6-1 8.5-.6 11.7 1.3.4.2.5.7.2 1zm1.5-3.3c-.3.4-.8.6-1.3.3-3.2-2-8.1-2.6-11.9-1.4-.5.1-1-.1-1.2-.6-.1-.5.1-1 .6-1.2 4.4-1.3 9.8-.7 13.5 1.6.4.3.6.9.3 1.3zm.1-3.5C15.3 8.3 8.7 8.1 5 9.2c-.6.2-1.2-.2-1.4-.7-.2-.6.2-1.2.7-1.4 4.3-1.3 11.5-1 16 1.6.5.3.7 1 .4 1.5-.3.5-1 .7-1.6.4z" />
-    </svg>
-  ),
-};
-
 export default function Footer({ locale, dict, brand }: FooterProps) {
   const tr = locale === 'tr';
   const year = new Date().getFullYear();
@@ -85,24 +61,20 @@ export default function Footer({ locale, dict, brand }: FooterProps) {
             </p>
 
             {SOCIAL_LINKS.length > 0 && (
-              <div className="mt-6 flex items-center gap-2.5">
+              <ul className="mt-6 flex flex-wrap items-center gap-x-5 gap-y-1.5 text-[11px] uppercase tracking-[0.2em] font-semibold">
                 {SOCIAL_LINKS.map((s) => (
-                  <a
-                    key={s.name}
-                    href={s.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    aria-label={s.name}
-                    className="w-9 h-9 rounded-full border border-zinc-800 bg-zinc-900/40 flex items-center justify-center text-zinc-400 hover:text-white hover:border-zinc-600 hover:bg-zinc-800/60 transition-colors"
-                  >
-                    {SOCIAL_ICONS[s.name] ?? (
-                      <span className="text-[10px] font-semibold uppercase">
-                        {s.name.charAt(0)}
-                      </span>
-                    )}
-                  </a>
+                  <li key={s.name}>
+                    <a
+                      href={s.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-zinc-500 hover:text-white transition-colors"
+                    >
+                      {s.name}
+                    </a>
+                  </li>
                 ))}
-              </div>
+              </ul>
             )}
           </div>
 
