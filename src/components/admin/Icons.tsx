@@ -192,6 +192,16 @@ export function IconReview(p: IconProps) {
   );
 }
 
+export function IconAudit(p: IconProps) {
+  // Shield + içinde saat — denetim/güvenlik kayıtları için.
+  return (
+    <Base {...p}>
+      <path d="M12 2 4 5v6c0 5 3.5 9 8 11 4.5-2 8-6 8-11V5l-8-3z" />
+      <path d="M12 8v4l2 2" />
+    </Base>
+  );
+}
+
 export function IconExternal(p: IconProps) {
   return (
     <Base {...p}>

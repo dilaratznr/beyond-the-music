@@ -91,7 +91,7 @@ export default function TwoFactorSetupPage() {
     <div className="min-h-[calc(100vh-7rem)] flex items-center justify-center px-4 py-10">
       <div className="w-full max-w-xl">
         {error && (
-          <div role="alert" className="mb-4 p-3 bg-red-500/10 border border-red-500/30 text-red-300 text-sm rounded-md">
+          <div role="alert" className="mb-4 p-3 bg-zinc-900/60 border border-zinc-800 border-l-2 border-l-rose-400 text-zinc-200 text-sm rounded-md">
             {error}
           </div>
         )}

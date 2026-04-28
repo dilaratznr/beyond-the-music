@@ -13,7 +13,25 @@ interface ArticleHit {
   category: string;
   featuredImage: string | null;
   status: string;
+  publishedAt: string | null;
   featuredOrder: number | null;
+}
+
+/**
+ * "Etkili" yayın durumu: status PUBLISHED gözükse bile publishedAt gelecek
+ * tarihliyse aslında henüz yayında değil → SCHEDULED olarak göster.
+ * Public site bu makaleyi göstermiyor, kullanıcının gerçek durumu görmesi
+ * için label burada normalize edilmeli.
+ */
+function effectiveStatusLabel(status: string, publishedAt: string | null): string {
+  if (status === 'PUBLISHED' && publishedAt) {
+    const when = new Date(publishedAt).getTime();
+    if (Number.isFinite(when) && when > Date.now()) return 'zamanlanmış';
+  }
+  if (status === 'PUBLISHED') return 'yayında';
+  if (status === 'SCHEDULED') return 'zamanlanmış';
+  if (status === 'PENDING_REVIEW') return 'onayda';
+  return 'taslak';
 }
 
 interface AlbumHit {
@@ -282,14 +300,13 @@ function FeaturedList({
         {items.map((it, i) => {
           const isOver = overIdx === i;
           const title = it.kind === 'article' ? it.titleTr : it.title;
+          // Etkili durumu hesapla: status PUBLISHED ama publishedAt gelecek
+          // bir tarihse aslında "henüz yayında değil" → SCHEDULED olarak göster.
+          // Aksi halde public site'da görünmemesine rağmen "yayında" yazıyordu.
           const sub =
             it.kind === 'article'
               ? `Makale · ${it.category.replace(/_/g, ' ').toLowerCase()} · ${
-                  it.status === 'PUBLISHED'
-                    ? 'yayında'
-                    : it.status === 'SCHEDULED'
-                    ? 'zamanlanmış'
-                    : 'taslak'
+                  effectiveStatusLabel(it.status, it.publishedAt)
                 }`
               : `Albüm · ${it.artist.name}`;
           const img = it.kind === 'article' ? it.featuredImage : it.coverImage;
@@ -500,11 +517,7 @@ function PickerPanel({
             const sub =
               it.kind === 'article'
                 ? `${it.category.replace(/_/g, ' ').toLowerCase()} · ${
-                    it.status === 'PUBLISHED'
-                      ? 'yayında'
-                      : it.status === 'SCHEDULED'
-                      ? 'zamanlanmış'
-                      : 'taslak'
+                    effectiveStatusLabel(it.status, it.publishedAt)
                   }`
                 : it.artist.name;
             const img = it.kind === 'article' ? it.featuredImage : it.coverImage;

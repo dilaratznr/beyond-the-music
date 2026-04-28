@@ -39,6 +39,7 @@ export async function GET(request: NextRequest) {
         category: true,
         featuredImage: true,
         status: true,
+        publishedAt: true,
         featuredOrder: true,
       },
     });

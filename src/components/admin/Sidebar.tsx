@@ -26,6 +26,7 @@ import {
   IconStar,
   IconUpload,
   IconReview,
+  IconAudit,
 } from './Icons';
 
 type IconComp = ComponentType<{ size?: number; className?: string }>;
@@ -67,6 +68,7 @@ const curationItems: { href: string; label: string; icon: IconComp }[] = [
 const managementItems: { href: string; label: string; icon: IconComp }[] = [
   { href: '/admin/import', label: 'İçe Aktar', icon: IconUpload },
   { href: '/admin/users', label: 'Kullanıcılar', icon: IconUsers },
+  { href: '/admin/audit', label: 'Denetim Kayıtları', icon: IconAudit },
   { href: '/admin/hero-videos', label: 'Hero Videoları', icon: IconVideo },
   { href: '/admin/settings', label: 'Site Ayarları', icon: IconSettings },
 ];

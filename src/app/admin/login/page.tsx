@@ -232,9 +232,9 @@ export default async function AdminLoginPage({
           <div
             role="alert"
             aria-live="assertive"
-            className="flex items-start gap-2.5 p-3 bg-red-500/10 border border-red-500/30 text-red-300 text-sm rounded-md"
+            className="flex items-start gap-2.5 p-3 bg-zinc-900/60 border border-zinc-800 border-l-2 border-l-rose-400 text-zinc-200 text-sm rounded-md"
           >
-            <span className="text-red-400 leading-none mt-0.5" aria-hidden="true">
+            <span className="text-rose-300 leading-none mt-0.5" aria-hidden="true">
               ●
             </span>
             <span>{error}</span>

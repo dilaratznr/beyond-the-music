@@ -313,7 +313,7 @@ export default function EditArticlePage({ params }: { params: Promise<{ id: stri
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
-        {error && <div className="p-3 bg-red-500/10 border border-red-500/20 text-red-300 text-sm rounded-lg">{error}</div>}
+        {error && <div className="p-3 bg-zinc-900/60 border border-zinc-800 border-l-2 border-l-rose-400 text-zinc-200 text-sm rounded-lg">{error}</div>}
 
         {/* Son red edilmiş review varsa editöre net bir geri bildirim
             olarak gösterilir. Yalnızca makale şu an DRAFT'ta iken mantıklı —

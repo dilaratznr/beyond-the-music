@@ -120,8 +120,8 @@ export default function GenresPage() {
       {isLoading ? (
         <GridSkeleton />
       ) : error ? (
-        <div className="bg-red-500/5 rounded-lg border border-red-500/20 p-10 text-center">
-          <p className="text-xs text-red-300 mb-2">Veriler yüklenemedi: {error.message}</p>
+        <div className="bg-zinc-900/60 rounded-lg border border-zinc-800 border-l-2 border-l-rose-400 p-10 text-center">
+          <p className="text-xs text-zinc-200 mb-2">Veriler yüklenemedi: {error.message}</p>
           <button
             type="button"
             onClick={reload}
