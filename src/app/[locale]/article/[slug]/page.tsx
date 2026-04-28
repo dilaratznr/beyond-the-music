@@ -89,6 +89,41 @@ export default async function ArticleDetailPage({ params }: { params: Params }) 
 
   if (!article || article.status !== 'PUBLISHED') notFound();
 
+  // Sidebar için "okumaya devam et" listesi. Aynı kategoriden makaleler
+  // önce, sonra en yeni diğerleri (her zaman 6 öğe doldurmaya çalışıyoruz).
+  // Kendi makalemizi liste dışına alıyoruz.
+  const relatedPool = await prisma.article.findMany({
+    where: {
+      status: 'PUBLISHED',
+      NOT: { id: article.id },
+    },
+    orderBy: { publishedAt: 'desc' },
+    take: 14, // sıralama sonrası kesileceği için bol gönder
+    select: {
+      id: true,
+      slug: true,
+      titleTr: true,
+      titleEn: true,
+      category: true,
+      featuredImage: true,
+      publishedAt: true,
+      author: { select: { name: true } },
+    },
+  });
+
+  const relatedArticles = [...relatedPool]
+    .sort((a, b) => {
+      // Aynı kategori öne çıksın — Prisma'nın `orderBy`'ı koşullu sort
+      // desteklemiyor, bu yüzden burada in-memory sıralıyoruz.
+      const aSame = a.category === article.category ? 0 : 1;
+      const bSame = b.category === article.category ? 0 : 1;
+      if (aSame !== bSame) return aSame - bSame;
+      const aTs = a.publishedAt?.getTime() ?? 0;
+      const bTs = b.publishedAt?.getTime() ?? 0;
+      return bTs - aTs;
+    })
+    .slice(0, 6);
+
   const title = locale === 'tr' ? article.titleTr : article.titleEn;
   const content = locale === 'tr' ? article.contentTr : article.contentEn;
   const description = stripHtml(content);
@@ -203,23 +238,89 @@ export default async function ArticleDetailPage({ params }: { params: Params }) 
         </div>
       </section>
 
-      {/* ▸▸▸ BODY ▸▸▸
-          Dar okuma kolonu (max-w-3xl ~ 48rem). .prose + .article-body
-          stil kuralları globals.css'te — tailwind v4'te @tailwindcss/
-          typography plugin'i kurulu değil, prose-* modifier'ları no-op
-          olurdu. */}
-      {content && (
-        <div className="max-w-3xl mx-auto px-6 py-16 md:py-24">
-          <article
-            className="prose article-body max-w-none"
-            dangerouslySetInnerHTML={{
-              // tiptap'in bastığı etiket seti — iframe izin veriyor
-              // (YouTube/Spotify embed'leri için, sadece allowlisted
-              // hostname'ler). JavaScript event'leri, <script>, <style>
-              // ve diğer tehlikeli etiketler atılıyor.
-              __html: sanitizeArticleHtml(content),
-            }}
-          />
+      {/* ▸▸▸ BODY + RELATED SIDEBAR ▸▸▸
+          Geniş kapsayıcı (max-w-7xl) içinde iki kolon: sol kolonda dar
+          okuma satırı (max-w-3xl ~ 48rem) — okuma akışı bozulmasın diye.
+          Sağ kolonda 320px'lik "okumaya devam et" sidebar'ı, sticky.
+          Mobile/tablet'te (lg altı) tek kolona düşüp aside içeriğin
+          altına geçiyor — küçük ekranda yan kolon scroll'u mantıksız. */}
+      {(content || relatedArticles.length > 0) && (
+        <div className="max-w-7xl mx-auto px-6 py-16 md:py-24 grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_320px] gap-10 lg:gap-14">
+          {content && (
+            <article
+              className="prose article-body max-w-3xl w-full"
+              dangerouslySetInnerHTML={{
+                // tiptap'in bastığı etiket seti — iframe izin veriyor
+                // (YouTube/Spotify embed'leri için, sadece allowlisted
+                // hostname'ler). JavaScript event'leri, <script>, <style>
+                // ve diğer tehlikeli etiketler atılıyor.
+                __html: sanitizeArticleHtml(content),
+              }}
+            />
+          )}
+
+          {relatedArticles.length > 0 && (
+            <aside className="lg:sticky lg:top-24 lg:self-start lg:max-h-[calc(100vh-7rem)] lg:overflow-y-auto pr-1 -mr-1">
+              <p className="text-[10px] uppercase tracking-[0.35em] font-bold text-zinc-500 mb-5 flex items-center gap-3">
+                <span className="w-8 h-px bg-zinc-700" />
+                {locale === 'tr' ? 'Okumaya Devam Et' : 'Keep Reading'}
+              </p>
+              <ul className="space-y-4">
+                {relatedArticles.map((rel) => {
+                  const relTitle = locale === 'tr' ? rel.titleTr : rel.titleEn;
+                  const relDate = rel.publishedAt
+                    ? new Date(rel.publishedAt).toLocaleDateString(
+                        locale === 'tr' ? 'tr-TR' : 'en-US',
+                        { year: 'numeric', month: 'short', day: 'numeric' },
+                      )
+                    : null;
+                  return (
+                    <li key={rel.id}>
+                      <Link
+                        href={`/${locale}/article/${rel.slug}`}
+                        className="group flex gap-3 rounded-xl bg-white/[0.02] border border-white/[0.04] hover:bg-white/[0.05] hover:border-white/10 transition-colors overflow-hidden"
+                      >
+                        <div className="relative w-20 h-20 flex-shrink-0 overflow-hidden bg-gradient-to-br from-zinc-800 to-zinc-950">
+                          {rel.featuredImage ? (
+                            <img
+                              src={rel.featuredImage}
+                              alt=""
+                              loading="lazy"
+                              decoding="async"
+                              className="absolute inset-0 w-full h-full object-cover opacity-75 group-hover:opacity-100 transition-opacity duration-500"
+                            />
+                          ) : (
+                            <div className="absolute inset-0 bg-[radial-gradient(circle_at_40%_30%,rgba(255,255,255,0.08),transparent_60%)]" />
+                          )}
+                        </div>
+                        <div className="py-2 pr-3 flex flex-col justify-center min-w-0 flex-1">
+                          <span className="text-[9px] font-bold uppercase tracking-widest text-zinc-500">
+                            {rel.category.replace(/_/g, ' ')}
+                          </span>
+                          <h4 className="text-xs font-semibold mt-1 leading-snug line-clamp-2 text-zinc-200 group-hover:text-white transition-colors">
+                            {relTitle}
+                          </h4>
+                          {relDate && (
+                            <span className="text-[10px] text-zinc-600 mt-1">
+                              {relDate}
+                            </span>
+                          )}
+                        </div>
+                      </Link>
+                    </li>
+                  );
+                })}
+              </ul>
+              <div className="mt-6 pt-5 border-t border-white/[0.06]">
+                <Link
+                  href={`/${locale}/article`}
+                  className="inline-flex items-center gap-2 text-[11px] font-bold text-zinc-400 hover:text-white uppercase tracking-wider underline-grow pb-1"
+                >
+                  {locale === 'tr' ? 'Tüm Makaleler' : 'All Articles'} →
+                </Link>
+              </div>
+            </aside>
+          )}
         </div>
       )}
     </div>
