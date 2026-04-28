@@ -195,9 +195,14 @@ export async function proxy(request: NextRequest) {
 
     // Public admin path'ler nonce CSP'den muaf — yukarıdaki açıklamaya
     // bakın. Next'in kendi varsayılan güvenlik davranışı + next.config.ts
-    // global header'ları kalır.
+    // global header'ları kalır. Ancak `x-pathname`'i BURADA da set etmek
+    // şart: AdminAuthGate component'i admin layout'ta çalışıyor ve bu
+    // header'ı okuyor. Set edilmezse fallback `/admin` kullanıyor →
+    // public path saymıyor → /admin/login'e redirect → sonsuz döngü.
     if (isPublicAdminPath) {
-      return NextResponse.next();
+      const requestHeaders = new Headers(request.headers);
+      requestHeaders.set('x-pathname', pathname);
+      return NextResponse.next({ request: { headers: requestHeaders } });
     }
 
     // Fresh nonce per request. Passing it through request headers is
