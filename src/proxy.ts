@@ -48,6 +48,41 @@ function buildAdminCsp(nonce: string): string {
 // State-mutating HTTP methods (GET/HEAD/OPTIONS are safe per spec).
 const MUTATING_METHODS = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
 
+// ── Stale-JWT check rate limiting ──────────────────────────────────────────
+//
+// Admin sayfa navigasyonu sırasında her request'te DB user check'i yapmak
+// 5-15ms ekliyordu — 5 sayfalık bir tıklama serisinde gözle görülür yavaşlık.
+// In-memory cache: aynı instance üstünde aynı user için 60 saniyede 1
+// DB sorgusu yeter. Vercel warm instance'lerinde bu kazanç gerçek; cold
+// start'ta cache boş, ilk request DB hit eder (zaten gerekli).
+const USER_CHECK_TTL_MS = 60_000;
+const userCheckCache = new Map<string, number>(); // userId → ms timestamp
+
+/** True dönerse caller DB'den user'ı doğrulamalı; false ise cache geçerli. */
+function shouldRevalidateUser(userId: string): boolean {
+  const last = userCheckCache.get(userId);
+  if (last === undefined) return true;
+  return Date.now() - last > USER_CHECK_TTL_MS;
+}
+
+/**
+ * Cache'i güncelle. invalid=true ise damga silinir (geçersizleştirme) —
+ * pasifleştirilen bir kullanıcının cache'te "OK" sabit kalmasını engeller.
+ */
+function markUserChecked(userId: string, invalid: boolean): void {
+  if (invalid) {
+    userCheckCache.delete(userId);
+    return;
+  }
+  userCheckCache.set(userId, Date.now());
+  // Map sınırsız büyümesin — 1000 entry'den fazlaysa en eskisini at.
+  // Admin paneli için 1000 farklı user pratikte ulaşılmaz, ama defansif.
+  if (userCheckCache.size > 1000) {
+    const firstKey = userCheckCache.keys().next().value;
+    if (firstKey !== undefined) userCheckCache.delete(firstKey);
+  }
+}
+
 /**
  * Origin validation for /api mutations (CSRF defense). NextAuth v4 + httpOnly
  * + SameSite=lax; Origin/Referer header can't be spoofed by attacker JS.
@@ -147,11 +182,27 @@ export async function proxy(request: NextRequest) {
       // Stale-JWT koruması: JWT signature OK olsa bile, kullanıcı DB'de
       // hâlâ var ve aktif mi kontrol et. Aksi halde silinen/pasifleştirilen
       // bir admin, eski cookie'siyle 24 saat boyunca admin yetkilerini
-      // kullanmaya devam ederdi (JWT stateless). Bu DB query her admin
-      // sayfa yükünde 1 ek call ekliyor (~5-15ms) — internal admin paneli
-      // için kabul edilebilir maliyet, public traffic'i etkilemez.
+      // kullanmaya devam ederdi (JWT stateless).
+      //
+      // Performans optimizasyonu: HER admin request'te DB hit yapmak
+      // navigation'ı yavaşlatıyordu (5-8 sayfa → 5-8 ekstra sorgu).
+      // İki katman:
+      //   1) Mutating request (POST/PUT/PATCH/DELETE) → her zaman DB check.
+      //      Burada gerçek hasar verebilecek action var, doğrulama şart.
+      //   2) Read request (GET, sayfa navigation) → in-memory cache 60sn.
+      //      Aynı instance üzerinde arka arkaya gelen sayfa istekleri DB
+      //      hit etmez. Cold start veya 60sn sonra yine doğrulanır.
+      //   3) requireSectionAccess (downstream API'lerde) zaten DB'den
+      //      live permission'ları okuyor → mutating action'da çift kontrol.
+      //
+      // Worst case: yeni pasifleştirilen admin 60 saniye boyunca read-only
+      // admin sayfalarını görebilir. Hiçbir mutation yapamaz (mutating
+      // path'inde DB check anında devreye girer). Kabul edilebilir.
       const tokenUserId = token.id as string | undefined;
-      if (tokenUserId) {
+      const isMutatingAdmin = MUTATING_METHODS.has(method);
+      const shouldCheckDb =
+        !!tokenUserId && (isMutatingAdmin || shouldRevalidateUser(tokenUserId));
+      if (shouldCheckDb && tokenUserId) {
         const dbUser = await prisma.user.findUnique({
           where: { id: tokenUserId },
           select: { isActive: true, role: true },
@@ -165,13 +216,19 @@ export async function proxy(request: NextRequest) {
           // NextAuth'un kullandığı her iki cookie ismini de sil
           response.cookies.delete('__Secure-next-auth.session-token');
           response.cookies.delete('next-auth.session-token');
+          // Cache invalidasyonu — bu user için bir daha "OK" diye kayıt
+          // tutmasın, başka instance'lar farkındaysa yine başına bunu
+          // tekrar yaşamasın diye.
+          markUserChecked(tokenUserId, /* invalid */ true);
           return response;
         }
+        // OK durumu: cache'e damga bas, sonraki 60sn bu user için DB
+        // hit etmesin (read path'inde).
+        markUserChecked(tokenUserId, /* invalid */ false);
         // DB'deki güncel role JWT'dekinden farklıysa (admin tarafından
         // değiştirilmiş), DB'yi otorite kabul ediyoruz — kullanıcı ne
         // hak ediyorsa onu görsün, JWT'deki eski role'e güvenmiyoruz.
-        // Burada sadece pathname'i bloklayıp loglamıyoruz; downstream
-        // permission check'leri zaten DB'den okuyor (auth-guard.ts).
+        // Downstream permission check'leri zaten DB'den okuyor (auth-guard).
       }
 
       // 2FA gate: parola OK ama henüz TOTP kodu doğrulanmadı.
