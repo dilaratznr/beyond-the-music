@@ -77,16 +77,35 @@ export async function PUT(request: NextRequest) {
   if (!Array.isArray(ids) || !ids.every((x) => typeof x === 'string')) {
     return NextResponse.json({ error: 'ids must be a string array' }, { status: 400 });
   }
-  if (ids.length > MAX_FEATURED) {
+
+  // Dedup BEFORE the size check — duplicates aren't user-facing limits, they
+  // collapse to one slot. Also avoids misleading "too many" messages when
+  // the actual unique count is fine.
+  const uniqueIds = Array.from(new Set(ids));
+
+  if (uniqueIds.length > MAX_FEATURED) {
     return NextResponse.json(
       { error: `En fazla ${MAX_FEATURED} öğe öne çıkarabilirsin.` },
       { status: 400 },
     );
   }
 
-  const uniqueIds = Array.from(new Set(ids));
-
+  // Önemli: Aşağıdaki transaction içinde N tane `update({ where: { id } })`
+  // çalıştırıyoruz. UI'ın gönderdiği bir id, bu request açıkken başka
+  // sekmede silinmiş bir kayda işaret ediyorsa Prisma `RecordNotFound`
+  // fırlatır → tüm transaction rollback olur AMA kullanıcı featured listesini
+  // boş bırakmak istemiyordu, sadece tek bir stale referansı temizlemek
+  // istiyordu. Önce DB'de gerçekten var olan id'leri çekip, sadece onları
+  // güncelle. Stale id'leri sessizce drop et (admin UI bir sonraki refresh'te
+  // güncel listeyi zaten alır).
   if (kind === 'article') {
+    const existing = await prisma.article.findMany({
+      where: { id: { in: uniqueIds } },
+      select: { id: true },
+    });
+    const existingSet = new Set(existing.map((r) => r.id));
+    const validIds = uniqueIds.filter((id) => existingSet.has(id));
+
     await prisma.$transaction([
       // Clear every existing featured article first.
       prisma.article.updateMany({
@@ -96,23 +115,38 @@ export async function PUT(request: NextRequest) {
       // Then assign the new order. We run this as N single-row updates
       // (rather than one updateMany) because each row needs a different
       // order value.
-      ...uniqueIds.map((id, i) =>
+      ...validIds.map((id, i) =>
         prisma.article.update({ where: { id }, data: { featuredOrder: i } }),
       ),
     ]);
     revalidateTag(CACHE_TAGS.article, 'max');
+    return NextResponse.json({
+      success: true,
+      count: validIds.length,
+      droppedStaleCount: uniqueIds.length - validIds.length,
+    });
   } else {
+    const existing = await prisma.album.findMany({
+      where: { id: { in: uniqueIds } },
+      select: { id: true },
+    });
+    const existingSet = new Set(existing.map((r) => r.id));
+    const validIds = uniqueIds.filter((id) => existingSet.has(id));
+
     await prisma.$transaction([
       prisma.album.updateMany({
         where: { featuredOrder: { not: null } },
         data: { featuredOrder: null },
       }),
-      ...uniqueIds.map((id, i) =>
+      ...validIds.map((id, i) =>
         prisma.album.update({ where: { id }, data: { featuredOrder: i } }),
       ),
     ]);
     revalidateTag(CACHE_TAGS.album, 'max');
+    return NextResponse.json({
+      success: true,
+      count: validIds.length,
+      droppedStaleCount: uniqueIds.length - validIds.length,
+    });
   }
-
-  return NextResponse.json({ success: true, count: uniqueIds.length });
 }

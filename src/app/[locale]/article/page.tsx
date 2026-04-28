@@ -17,15 +17,16 @@ type ArticleListItem = Awaited<ReturnType<typeof loadArticles>>[number];
 
 // Kategori sıralaması — anasayfadaki "Editor's Pick" hissini korumak için
 // kültürel impact ve genre öncelikli, niş kategoriler aşağıda.
+// Prisma `ArticleCategory` enum'uyla 1-1 eşleşir (schema.prisma).
 const CATEGORY_ORDER = [
   'CULTURAL_IMPACT',
   'GENRE',
-  'ARTIST',
-  'ALBUM',
+  'CURATED_MOVEMENT',
   'DEEP_CUT',
   'THEORY',
   'FASHION',
   'SUBCULTURE',
+  'LISTENING_PATH',
   'AI_MUSIC',
 ] as const;
 

@@ -76,13 +76,13 @@
     "categories": {
       "GENRE": "Tür",
       "CULTURAL_IMPACT": "Kültürel Etki",
-      "DEEP_CUT": "Derin Kesit",
-      "AI_MUSIC": "AI Müzik",
-      "THEORY": "Teori",
-      "FASHION": "Moda",
       "SUBCULTURE": "Alt Kültür",
-      "ARTIST": "Sanatçı",
-      "ALBUM": "Albüm"
+      "CURATED_MOVEMENT": "Küratöryel Hareket",
+      "THEORY": "Teori",
+      "LISTENING_PATH": "Dinleme Rotası",
+      "AI_MUSIC": "AI Müzik",
+      "DEEP_CUT": "Derin Kesit",
+      "FASHION": "Moda"
     }
   },
   "common": {

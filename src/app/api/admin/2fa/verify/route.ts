@@ -21,7 +21,11 @@ function getCookieName() {
  * backup codes (raw, one-time display). Rate-limited (brute force defense).
  */
 export async function POST(request: NextRequest) {
-  const { error, user } = await requireAuth('EDITOR');
+  // allowPending: bu endpoint hem 2FA setup sırasında (enroll state'i)
+  // hem de login sonrası TOTP kodunu doğrulamak için (verify state'i)
+  // çağrılıyor. İkisi de tfaPending JWT'siyle gelir; pending bypass
+  // burada amaçtır, başka admin endpoint'inde DEĞİL.
+  const { error, user } = await requireAuth('EDITOR', { allowPending: true });
   if (error || !user) return error;
 
   const userId = (user as { id: string }).id;

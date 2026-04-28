@@ -76,13 +76,13 @@
     "categories": {
       "GENRE": "Genre",
       "CULTURAL_IMPACT": "Cultural Impact",
-      "DEEP_CUT": "Deep Cut",
-      "AI_MUSIC": "AI Music",
-      "THEORY": "Theory",
-      "FASHION": "Fashion",
       "SUBCULTURE": "Subculture",
-      "ARTIST": "Artist",
-      "ALBUM": "Album"
+      "CURATED_MOVEMENT": "Curated Movement",
+      "THEORY": "Theory",
+      "LISTENING_PATH": "Listening Path",
+      "AI_MUSIC": "AI Music",
+      "DEEP_CUT": "Deep Cut",
+      "FASHION": "Fashion"
     }
   },
   "common": {

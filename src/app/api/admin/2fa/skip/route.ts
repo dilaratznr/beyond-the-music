@@ -23,7 +23,10 @@ function getCookieName() {
 }
 
 export async function POST(request: NextRequest) {
-  const { error, user } = await requireAuth('EDITOR');
+  // allowPending: bu endpoint tam olarak `tfaPending: 'enroll'` state'inde
+  // çağrılır (kullanıcı 2FA setup'ı atlamak istiyor). Pending check'ini
+  // bypass etmek burada amaçtır, başka yerde ASLA değil.
+  const { error, user } = await requireAuth('EDITOR', { allowPending: true });
   if (error || !user) return error;
 
   const ctx = extractContext(request);

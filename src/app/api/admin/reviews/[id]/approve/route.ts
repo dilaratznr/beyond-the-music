@@ -53,12 +53,20 @@ export async function POST(
           { status: 404 },
         );
       }
+      // Schedule preservation: yazar review'a göndermeden önce ileri tarihli
+      // bir publishedAt set ettiyse, super-admin onayı bu zamanlamayı
+      // bozmamalı. publishedAt gelecekte ise statüsü SCHEDULED kalır;
+      // publishDueArticles() (cron + admin sayfa load'larında çağrılan)
+      // zaman gelince PUBLISHED'e çevirir. Geçmiş tarihli veya boşsa
+      // anında yayına alınır (publishedAt = now).
+      const now = new Date();
+      const isScheduled =
+        article.publishedAt !== null && article.publishedAt > now;
       await prisma.article.update({
         where: { id: article.id },
-        data: {
-          status: 'PUBLISHED',
-          publishedAt: article.publishedAt ?? new Date(),
-        },
+        data: isScheduled
+          ? { status: 'SCHEDULED' }
+          : { status: 'PUBLISHED', publishedAt: article.publishedAt ?? now },
       });
       revalidateTag(CACHE_TAGS.article, 'max');
       break;

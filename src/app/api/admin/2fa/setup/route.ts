@@ -16,7 +16,10 @@ import { generateTwoFactorSetup } from '@/lib/two-factor';
  * ise (`twoFactorEnabledAt` dolu) → 409 döner; önce disable etmesi lazım.
  */
 export async function POST() {
-  const { error, user } = await requireAuth('EDITOR');
+  // allowPending: setup endpoint'i `tfaPending: 'enroll'` state'inde
+  // çağrılır (kullanıcı yeni 2FA secret'i kuruyor). Pending bypass
+  // burada amaçtır, başka admin endpoint'inde DEĞİL.
+  const { error, user } = await requireAuth('EDITOR', { allowPending: true });
   if (error || !user) return error;
 
   const userId = (user as { id: string }).id;
