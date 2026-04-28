@@ -63,6 +63,13 @@ async function verifyAction(formData: FormData) {
 
   const userId = token.id as string;
 
+  // Re-redirect helper'ı: error message ekleyip orijinal `next` callback'ini
+  // koru. Olmadan kullanıcı 2FA fail → retry success sonrası dashboard'a
+  // düşüyor, ulaşmak istediği sayfa kaybediliyordu.
+  const nextParam = encodeURIComponent(next);
+  const failRedirect = (errCode: string) =>
+    redirect(`/admin/login/2fa?error=${errCode}&next=${nextParam}`);
+
   // Brute-force koruması — verify endpoint ile aynı pencere
   const rl = rateLimit(`2fa:login:${userId}`, 5, 60_000);
   if (!rl.success) {
@@ -72,11 +79,11 @@ async function verifyAction(formData: FormData) {
       ip,
       userAgent,
     });
-    redirect('/admin/login/2fa?error=too-many');
+    failRedirect('too-many');
   }
 
   if (!code) {
-    redirect('/admin/login/2fa?error=missing');
+    failRedirect('missing');
   }
 
   const dbUser = await prisma.user.findUnique({
@@ -125,7 +132,7 @@ async function verifyAction(formData: FormData) {
       ip,
       userAgent,
     });
-    redirect('/admin/login/2fa?error=invalid');
+    failRedirect('invalid');
   }
 
   // Tam JWT — tfaPending YOK

@@ -172,13 +172,19 @@ export default function ImageUploader({
           </button>
         </div>
       ) : (
-        <label
+        <button
+          type="button"
+          onClick={() => inputRef.current?.click()}
           onDragOver={(e) => {
             e.preventDefault();
             setDragOver(true);
           }}
           onDragLeave={() => setDragOver(false)}
           onDrop={handleDrop}
+          disabled={uploading}
+          // Önceden bir <label> idi ama ne `htmlFor` ne de nested input
+          // vardı — tıklamak hiçbir şey yapmıyordu. <button> + ref.click()
+          // ile dosya seçici garanti açılıyor; drag/drop davranışı korundu.
           className={`${aspectClass} w-full max-w-[220px] flex flex-col items-center justify-center gap-2 border-2 border-dashed rounded-md cursor-pointer transition-colors ${
             dragOver
               ? 'border-zinc-500 bg-zinc-900/80'
@@ -203,7 +209,7 @@ export default function ImageUploader({
             {uploading ? 'Yükleniyor…' : 'Görsel yükle'}
           </span>
           <span className="text-[10px] text-zinc-500">Sürükle bırak veya tıkla</span>
-        </label>
+        </button>
       )}
 
       <input
