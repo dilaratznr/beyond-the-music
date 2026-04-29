@@ -5,7 +5,7 @@ import { publicApiRateLimit } from '@/lib/rate-limit';
 export async function GET(request: NextRequest) {
   // Search 6 ayrı `findMany` + `contains` ile — DB için pahalı sorgu.
   // Normal kullanıcı saniyede 1 yazıyorsa 30/min yeter; üzeri scrape'tir.
-  const limited = publicApiRateLimit(request, 'search', 30, 60_000);
+  const limited = await publicApiRateLimit(request, 'search', 30, 60_000);
   if (limited) return limited;
 
   const { searchParams } = new URL(request.url);

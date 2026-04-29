@@ -5,6 +5,7 @@ import { requireAuth } from '@/lib/auth-guard';
 import { CACHE_TAGS } from '@/lib/db-cache';
 import { slugify } from '@/lib/utils';
 import { parseCsv, rowsToRecords, parseBool, parseReleaseDate, parseTrackNumber } from '@/lib/csv';
+import { audit, extractContext } from '@/lib/audit-log';
 
 /**
  * POST /api/admin/import/discography — Body: { artistId, csv, dryRun? }.
@@ -33,8 +34,8 @@ interface AlbumPlan {
 
 export async function POST(request: NextRequest) {
   // Bulk import → SUPER_ADMIN only (bypass canPublish + 100+ records).
-  const { error } = await requireAuth('SUPER_ADMIN');
-  if (error) return error;
+  const { error, user } = await requireAuth('SUPER_ADMIN');
+  if (error || !user) return error;
 
   const body = await request.json().catch(() => null);
   const artistId = typeof body?.artistId === 'string' ? body.artistId : '';
@@ -257,6 +258,19 @@ export async function POST(request: NextRequest) {
   if (songWrites.length > 0) {
     await prisma.$transaction(songWrites);
   }
+
+  // Audit: bulk CSV import = arşiv koleksiyonu seviyesinde değişiklik.
+  // "Hangi sanatçıya kaç albüm/şarkı yüklendi, kim tarafından?" izlenmeli.
+  const ctx = extractContext(request);
+  await audit({
+    event: 'DISCOGRAPHY_IMPORTED',
+    actorId: user.id,
+    targetId: artist.id,
+    targetType: 'ARTIST',
+    ip: ctx.ip,
+    userAgent: ctx.userAgent,
+    detail: `${artist.name} · ${summary.albumsToCreate} yeni albüm, ${summary.albumsToUpdate} güncel, ${summary.songsToCreate} yeni şarkı`,
+  });
 
   revalidateTag(CACHE_TAGS.album, 'max');
   revalidateTag(CACHE_TAGS.song, 'max');

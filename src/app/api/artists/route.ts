@@ -6,14 +6,15 @@ import { CACHE_TAGS } from '@/lib/db-cache';
 import { slugify } from '@/lib/utils';
 import { resolveCreateStatus, maybeCreateReviewOnCreate } from '@/lib/content-review';
 import { publicApiRateLimit } from '@/lib/rate-limit';
+import { audit, extractContext } from '@/lib/audit-log';
 
 export async function GET(request: NextRequest) {
-  const limited = publicApiRateLimit(request, 'artists');
+  const limited = await publicApiRateLimit(request, 'artists');
   if (limited) return limited;
 
   const { searchParams } = new URL(request.url);
   const page = parseInt(searchParams.get('page') || '1');
-  const limit = parseInt(searchParams.get('limit') || '20');
+  const limit = Math.min(Math.max(1, parseInt(searchParams.get('limit') || '20')), 100);
   const type = searchParams.get('type');
   const all = searchParams.get('all') === 'true';
 
@@ -74,6 +75,17 @@ export async function POST(request: NextRequest) {
     entityTitle: artist.name,
     userId: user.id,
     status,
+  });
+
+  const ctx = extractContext(request);
+  await audit({
+    event: 'ARTIST_CREATED',
+    actorId: user.id,
+    targetId: artist.id,
+    targetType: 'ARTIST',
+    ip: ctx.ip,
+    userAgent: ctx.userAgent,
+    detail: artist.name,
   });
 
   revalidateTag(CACHE_TAGS.artist, 'max');

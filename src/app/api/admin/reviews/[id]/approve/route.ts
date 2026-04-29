@@ -4,6 +4,7 @@ import prisma from '@/lib/prisma';
 import { requireAuth } from '@/lib/auth-guard';
 import { CACHE_TAGS } from '@/lib/db-cache';
 import { approveReview } from '@/lib/content-review';
+import { audit, extractContext } from '@/lib/audit-log';
 
 /**
  * POST /api/admin/reviews/[id]/approve
@@ -15,7 +16,7 @@ import { approveReview } from '@/lib/content-review';
  *   Entity DB'de yoksa (silinmişse) warn log + 404 döner.
  */
 export async function POST(
-  _request: NextRequest,
+  request: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
   const { error, user } = await requireAuth('SUPER_ADMIN');
@@ -111,6 +112,20 @@ export async function POST(
   }
 
   const updated = await approveReview(review.id, user.id);
+
+  // Audit: yetkili karar — review onaylandı, içerik yayına alındı.
+  // Forensic için: hangi Super Admin hangi içeriği yayınladı, ne zaman.
+  const ctx = extractContext(request);
+  await audit({
+    event: 'REVIEW_APPROVED',
+    actorId: user.id,
+    targetId: review.entityId,
+    targetType: review.section,
+    ip: ctx.ip,
+    userAgent: ctx.userAgent,
+    detail: `${review.section}: ${review.entityTitle}`,
+  });
+
   return NextResponse.json(updated);
 }
 

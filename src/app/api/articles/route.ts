@@ -10,9 +10,10 @@ import { canUserPublish, submitForReview } from '@/lib/content-review';
 import { sanitizeRichText } from '@/lib/sanitize-html';
 import { publicApiRateLimit } from '@/lib/rate-limit';
 import { validateImageUrl } from '@/lib/url-validation';
+import { audit, extractContext } from '@/lib/audit-log';
 
 export async function GET(request: NextRequest) {
-  const limited = publicApiRateLimit(request, 'articles');
+  const limited = await publicApiRateLimit(request, 'articles');
   if (limited) return limited;
 
   // Promote any scheduled articles whose time has come before reading the list —
@@ -21,7 +22,7 @@ export async function GET(request: NextRequest) {
 
   const { searchParams } = new URL(request.url);
   const page = parseInt(searchParams.get('page') || '1');
-  const limit = parseInt(searchParams.get('limit') || '20');
+  const limit = Math.min(Math.max(1, parseInt(searchParams.get('limit') || '20')), 100);
   const category = searchParams.get('category');
   const status = searchParams.get('status');
 
@@ -171,6 +172,17 @@ export async function POST(request: NextRequest) {
       submittedById: user.id,
     });
   }
+
+  const ctx = extractContext(request);
+  await audit({
+    event: 'ARTICLE_CREATED',
+    actorId: user.id,
+    targetId: article.id,
+    targetType: 'ARTICLE',
+    ip: ctx.ip,
+    userAgent: ctx.userAgent,
+    detail: `${article.titleTr || article.titleEn} (${resolvedStatus})`,
+  });
 
   revalidateTag(CACHE_TAGS.article, 'max');
   return NextResponse.json(article, { status: 201 });

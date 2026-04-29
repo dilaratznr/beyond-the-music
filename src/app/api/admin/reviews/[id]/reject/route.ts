@@ -4,6 +4,7 @@ import prisma from '@/lib/prisma';
 import { requireAuth } from '@/lib/auth-guard';
 import { CACHE_TAGS } from '@/lib/db-cache';
 import { rejectReview } from '@/lib/content-review';
+import { audit, extractContext } from '@/lib/audit-log';
 
 /**
  * Reject pending review. Sets entity to DRAFT (Article: also null publishedAt),
@@ -93,6 +94,19 @@ export async function POST(
   }
 
   const updated = await rejectReview(review.id, user.id, note);
+
+  // Audit: yetkili karar — review reddedildi.
+  const ctx = extractContext(request);
+  await audit({
+    event: 'REVIEW_REJECTED',
+    actorId: user.id,
+    targetId: review.entityId,
+    targetType: review.section,
+    ip: ctx.ip,
+    userAgent: ctx.userAgent,
+    detail: `${review.section}: ${review.entityTitle}${note ? ` · note: ${note.slice(0, 200)}` : ''}`,
+  });
+
   return NextResponse.json(updated);
 }
 

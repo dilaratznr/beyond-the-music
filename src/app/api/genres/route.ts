@@ -6,14 +6,15 @@ import { CACHE_TAGS } from '@/lib/db-cache';
 import { slugify } from '@/lib/utils';
 import { resolveCreateStatus, maybeCreateReviewOnCreate } from '@/lib/content-review';
 import { publicApiRateLimit } from '@/lib/rate-limit';
+import { audit, extractContext } from '@/lib/audit-log';
 
 export async function GET(request: NextRequest) {
-  const limited = publicApiRateLimit(request, 'genres');
+  const limited = await publicApiRateLimit(request, 'genres');
   if (limited) return limited;
 
   const { searchParams } = new URL(request.url);
   const page = parseInt(searchParams.get('page') || '1');
-  const limit = parseInt(searchParams.get('limit') || '20');
+  const limit = Math.min(Math.max(1, parseInt(searchParams.get('limit') || '20')), 100);
   const all = searchParams.get('all') === 'true';
 
   // Anonymous → PUBLISHED only; admin → all (admin/genres list page uses
@@ -80,6 +81,17 @@ export async function POST(request: NextRequest) {
     entityTitle: genre.nameTr,
     userId: user.id,
     status,
+  });
+
+  const ctx = extractContext(request);
+  await audit({
+    event: 'GENRE_CREATED',
+    actorId: user.id,
+    targetId: genre.id,
+    targetType: 'GENRE',
+    ip: ctx.ip,
+    userAgent: ctx.userAgent,
+    detail: genre.nameTr,
   });
 
   revalidateTag(CACHE_TAGS.genre, 'max');

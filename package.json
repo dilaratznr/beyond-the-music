@@ -67,10 +67,13 @@
     "cross-env": "^10.1.0",
     "eslint": "^9",
     "eslint-config-next": "16.2.1",
-    "nodemailer": "^7.0.13",
+    "nodemailer": "^8.0.7",
     "tailwindcss": "^4",
     "tsx": "^4.21.0",
     "typescript": "^5",
     "vitest": "^2.1.9"
+  },
+  "overrides": {
+    "nodemailer": "^8.0.7"
   }
 }

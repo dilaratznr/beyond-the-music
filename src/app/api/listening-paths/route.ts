@@ -6,14 +6,15 @@ import { CACHE_TAGS } from '@/lib/db-cache';
 import { slugify } from '@/lib/utils';
 import { resolveCreateStatus, maybeCreateReviewOnCreate } from '@/lib/content-review';
 import { publicApiRateLimit } from '@/lib/rate-limit';
+import { audit, extractContext } from '@/lib/audit-log';
 
 export async function GET(request: NextRequest) {
-  const limited = publicApiRateLimit(request, 'listening-paths');
+  const limited = await publicApiRateLimit(request, 'listening-paths');
   if (limited) return limited;
 
   const { searchParams } = new URL(request.url);
   const page = parseInt(searchParams.get('page') || '1');
-  const limit = parseInt(searchParams.get('limit') || '20');
+  const limit = Math.min(Math.max(1, parseInt(searchParams.get('limit') || '20')), 100);
 
   // Public ↔ admin shared. Anonymous never sees DRAFT/PENDING_REVIEW paths.
   const isAdmin = await isAdminRequest();
@@ -57,6 +58,17 @@ export async function POST(request: NextRequest) {
     entityTitle: path.titleTr,
     userId: user.id,
     status,
+  });
+
+  const ctx = extractContext(request);
+  await audit({
+    event: 'LISTENING_PATH_CREATED',
+    actorId: user.id,
+    targetId: path.id,
+    targetType: 'LISTENING_PATH',
+    ip: ctx.ip,
+    userAgent: ctx.userAgent,
+    detail: path.titleTr,
   });
 
   revalidateTag(CACHE_TAGS.listeningPath, 'max');

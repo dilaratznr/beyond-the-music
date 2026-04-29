@@ -7,6 +7,7 @@ import {
   buildInviteUrl,
   sendInviteEmail,
 } from '@/lib/user-invitations';
+import { audit, extractContext } from '@/lib/audit-log';
 
 /**
  * POST /api/users/[id]/resend-invite
@@ -30,7 +31,7 @@ export async function POST(
   // Rate limit — aynı kullanıcıya 5 dakikada maksimum 2 davet.
   // SMTP provider'ın spam flag'ini tetiklememesi için; aynı zamanda
   // yanlış tıklama ile email bombardımanını engeller.
-  const limit = rateLimit(`resend-invite:${id}`, 2, 5 * 60 * 1000);
+  const limit = await rateLimit(`resend-invite:${id}`, 2, 5 * 60 * 1000);
   if (!limit.success) {
     const waitSec = Math.ceil(limit.resetInMs / 1000);
     return NextResponse.json(
@@ -77,6 +78,19 @@ export async function POST(
     emailSent = result.emailSent;
     emailError = result.error;
   }
+
+  // Audit: davet yenileme = pratikte super-admin'in tetiklediği password
+  // reset. "Kim kimin için davet yeniden tetikledi?" izlenmeli.
+  const ctx = extractContext(request);
+  await audit({
+    event: 'USER_INVITE_RESENT',
+    actorId: actor.id,
+    targetId: user.id,
+    targetType: 'USER',
+    ip: ctx.ip,
+    userAgent: ctx.userAgent,
+    detail: emailSent ? 'invite emailed' : 'manual share',
+  });
 
   return NextResponse.json({
     invite: {

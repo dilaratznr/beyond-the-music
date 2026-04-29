@@ -12,6 +12,7 @@ import {
 } from '@/lib/user-invitations';
 import { sanitizePermissionsInput } from '@/lib/permissions';
 import { isValidUsername } from '@/lib/user-lookup';
+import { audit, extractContext } from '@/lib/audit-log';
 
 const VALID_ROLES = new Set(['SUPER_ADMIN', 'ADMIN', 'EDITOR']);
 
@@ -160,6 +161,20 @@ export async function POST(request: NextRequest) {
     emailSent = result.emailSent;
     emailError = result.error;
   }
+
+  // Audit: yeni kullanıcı oluşturuldu. Davet edilen kullanıcı + rol +
+  // email gönderim durumu. Forensic için kritik — kim kimin için davet
+  // oluşturdu, hangi yetkilerle.
+  const ctx = extractContext(request);
+  await audit({
+    event: 'USER_CREATED',
+    actorId: actor.id,
+    targetId: user.id,
+    targetType: 'USER',
+    ip: ctx.ip,
+    userAgent: ctx.userAgent,
+    detail: `${user.username} (${user.role})${emailSent ? ' · invite emailed' : ''}`,
+  });
 
   revalidateTag(CACHE_TAGS.user, 'max');
   return NextResponse.json(

@@ -63,6 +63,27 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
   if (error || !user) return error;
 
   const { id } = await params;
+
+  // Ownership guard: section permission "canEdit" yeterli değil — bir
+  // EDITOR yalnız kendi makalesini düzenleyebilmeli, başkasının yazısını
+  // bozup yayına gönderemez. ADMIN/SUPER_ADMIN bu kuralın üstünde
+  // (moderasyon hakkı). Author null olan eski kayıtlar için de izin yok
+  // (tutarsız state, mod düzeltsin).
+  const existing = await prisma.article.findUnique({
+    where: { id },
+    select: { authorId: true },
+  });
+  if (!existing) {
+    return NextResponse.json({ error: 'Makale bulunamadı' }, { status: 404 });
+  }
+  const isModerator = user.role === 'ADMIN' || user.role === 'SUPER_ADMIN';
+  if (!isModerator && existing.authorId !== user.id) {
+    return NextResponse.json(
+      { error: 'Sadece kendi makalenizi düzenleyebilirsiniz' },
+      { status: 403 },
+    );
+  }
+
   const body = await request.json();
   const {
     titleTr,

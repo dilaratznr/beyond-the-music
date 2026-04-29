@@ -6,14 +6,15 @@ import { CACHE_TAGS } from '@/lib/db-cache';
 import { slugify } from '@/lib/utils';
 import { resolveCreateStatus, maybeCreateReviewOnCreate } from '@/lib/content-review';
 import { publicApiRateLimit } from '@/lib/rate-limit';
+import { audit, extractContext } from '@/lib/audit-log';
 
 export async function GET(request: NextRequest) {
-  const limited = publicApiRateLimit(request, 'architects');
+  const limited = await publicApiRateLimit(request, 'architects');
   if (limited) return limited;
 
   const { searchParams } = new URL(request.url);
   const page = parseInt(searchParams.get('page') || '1');
-  const limit = parseInt(searchParams.get('limit') || '20');
+  const limit = Math.min(Math.max(1, parseInt(searchParams.get('limit') || '20')), 100);
   const type = searchParams.get('type');
 
   const where: Record<string, unknown> = {};
@@ -50,6 +51,17 @@ export async function POST(request: NextRequest) {
     entityTitle: architect.name,
     userId: user.id,
     status,
+  });
+
+  const ctx = extractContext(request);
+  await audit({
+    event: 'ARCHITECT_CREATED',
+    actorId: user.id,
+    targetId: architect.id,
+    targetType: 'ARCHITECT',
+    ip: ctx.ip,
+    userAgent: ctx.userAgent,
+    detail: architect.name,
   });
 
   revalidateTag(CACHE_TAGS.architect, 'max');

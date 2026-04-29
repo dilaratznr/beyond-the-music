@@ -5,6 +5,7 @@ import { requireSectionAccess } from '@/lib/auth-guard';
 import { CACHE_TAGS } from '@/lib/db-cache';
 import { maybeFlipAlbumOnSongChange } from '@/lib/content-review';
 import { publicApiRateLimit } from '@/lib/rate-limit';
+import { audit, extractContext } from '@/lib/audit-log';
 
 /**
  * Songs are subordinate to Albums — they inherit the ALBUM permission
@@ -12,12 +13,12 @@ import { publicApiRateLimit } from '@/lib/rate-limit';
  */
 
 export async function GET(request: NextRequest) {
-  const limited = publicApiRateLimit(request, 'songs');
+  const limited = await publicApiRateLimit(request, 'songs');
   if (limited) return limited;
 
   const { searchParams } = new URL(request.url);
   const page = parseInt(searchParams.get('page') || '1');
-  const limit = parseInt(searchParams.get('limit') || '20');
+  const limit = Math.min(Math.max(1, parseInt(searchParams.get('limit') || '20')), 100);
   const albumId = searchParams.get('albumId');
   const isDeepCut = searchParams.get('isDeepCut');
   const all = searchParams.get('all') === 'true';
@@ -80,6 +81,17 @@ export async function POST(request: NextRequest) {
   // PENDING'e çek. Song'un kendi status'u yok, parent'ın yayın durumunu
   // değiştirmek yeterli.
   const { flipped } = await maybeFlipAlbumOnSongChange({ albumId, userId: user.id });
+
+  const ctx = extractContext(request);
+  await audit({
+    event: 'SONG_CREATED',
+    actorId: user.id,
+    targetId: song.id,
+    targetType: 'SONG',
+    ip: ctx.ip,
+    userAgent: ctx.userAgent,
+    detail: song.title,
+  });
 
   revalidateTag(CACHE_TAGS.song, 'max');
   revalidateTag(CACHE_TAGS.album, 'max');

@@ -71,7 +71,7 @@ async function verifyAction(formData: FormData) {
     redirect(`/admin/login/2fa?error=${errCode}&next=${nextParam}`);
 
   // Brute-force koruması — verify endpoint ile aynı pencere
-  const rl = rateLimit(`2fa:login:${userId}`, 5, 60_000);
+  const rl = await rateLimit(`2fa:login:${userId}`, 5, 60_000);
   if (!rl.success) {
     await audit({
       event: 'TWO_FACTOR_LOGIN_BLOCKED_RATE_LIMIT',

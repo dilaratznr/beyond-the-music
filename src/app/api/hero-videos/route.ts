@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { requireAuth } from '@/lib/auth-guard';
+import { audit, extractContext } from '@/lib/audit-log';
 
 export async function GET() {
   const videos = await prisma.heroVideo.findMany({ orderBy: { order: 'asc' } });
@@ -8,8 +9,8 @@ export async function GET() {
 }
 
 export async function POST(request: NextRequest) {
-  const { error } = await requireAuth('SUPER_ADMIN');
-  if (error) return error;
+  const { error, user } = await requireAuth('SUPER_ADMIN');
+  if (error || !user) return error;
 
   const body = await request.json();
   const { url, duration, title } = body;
@@ -20,6 +21,17 @@ export async function POST(request: NextRequest) {
 
   const video = await prisma.heroVideo.create({
     data: { url, duration: duration || 10, order: count, isActive: true, title: title || null },
+  });
+
+  const ctx = extractContext(request);
+  await audit({
+    event: 'HERO_VIDEO_CREATED',
+    actorId: user.id,
+    targetId: video.id,
+    targetType: 'HERO_VIDEO',
+    ip: ctx.ip,
+    userAgent: ctx.userAgent,
+    detail: video.title || video.url,
   });
 
   return NextResponse.json(video, { status: 201 });

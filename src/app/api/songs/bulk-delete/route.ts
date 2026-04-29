@@ -3,6 +3,7 @@ import { revalidateTag } from 'next/cache';
 import prisma from '@/lib/prisma';
 import { requireSectionAccess } from '@/lib/auth-guard';
 import { CACHE_TAGS } from '@/lib/db-cache';
+import { audit, extractContext } from '@/lib/audit-log';
 
 /**
  * POST /api/songs/bulk-delete
@@ -13,8 +14,8 @@ import { CACHE_TAGS } from '@/lib/db-cache';
  * also bulk-prune its tracks.
  */
 export async function POST(request: NextRequest) {
-  const { error } = await requireSectionAccess('ALBUM', 'canDelete');
-  if (error) return error;
+  const { error, user } = await requireSectionAccess('ALBUM', 'canDelete');
+  if (error || !user) return error;
 
   const body = await request.json().catch(() => null);
   const ids = Array.isArray(body?.ids) ? body.ids.filter((x: unknown): x is string => typeof x === 'string') : [];
@@ -23,6 +24,17 @@ export async function POST(request: NextRequest) {
   }
 
   const result = await prisma.song.deleteMany({ where: { id: { in: ids } } });
+
+  const ctx = extractContext(request);
+  await audit({
+    event: 'SONG_BULK_DELETED',
+    actorId: user.id,
+    targetType: 'SONG',
+    ip: ctx.ip,
+    userAgent: ctx.userAgent,
+    detail: `${result.count} silindi · ids=${ids.slice(0, 10).join(',')}${ids.length > 10 ? '…' : ''}`,
+  });
+
   revalidateTag(CACHE_TAGS.song, 'max');
   revalidateTag(CACHE_TAGS.album, 'max');
   return NextResponse.json({ success: true, deleted: result.count });

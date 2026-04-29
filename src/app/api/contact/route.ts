@@ -13,7 +13,7 @@ function escapeHtml(str: string): string {
 
 export async function POST(request: NextRequest) {
   const ip = getClientIp(request);
-  const limit = rateLimit(`contact:${ip}`, 5, 60 * 60 * 1000); // 5/hour per IP
+  const limit = await rateLimit(`contact:${ip}`, 5, 60 * 60 * 1000); // 5/hour per IP
   if (!limit.success) {
     return NextResponse.json(
       { error: 'Çok fazla istek. Lütfen daha sonra tekrar deneyin.' },
@@ -33,9 +33,15 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Geçersiz istek' }, { status: 400 });
   }
 
-  const name = typeof body.name === 'string' ? body.name.trim() : '';
-  const email = typeof body.email === 'string' ? body.email.trim() : '';
-  const subject = typeof body.subject === 'string' ? body.subject.trim() : '';
+  // CRLF stripping: name/email/subject mail header'ına gömülüyor (replyTo,
+  // subject). \r veya \n karakteri gömülürse SMTP komut/header injection
+  // pencereisi açılır (BCC ekleme vs.). Body'de görünmesi normal değil
+  // zaten — boşlukla değiştir.
+  const stripCrlf = (s: string) => s.replace(/[\r\n]+/g, ' ');
+  const name = typeof body.name === 'string' ? stripCrlf(body.name).trim() : '';
+  const email = typeof body.email === 'string' ? stripCrlf(body.email).trim() : '';
+  const subject = typeof body.subject === 'string' ? stripCrlf(body.subject).trim() : '';
+  // Message gerçek gövde — newline'ları koru, sadece trim.
   const message = typeof body.message === 'string' ? body.message.trim() : '';
   // Honeypot: if the hidden `website` field is populated, silently drop.
   const honeypot = typeof body.website === 'string' ? body.website : '';

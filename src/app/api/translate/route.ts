@@ -29,7 +29,7 @@ export async function POST(request: NextRequest) {
   const ip = getClientIp(request);
   const rlKey = user?.id ?? ip;
 
-  const burst = rateLimit(`translate:burst:${rlKey}`, BURST_LIMIT, BURST_WINDOW_MS);
+  const burst = await rateLimit(`translate:burst:${rlKey}`, BURST_LIMIT, BURST_WINDOW_MS);
   if (!burst.success) {
     return NextResponse.json(
       { error: 'Çok hızlı çeviri isteği. Bir dakika bekleyin. / Too many translation requests.' },
@@ -39,7 +39,7 @@ export async function POST(request: NextRequest) {
       },
     );
   }
-  const hourly = rateLimit(`translate:hourly:${rlKey}`, HOURLY_LIMIT, HOURLY_WINDOW_MS);
+  const hourly = await rateLimit(`translate:hourly:${rlKey}`, HOURLY_LIMIT, HOURLY_WINDOW_MS);
   if (!hourly.success) {
     return NextResponse.json(
       { error: 'Saatlik çeviri sınırı aşıldı. / Hourly translation limit reached.' },

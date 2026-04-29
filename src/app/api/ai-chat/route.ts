@@ -41,7 +41,7 @@ interface HistoryTurn {
 export async function POST(request: NextRequest) {
   const ip = getClientIp(request);
 
-  const burst = rateLimit(`aichat:burst:${ip}`, BURST_LIMIT, BURST_WINDOW_MS);
+  const burst = await rateLimit(`aichat:burst:${ip}`, BURST_LIMIT, BURST_WINDOW_MS);
   if (!burst.success) {
     return NextResponse.json(
       { error: 'Çok hızlı. Lütfen bir dakika bekleyin. / Slow down, try again in a minute.' },
@@ -51,7 +51,7 @@ export async function POST(request: NextRequest) {
       },
     );
   }
-  const hourly = rateLimit(`aichat:hourly:${ip}`, HOURLY_LIMIT, HOURLY_WINDOW_MS);
+  const hourly = await rateLimit(`aichat:hourly:${ip}`, HOURLY_LIMIT, HOURLY_WINDOW_MS);
   if (!hourly.success) {
     return NextResponse.json(
       { error: 'Saatlik kullanım sınırına ulaştınız. / Hourly usage limit reached.' },

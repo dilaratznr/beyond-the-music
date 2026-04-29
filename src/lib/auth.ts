@@ -3,6 +3,16 @@ import CredentialsProvider from 'next-auth/providers/credentials';
 import bcrypt from 'bcryptjs';
 import { findUserByIdentifier } from './user-lookup';
 
+/**
+ * Sabit bir bcrypt hash — kullanıcı bulunamadığında bile compare çalıştırıp
+ * yanıt süresinin "user yok" / "user var, şifre yanlış" durumlarında aynı
+ * kalmasını sağlıyoruz. Aksi halde saldırgan response time farkından
+ * username enumeration yapabilir. Hash boş bir string'in 12-cost bcrypt'i;
+ * gerçek kullanıcı şifresiyle eşleşme olasılığı sıfır.
+ */
+const DUMMY_BCRYPT_HASH =
+  '$2a$12$CwTycUXWue0Thq9StjUM0uJ8xkjqg.QQUZpJfMKKpCgz6Nj3KrxmS';
+
 export const authOptions: AuthOptions = {
   providers: [
     CredentialsProvider({
@@ -20,14 +30,21 @@ export const authOptions: AuthOptions = {
 
         const user = await findUserByIdentifier(credentials.identifier);
 
-        if (!user) {
+        // Constant-time pathing: User yoksa bile bcrypt.compare çalıştır.
+        // Kullanıcı yokken hızlı return ettiğimiz eski sürümde saldırgan
+        // login response time'ından "bu username DB'de var mı?" bilgisini
+        // çıkarabiliyordu. Şimdi her durumda aynı bcrypt maliyetini ödetiyoruz.
+        const passwordHash = user?.password ?? DUMMY_BCRYPT_HASH;
+        const isValid = await bcrypt.compare(credentials.password, passwordHash);
+
+        // mustSetPassword / isActive kontrollerini de password DOĞRU olunca
+        // throw'la — yanlış şifrede de "INVITE_PENDING" / "ACCOUNT_DISABLED"
+        // dönersek bu state'ler de timing/error-based enumeration vektörü
+        // olur. Yanlış şifre = generic null.
+        if (!user || !isValid) {
           return null;
         }
 
-        // Davet akışı bekleyen hesap — şifre hiçbir zaman set edilmedi,
-        // placeholder hash'le doldurulmuş. Bcrypt compare bile doğruyu
-        // söyleyemeyecek kadar güçsüz bir güvenlik olurdu (teorik olarak
-        // random hash ile çakışma sıfır, ama yine de açıkça blokluyoruz).
         if (user.mustSetPassword) {
           // NextAuth Credentials provider hata mesajı kullanıcıya iletmeye
           // izin verir — login sayfası özel bir uyarı gösterebilir.
@@ -36,12 +53,6 @@ export const authOptions: AuthOptions = {
 
         if (!user.isActive) {
           throw new Error('ACCOUNT_DISABLED');
-        }
-
-        const isValid = await bcrypt.compare(credentials.password, user.password);
-
-        if (!isValid) {
-          return null;
         }
 
         return {

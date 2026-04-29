@@ -17,7 +17,7 @@ export async function POST(request: NextRequest) {
   const ctx = extractContext(request);
 
   // Rate limit (TOTP verification provides baseline defense).
-  const rl = rateLimit(`2fa:regen:${userId}`, 5, 60_000);
+  const rl = await rateLimit(`2fa:regen:${userId}`, 5, 60_000);
   if (!rl.success) {
     return NextResponse.json({ error: 'Çok fazla deneme.' }, { status: 429 });
   }

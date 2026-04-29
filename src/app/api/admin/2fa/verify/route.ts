@@ -32,7 +32,7 @@ export async function POST(request: NextRequest) {
   const ctx = extractContext(request);
 
   // Brute force defense: rate-limit 5/min makes exhaustive search impractical.
-  const rl = rateLimit(`2fa:verify:${userId}`, 5, 60_000);
+  const rl = await rateLimit(`2fa:verify:${userId}`, 5, 60_000);
   if (!rl.success) {
     return NextResponse.json(
       { error: 'Çok fazla yanlış kod. 1 dakika bekleyin.' },

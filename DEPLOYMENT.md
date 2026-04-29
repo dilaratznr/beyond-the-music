@@ -174,7 +174,18 @@ Deploy başarılı olduktan sonra ilk Super Admin'i `prisma/seed.ts` ile oluştu
 
 ---
 
-## Aşama 8 — Email domain doğrulama (opsiyonel ama önerilir)
+## Aşama 8a — Upstash Redis (rate-limit, opsiyonel ama önerilir)
+
+Rate-limit (login brute-force, contact form, public API) varsayılan olarak in-memory çalışıyor. Vercel serverless'te her cold start sıfırlandığı için **production'da Upstash Redis önerilir** — yoksa istek sınırlama tek bir instance içinde tutarsız çalışır ve saldırgan farklı edge'lere isabet ederek daha çok deneme yapabilir.
+
+1. https://upstash.com → kayıt ol → **Create Database** → Type: Regional, Region: Vercel'inkiyle aynı (genelde `eu-central-1`).
+2. Database sayfasında **REST API** sekmesi → **UPSTASH_REDIS_REST_URL** ve **UPSTASH_REDIS_REST_TOKEN** değerlerini kopyala.
+3. Vercel projesi → Settings → Environment Variables → ikisini de ekle (Production + Preview).
+4. Redeploy.
+
+İki env tanımlıysa rate-limit otomatik olarak Redis kullanır; yoksa in-memory'e düşer (kod değişikliği gerekmez). Upstash'in free tier'ı (10k komut/gün) bu projenin trafiği için bolca yeter.
+
+## Aşama 8b — Email domain doğrulama (opsiyonel ama önerilir)
 
 Şifre sıfırlama maillerinin spam'e düşmemesi için:
 

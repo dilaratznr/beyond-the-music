@@ -48,8 +48,8 @@ async function loginAction(formData: FormData) {
     hdrs.get('x-real-ip')?.trim() ||
     'unknown';
 
-  const ipLimit = rateLimit(`login:ip:${ip}`, 20, 10 * 60 * 1000);
-  const idLimit = rateLimit(`login:id:${identifier}`, 5, 10 * 60 * 1000);
+  const ipLimit = await rateLimit(`login:ip:${ip}`, 20, 10 * 60 * 1000);
+  const idLimit = await rateLimit(`login:id:${identifier}`, 5, 10 * 60 * 1000);
   const userAgent = hdrs.get('user-agent') ?? null;
 
   if (!ipLimit.success || !idLimit.success) {

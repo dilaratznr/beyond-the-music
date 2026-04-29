@@ -6,14 +6,16 @@ import { CACHE_TAGS } from '@/lib/db-cache';
 import { slugify } from '@/lib/utils';
 import { resolveCreateStatus, maybeCreateReviewOnCreate } from '@/lib/content-review';
 import { publicApiRateLimit } from '@/lib/rate-limit';
+import { audit, extractContext } from '@/lib/audit-log';
 
 export async function GET(request: NextRequest) {
-  const limited = publicApiRateLimit(request, 'albums');
+  const limited = await publicApiRateLimit(request, 'albums');
   if (limited) return limited;
 
   const { searchParams } = new URL(request.url);
   const page = parseInt(searchParams.get('page') || '1');
-  const limit = parseInt(searchParams.get('limit') || '20');
+  // DoS guard: ?limit=999999 ile DB'yi taratamasınlar — 100'le sınırlandır.
+  const limit = Math.min(Math.max(1, parseInt(searchParams.get('limit') || '20')), 100);
   const artistId = searchParams.get('artistId');
 
   // Anonymous visitors only see PUBLISHED. Admin panel uses the same endpoint
@@ -61,6 +63,17 @@ export async function POST(request: NextRequest) {
     entityTitle: album.title,
     userId: user.id,
     status,
+  });
+
+  const ctx = extractContext(request);
+  await audit({
+    event: 'ALBUM_CREATED',
+    actorId: user.id,
+    targetId: album.id,
+    targetType: 'ALBUM',
+    ip: ctx.ip,
+    userAgent: ctx.userAgent,
+    detail: album.title,
   });
 
   revalidateTag(CACHE_TAGS.album, 'max');

@@ -3,14 +3,15 @@ import { revalidateTag } from 'next/cache';
 import prisma from '@/lib/prisma';
 import { requireSectionAccess } from '@/lib/auth-guard';
 import { CACHE_TAGS } from '@/lib/db-cache';
+import { audit, extractContext } from '@/lib/audit-log';
 
 /**
  * Bulk article status update. Preserves original publishedAt for PUBLISHED
  * articles; nulls it for DRAFT. SCHEDULED excluded (needs per-article dates).
  */
 export async function POST(request: NextRequest) {
-  const { error } = await requireSectionAccess('ARTICLE', 'canPublish');
-  if (error) return error;
+  const { error, user } = await requireSectionAccess('ARTICLE', 'canPublish');
+  if (error || !user) return error;
 
   const body = await request.json().catch(() => null);
   const ids = Array.isArray(body?.ids)
@@ -49,6 +50,17 @@ export async function POST(request: NextRequest) {
   });
 
   const results = await prisma.$transaction(updates);
+
+  const ctx = extractContext(request);
+  await audit({
+    event: status === 'PUBLISHED' ? 'ARTICLE_BULK_PUBLISHED' : 'ARTICLE_BULK_UNPUBLISHED',
+    actorId: user.id,
+    targetType: 'ARTICLE',
+    ip: ctx.ip,
+    userAgent: ctx.userAgent,
+    detail: `${results.length} makale → ${status} · ids=${ids.slice(0, 10).join(',')}${ids.length > 10 ? '…' : ''}`,
+  });
+
   revalidateTag(CACHE_TAGS.article, 'max');
   return NextResponse.json({ success: true, updated: results.length });
 }

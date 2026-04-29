@@ -26,7 +26,7 @@ export async function POST(request: NextRequest) {
   const userId = (user as { id: string }).id;
 
   // Brute-force koruması — verify endpoint ile aynı pencere.
-  const rl = rateLimit(`2fa:disable:${userId}`, 5, 60_000);
+  const rl = await rateLimit(`2fa:disable:${userId}`, 5, 60_000);
   if (!rl.success) {
     return NextResponse.json(
       { error: 'Çok fazla deneme — bir dakika sonra tekrar dene' },

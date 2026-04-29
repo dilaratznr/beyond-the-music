@@ -3,6 +3,7 @@ import bcrypt from 'bcryptjs';
 import prisma from '@/lib/prisma';
 import { verifyInvitationToken } from '@/lib/user-invitations';
 import { validatePassword } from '@/lib/password-policy';
+import { audit, extractContext } from '@/lib/audit-log';
 
 /**
  * GET /api/auth/accept-invite?token=xxx
@@ -87,6 +88,19 @@ export async function POST(request: NextRequest) {
       data: { usedAt: new Date() },
     }),
   ]);
+
+  // Audit: davet kabul edildi ve şifre set edildi. actor = kullanıcının
+  // kendisi (henüz session yok ama davet token'ı kimliği doğruluyor).
+  const ctx = extractContext(request);
+  await audit({
+    event: 'USER_INVITE_ACCEPTED',
+    actorId: record.userId,
+    targetId: record.userId,
+    targetType: 'USER',
+    ip: ctx.ip,
+    userAgent: ctx.userAgent,
+    detail: 'password set via invite',
+  });
 
   return NextResponse.json({ success: true });
 }
