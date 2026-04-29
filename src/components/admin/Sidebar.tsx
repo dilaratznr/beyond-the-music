@@ -408,8 +408,15 @@ export default function Sidebar() {
             );
           }
 
+          // Profil bloğu artık tıklanabilir — kendi hesap güvenlik
+          // sayfasına (2FA aç/kapa, yedek kodları yenile) götürür. Eski
+          // sürümde bu link yoktu, kullanıcı 2FA'sını kapatamıyordu.
           return (
-            <div className="flex items-center gap-2.5 px-1.5 py-2 rounded-md bg-zinc-900/40 border border-zinc-800/60">
+            <Link
+              href="/admin/security/2fa/setup"
+              title="Hesap güvenliği (2FA)"
+              className="flex items-center gap-2.5 px-1.5 py-2 rounded-md bg-zinc-900/40 border border-zinc-800/60 hover:bg-zinc-900/70 hover:border-zinc-700 transition-colors group"
+            >
               <div
                 className={cn(
                   'w-8 h-8 rounded-full flex items-center justify-center text-[12px] font-semibold flex-shrink-0 text-white',
@@ -436,7 +443,10 @@ export default function Sidebar() {
                   </p>
                 )}
               </div>
-            </div>
+              <span className="text-zinc-600 group-hover:text-zinc-400 text-xs flex-shrink-0 transition-colors">
+                ⚙
+              </span>
+            </Link>
           );
         })()}
         <div className="flex gap-1">

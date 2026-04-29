@@ -12,14 +12,24 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
+import useSWR from 'swr';
 
 type State =
   | { kind: 'idle' }
   | { kind: 'qr'; qrDataUrl: string; otpauthUrl: string }
-  | { kind: 'success'; backupCodes: string[] };
+  | { kind: 'success'; backupCodes: string[] }
+  // 2FA zaten aktif → "yönet" görünümü: disable + regenerate-codes butonları
+  | { kind: 'manage' }
+  // Manage'te disable code input açıldı → kapatma için TOTP/backup bekliyor
+  | { kind: 'disabling' };
+
+interface MeResponse {
+  twoFactorEnabled?: boolean;
+  twoFactorEnabledAt?: string | null;
+}
 
 export default function TwoFactorSetupPage() {
   const router = useRouter();
@@ -33,6 +43,21 @@ export default function TwoFactorSetupPage() {
   const [code, setCode] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [info, setInfo] = useState<string | null>(null);
+
+  // Kullanıcının 2FA durumu — Sidebar zaten /api/users/me'yi çekiyor,
+  // burada SWR cache hit ediyoruz. enabled ise idle yerine manage göster.
+  const { data: me, mutate: mutateMe } = useSWR<MeResponse>('/api/users/me', {
+    fetcher: (url) => fetch(url).then((r) => r.json()),
+  });
+
+  useEffect(() => {
+    if (state.kind === 'idle' && me?.twoFactorEnabled && !isOnboarding) {
+      setState({ kind: 'manage' });
+    }
+    // Onboarding state'inde manage'a düşmek istemiyoruz — yeni kullanıcı
+    // zaten 2FA aktif değil, idle akışına devam etsin.
+  }, [me, state.kind, isOnboarding]);
 
   async function skipSetup() {
     setBusy(true);
@@ -79,6 +104,50 @@ export default function TwoFactorSetupPage() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Doğrulama başarısız');
+      setState({ kind: 'success', backupCodes: data.backupCodes });
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Hata');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function disable2fa() {
+    if (state.kind !== 'disabling') return;
+    setBusy(true);
+    setError(null);
+    try {
+      const res = await fetch('/api/admin/2fa/disable', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Kapatılamadı');
+      setCode('');
+      setInfo('İki adımlı doğrulama kapatıldı.');
+      // SWR'da cache'i taze tut, Sidebar / AdminAuthGate güncel state alsın.
+      await mutateMe();
+      setState({ kind: 'idle' });
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Hata');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function regenerateCodes() {
+    setBusy(true);
+    setError(null);
+    setInfo(null);
+    try {
+      const res = await fetch('/api/admin/2fa/regenerate-codes', {
+        method: 'POST',
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Yedek kodlar yenilenemedi');
+      // Yedek kodları success ekranıyla göster — kullanıcı SADECE şimdi
+      // görür; sayfayı kapatınca DB'de hash kaydı kalır, ham kodlar gider.
       setState({ kind: 'success', backupCodes: data.backupCodes });
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Hata');
@@ -285,6 +354,127 @@ export default function TwoFactorSetupPage() {
               >
                 {'Dashboard\u2019a dön'}
               </Link>
+            </div>
+          </div>
+        )}
+
+        {/* ───────────── MANAGE (2FA aktifken görünür) ───────────── */}
+        {state.kind === 'manage' && (
+          <div className="rounded-2xl border border-zinc-800 bg-zinc-900/40 p-8">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="w-10 h-10 rounded-xl bg-emerald-500/10 ring-1 ring-emerald-500/30 flex items-center justify-center">
+                <svg className="w-5 h-5 text-emerald-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                  <path d="M9 12l2 2 4-4" />
+                </svg>
+              </div>
+              <div>
+                <h1 className="text-lg font-semibold text-zinc-100 leading-tight">
+                  İki Adımlı Doğrulama
+                </h1>
+                <p className="text-[11px] text-emerald-400 mt-0.5 font-medium uppercase tracking-wider">
+                  Aktif
+                  {me?.twoFactorEnabledAt && (
+                    <span className="text-zinc-500 normal-case font-normal tracking-normal ml-2">
+                      · {new Date(me.twoFactorEnabledAt).toLocaleDateString('tr-TR', {
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric',
+                      })} tarihinden beri
+                    </span>
+                  )}
+                </p>
+              </div>
+            </div>
+
+            {info && (
+              <div className="mb-5 p-3 bg-emerald-500/[0.06] border border-emerald-500/20 text-emerald-300 text-sm rounded-md">
+                {info}
+              </div>
+            )}
+
+            <p className="text-sm text-zinc-400 mb-6 leading-relaxed">
+              Hesabın iki adımlı doğrulamayla korunuyor. Her login'de
+              authenticator uygulamasından bir kod istenir.
+            </p>
+
+            <div className="space-y-3">
+              <button
+                onClick={regenerateCodes}
+                disabled={busy}
+                className="w-full flex items-center justify-between px-4 py-3 bg-zinc-950 border border-zinc-800 hover:border-zinc-700 hover:bg-zinc-900 rounded-lg text-left text-sm transition-colors disabled:opacity-50"
+              >
+                <span>
+                  <span className="block text-zinc-100 font-medium">Yedek kodları yenile</span>
+                  <span className="block text-[11px] text-zinc-500 mt-0.5">Eskileri geçersiz olur, yeni 10 kod üretilir</span>
+                </span>
+                <span className="text-zinc-500 text-xs">→</span>
+              </button>
+
+              <button
+                onClick={() => {
+                  setCode('');
+                  setError(null);
+                  setInfo(null);
+                  setState({ kind: 'disabling' });
+                }}
+                disabled={busy}
+                className="w-full flex items-center justify-between px-4 py-3 bg-rose-500/[0.04] border border-rose-500/20 hover:border-rose-500/40 hover:bg-rose-500/[0.08] rounded-lg text-left text-sm transition-colors disabled:opacity-50"
+              >
+                <span>
+                  <span className="block text-rose-200 font-medium">İki adımlı doğrulamayı kapat</span>
+                  <span className="block text-[11px] text-rose-300/60 mt-0.5">Hesap güvenliğin azalır — sadece şifreyle korunur</span>
+                </span>
+                <span className="text-rose-300 text-xs">→</span>
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* ───────────── DISABLING (kapatma onayı için TOTP/backup) ───────────── */}
+        {state.kind === 'disabling' && (
+          <div className="rounded-2xl border border-rose-500/30 bg-zinc-900/40 p-8">
+            <h1 className="text-lg font-semibold text-zinc-100 tracking-tight mb-2">
+              2FA'yı kapatmak için doğrulama
+            </h1>
+            <p className="text-sm text-zinc-400 mb-6 leading-relaxed">
+              Authenticator uygulamasındaki <strong>6 haneli kodu</strong> ya
+              da yedek kodlardan birini gir. Çalınmış oturumun bunu yapmasını
+              engellemek için bu adım zorunlu.
+            </p>
+
+            <div className="space-y-3">
+              <input
+                type="text"
+                inputMode="text"
+                autoComplete="one-time-code"
+                autoFocus
+                value={code}
+                onChange={(e) => setCode(e.target.value.replace(/\s/g, ''))}
+                placeholder="000000 veya yedek kod"
+                className="w-full px-3.5 py-2.5 text-center text-base tracking-[0.25em] bg-zinc-950 border border-zinc-800 rounded-md text-zinc-100 focus:border-rose-500/60 outline-none placeholder:tracking-normal placeholder:text-zinc-600"
+              />
+
+              <div className="flex gap-2">
+                <button
+                  onClick={() => {
+                    setCode('');
+                    setError(null);
+                    setState({ kind: 'manage' });
+                  }}
+                  disabled={busy}
+                  className="flex-1 py-2.5 text-zinc-300 bg-zinc-800/60 hover:bg-zinc-800 rounded-md text-sm font-medium transition-colors disabled:opacity-50"
+                >
+                  Vazgeç
+                </button>
+                <button
+                  onClick={disable2fa}
+                  disabled={busy || code.length < 6}
+                  className="flex-1 py-2.5 bg-rose-500 hover:bg-rose-400 text-white rounded-md text-sm font-semibold transition-colors disabled:opacity-30"
+                >
+                  {busy ? 'Kapatılıyor…' : 'Kapat'}
+                </button>
+              </div>
             </div>
           </div>
         )}

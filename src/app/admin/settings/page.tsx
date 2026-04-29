@@ -391,6 +391,136 @@ export default function SettingsPage() {
           </SettingsCard>
         )}
 
+        {/* ── Contact info (Super Admin only) ────────────────── */}
+        {isSuperAdmin && (
+          <SettingsCard
+            title="İletişim Bilgileri"
+            description="Footer ve İletişim sayfasında görünen e-posta, telefon ve adres. Boş bırakılan alan public sitede hiç görünmez (ör. telefon istemiyorsanız boş bırakın)."
+            badge="Sadece Super Admin"
+          >
+            <div>
+              <FieldLabel htmlFor="contact-email">E-posta</FieldLabel>
+              <TextInput
+                id="contact-email"
+                value={settings.contact_email || ''}
+                onChange={(v) => update('contact_email', v)}
+                placeholder="info@example.com"
+              />
+              <FieldHelp>Footer ve iletişim sayfasında mailto: linki olarak görünür.</FieldHelp>
+            </div>
+
+            <div className="grid sm:grid-cols-2 gap-4">
+              <div>
+                <FieldLabel htmlFor="contact-phone">Telefon (ham)</FieldLabel>
+                <TextInput
+                  id="contact-phone"
+                  value={settings.contact_phone || ''}
+                  onChange={(v) => update('contact_phone', v)}
+                  placeholder="+905374225708"
+                />
+                <FieldHelp>
+                  <code>tel:</code> linki için boşluksuz format. Boş bırakırsanız telefon hiç gösterilmez.
+                </FieldHelp>
+              </div>
+              <div>
+                <FieldLabel htmlFor="contact-phone-display">Telefon (gösterim)</FieldLabel>
+                <TextInput
+                  id="contact-phone-display"
+                  value={settings.contact_phone_display || ''}
+                  onChange={(v) => update('contact_phone_display', v)}
+                  placeholder="0 537 422 57 08"
+                />
+                <FieldHelp>Kullanıcıya gösterilen biçim. Boş bırakırsanız ham numara gösterilir.</FieldHelp>
+              </div>
+            </div>
+
+            <SharedFieldsDivider />
+
+            <div>
+              <FieldLabel htmlFor="contact-address-name">Adres Başlığı</FieldLabel>
+              <TextInput
+                id="contact-address-name"
+                value={settings.contact_address_name || ''}
+                onChange={(v) => update('contact_address_name', v)}
+                placeholder="Fade Stage"
+              />
+              <FieldHelp>Adresin üstünde küçük bir etiket olarak görünür (mekan adı vb.).</FieldHelp>
+            </div>
+
+            <div>
+              <FieldLabel htmlFor="contact-address-line">Adres</FieldLabel>
+              <TextArea
+                id="contact-address-line"
+                value={settings.contact_address_line || ''}
+                onChange={(v) => update('contact_address_line', v)}
+                rows={2}
+                placeholder="Cinnah Cd. Farabi Sk. 39/A, Çankaya/Ankara"
+              />
+              <FieldHelp>Tek satıra sığmayabilir; boş bırakırsanız adres bloğu hiç görünmez.</FieldHelp>
+            </div>
+          </SettingsCard>
+        )}
+
+        {/* ── Social links (Super Admin only) ────────────────── */}
+        {isSuperAdmin && (
+          <SettingsCard
+            title="Sosyal Medya"
+            description="Footer ve iletişim sayfasında görünen platform linkleri. Boş bırakılan platform listede hiç görünmez."
+            badge="Sadece Super Admin"
+          >
+            <div className="grid sm:grid-cols-2 gap-4">
+              <div>
+                <FieldLabel htmlFor="social-instagram">Instagram</FieldLabel>
+                <TextInput
+                  id="social-instagram"
+                  value={settings.social_instagram || ''}
+                  onChange={(v) => update('social_instagram', v)}
+                  placeholder="https://instagram.com/..."
+                />
+              </div>
+              <div>
+                <FieldLabel htmlFor="social-youtube">YouTube</FieldLabel>
+                <TextInput
+                  id="social-youtube"
+                  value={settings.social_youtube || ''}
+                  onChange={(v) => update('social_youtube', v)}
+                  placeholder="https://youtube.com/@..."
+                />
+              </div>
+              <div>
+                <FieldLabel htmlFor="social-spotify">Spotify</FieldLabel>
+                <TextInput
+                  id="social-spotify"
+                  value={settings.social_spotify || ''}
+                  onChange={(v) => update('social_spotify', v)}
+                  placeholder="https://open.spotify.com/..."
+                />
+              </div>
+              <div>
+                <FieldLabel htmlFor="social-twitter">X (Twitter)</FieldLabel>
+                <TextInput
+                  id="social-twitter"
+                  value={settings.social_twitter || ''}
+                  onChange={(v) => update('social_twitter', v)}
+                  placeholder="https://x.com/..."
+                />
+              </div>
+              <div>
+                <FieldLabel htmlFor="social-tiktok">TikTok</FieldLabel>
+                <TextInput
+                  id="social-tiktok"
+                  value={settings.social_tiktok || ''}
+                  onChange={(v) => update('social_tiktok', v)}
+                  placeholder="https://tiktok.com/@..."
+                />
+              </div>
+            </div>
+            <FieldHelp>
+              Tam URL girin (https:// dahil). Boş bıraktığınız platform footer ve iletişim sayfasından otomatik gizlenir.
+            </FieldHelp>
+          </SettingsCard>
+        )}
+
         {/* ── Custom nav links (Super Admin only) ────────────── */}
         {isSuperAdmin && (
           <SettingsCard

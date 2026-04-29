@@ -16,7 +16,7 @@
 - `src/app/api/` — API route'ları
 - `src/components/public/` — anasayfa ve public bileşenleri
 - `src/components/admin/` — admin paneli bileşenleri
-- `src/lib/` — prisma, auth, seo, image-storage, **site-config** (iletişim + sosyal linkler), site-sections, …
+- `src/lib/` — prisma, auth, seo, image-storage, **site-contact** (iletişim + sosyal linkler), site-sections, …
 - `src/i18n.ts` — dictionary loader
 - `prisma/schema.prisma` — DB şeması
 - `prisma/seed.ts` — seed data
@@ -31,7 +31,7 @@
 - **ISR:** anasayfa `revalidate = 30` — `force-dynamic` bilinçli olarak kullanılmıyor (perf baseline için `PERF-BASELINE.md`).
 - **Yatay scroll sahneleri** `src/components/public/HorizontalScroll.tsx` ile yapılır (pin + translate, kart yüksekliğine göre ölçülmüş sticky).
 - **Site ayarları** admin tarafında `SiteSetting` modeliyle DB'den okunur; section enable/disable için `src/lib/site-sections.ts` merkezi liste.
-- **İletişim ve sosyal linkler** `src/lib/site-config.ts` üzerinden yönetilir; production'da `NEXT_PUBLIC_CONTACT_*` / `NEXT_PUBLIC_SOCIAL_*` env'leriyle override edilir.
+- **İletişim ve sosyal linkler** Super Admin tarafından `/admin/settings`'ten yönetilir; runtime okuma `src/lib/site-contact.ts` (`getSiteContact`) üzerinden `SiteSetting` tablosuna gider. Boş bırakılan alan public sitede hiç render edilmez (telefon dahil).
 - **Medya:** upload'lar R2/S3'e gider; yoksa `/public/uploads`'a düşer (serverless'te kalıcı değil — bkz. `DEPLOYMENT.md`).
 
 ## İlgili dokümanlar

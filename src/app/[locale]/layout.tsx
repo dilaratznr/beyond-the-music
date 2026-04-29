@@ -2,11 +2,13 @@ import { getDictionary } from '@/i18n';
 import Navbar from '@/components/public/Navbar';
 import Footer from '@/components/public/Footer';
 import AiChat from '@/components/public/AiChat';
+import ErrorBoundary from '@/components/public/ErrorBoundary';
 import SmoothScroll from '@/components/public/SmoothScroll';
 import { PUBLIC_SECTIONS, getSectionEnabledMap } from '@/lib/site-sections';
 import { getCustomNavItems, resolveCustomHref, isExternalHref } from '@/lib/site-custom-nav';
 import { getSiteFonts, resolveFontStyle } from '@/lib/site-fonts';
 import { getSiteBranding } from '@/lib/site-branding';
+import { getSiteContact } from '@/lib/site-contact';
 
 export async function generateStaticParams() {
   return [{ locale: 'tr' }, { locale: 'en' }];
@@ -23,11 +25,12 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
 export default async function LocaleLayout({ children, params }: { children: React.ReactNode; params: Promise<{ locale: string }> }) {
   const { locale } = await params;
   const dict = getDictionary(locale);
-  const [enabledMap, fonts, customNav, branding] = await Promise.all([
+  const [enabledMap, fonts, customNav, branding, contactData] = await Promise.all([
     getSectionEnabledMap(),
     getSiteFonts(),
     getCustomNavItems(),
     getSiteBranding(),
+    getSiteContact(),
   ]);
 
   // Footer logo, ayrı yüklenmemişse header logosuna düşer — tek logo
@@ -85,9 +88,20 @@ export default async function LocaleLayout({ children, params }: { children: Rea
       <SmoothScroll>
         <Navbar locale={locale} sections={navSections} brand={navbarBrand} />
         <main id="main-content" tabIndex={-1} className="flex-1">{children}</main>
-        <Footer locale={locale} dict={dict} brand={footerBrand} />
+        <Footer
+          locale={locale}
+          dict={dict}
+          brand={footerBrand}
+          contact={contactData.contact}
+          social={contactData.social}
+        />
       </SmoothScroll>
-      <AiChat locale={locale} />
+      {/* AI chat'in iç hatası tüm sayfayı çökertmesin — error boundary
+          fallback null verirse widget sessizce gizlenir, kullanıcı
+          siteyi kullanmaya devam eder. */}
+      <ErrorBoundary>
+        <AiChat locale={locale} />
+      </ErrorBoundary>
     </div>
   );
 }

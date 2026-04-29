@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { SITE_CONTACT, SOCIAL_LINKS } from '@/lib/site-config';
+import type { SiteContact, SocialLink } from '@/lib/site-contact';
 
 interface FooterBrand {
   /** Footer-özel logo URL'i. Boşsa header logosuna düşer. */
@@ -27,9 +27,13 @@ interface FooterProps {
   };
   /** Marka bilgisi. Bkz. src/lib/site-branding.ts */
   brand: FooterBrand;
+  /** Super Admin tarafından yönetilen iletişim bilgileri. Bkz. src/lib/site-contact.ts */
+  contact: SiteContact;
+  /** Boş URL'li platformlar zaten filtrelenmiş olarak gelir. */
+  social: SocialLink[];
 }
 
-export default function Footer({ locale, dict, brand }: FooterProps) {
+export default function Footer({ locale, dict, brand, contact, social }: FooterProps) {
   const tr = locale === 'tr';
   const year = new Date().getFullYear();
 
@@ -60,9 +64,9 @@ export default function Footer({ locale, dict, brand }: FooterProps) {
                 : 'A platform exploring the culture beyond music. An archive. An atlas. A curation.'}
             </p>
 
-            {SOCIAL_LINKS.length > 0 && (
+            {social.length > 0 && (
               <ul className="mt-6 flex flex-wrap items-center gap-x-5 gap-y-1.5 text-[11px] uppercase tracking-[0.2em] font-semibold">
-                {SOCIAL_LINKS.map((s) => (
+                {social.map((s) => (
                   <li key={s.name}>
                     <a
                       href={s.url}
@@ -147,30 +151,32 @@ export default function Footer({ locale, dict, brand }: FooterProps) {
               {tr ? 'İletişim' : 'Get in Touch'}
             </h4>
             <ul className="space-y-2.5 text-sm">
-              <li>
-                <a
-                  href={`mailto:${SITE_CONTACT.email}`}
-                  className="hover:text-white transition-colors break-all"
-                >
-                  {SITE_CONTACT.email}
-                </a>
-              </li>
-              {SITE_CONTACT.phone && (
+              {contact.email && (
                 <li>
                   <a
-                    href={`tel:${SITE_CONTACT.phone}`}
-                    className="hover:text-white transition-colors"
+                    href={`mailto:${contact.email}`}
+                    className="hover:text-white transition-colors break-all"
                   >
-                    {SITE_CONTACT.phoneDisplay}
+                    {contact.email}
                   </a>
                 </li>
               )}
-              {SITE_CONTACT.addressLine && (
+              {contact.phone && (
+                <li>
+                  <a
+                    href={`tel:${contact.phone}`}
+                    className="hover:text-white transition-colors"
+                  >
+                    {contact.phoneDisplay || contact.phone}
+                  </a>
+                </li>
+              )}
+              {contact.addressLine && (
                 <li className="text-zinc-600 leading-relaxed pt-1">
-                  {SITE_CONTACT.addressName && (
-                    <span className="block text-zinc-500">{SITE_CONTACT.addressName}</span>
+                  {contact.addressName && (
+                    <span className="block text-zinc-500">{contact.addressName}</span>
                   )}
-                  {SITE_CONTACT.addressLine}
+                  {contact.addressLine}
                 </li>
               )}
             </ul>
