@@ -84,7 +84,7 @@ export default async function TopicDetailPage({
             href={`/${locale}/article`}
             className="text-white/60 hover:text-white transition-colors"
           >
-            ← {dict.article?.title ?? (tr ? 'Makaleler' : 'Articles')}
+            {dict.article?.backToArticles ?? (tr ? '← Makaleler' : '← Articles')}
           </Link>
         }
         title={name}
@@ -92,13 +92,7 @@ export default async function TopicDetailPage({
         meta={
           <div className="text-[11px] uppercase tracking-wider text-white/40 font-bold">
             {articles.length}{' '}
-            {tr
-              ? articles.length === 1
-                ? 'makale'
-                : 'makale'
-              : articles.length === 1
-                ? 'article'
-                : 'articles'}
+            {dict.article?.articleCountUnit ?? (tr ? 'makale' : 'articles')}
           </div>
         }
       />
@@ -106,8 +100,8 @@ export default async function TopicDetailPage({
       <div className="max-w-[1480px] mx-auto px-6 lg:px-10 xl:px-14 py-12 space-y-12">
         {articles.length === 0 ? (
           <EmptyState
-            title={tr ? 'Bu üst başlıkta henüz makale yok.' : 'No articles under this topic yet.'}
-            hint={tr ? 'Yakında — kürasyon sürüyor' : 'Coming soon — curation in progress'}
+            title={dict.article?.topicEmpty ?? (tr ? 'Bu üst başlıkta henüz makale yok.' : 'No articles under this topic yet.')}
+            hint={dict.article?.topicEmptyHint ?? (tr ? 'Yakında — kürasyon sürüyor' : 'Coming soon — curation in progress')}
           />
         ) : (
           <>

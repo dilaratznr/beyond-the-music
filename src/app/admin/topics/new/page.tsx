@@ -189,6 +189,9 @@ export default function NewTopicPage() {
           submitLabel={canPublish === false ? 'Onaya Gönder' : 'Üst Başlık Oluştur'}
           submittingLabel={translating ? 'Çevriliyor…' : canPublish === false ? 'Gönderiliyor…' : 'Oluşturuluyor…'}
           submitting={submitting}
+          // Sadece TR şart — EN boşsa translatePairs otomatik çevirir
+          // (Genre /new pattern'iyle aynı). Çeviri fail ederse server
+          // "Name (TR/EN) required" toast'ı bildirir.
           disabled={!form.nameTr}
         />
       </form>

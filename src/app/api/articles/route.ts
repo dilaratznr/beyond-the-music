@@ -102,6 +102,23 @@ export async function POST(request: NextRequest) {
     );
   }
 
+  // topicId verilmişse mevcut olduğunu doğrula — Prisma FK violation
+  // generic 500 dönerdi; pre-check ile 400 + anlamlı mesaj ver.
+  // Admin dropdown'undan gelen seçim normalde geçerli ama API'yi
+  // doğrudan kullanan biri sahte id gönderebilir.
+  if (topicId) {
+    const topicExists = await prisma.articleTopic.findUnique({
+      where: { id: topicId },
+      select: { id: true },
+    });
+    if (!topicExists) {
+      return NextResponse.json(
+        { error: 'Seçilen üst başlık bulunamadı.' },
+        { status: 400 },
+      );
+    }
+  }
+
   // Normalise the status/publishedAt pair:
   //   DRAFT           → publishedAt = null
   //   SCHEDULED       → publishedAt = future date (required); if in the past, publish now

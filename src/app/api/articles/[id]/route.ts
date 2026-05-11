@@ -122,7 +122,23 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
   }
   if (relatedGenreId !== undefined) data.relatedGenreId = relatedGenreId || null;
   if (relatedArtistId !== undefined) data.relatedArtistId = relatedArtistId || null;
-  if (topicId !== undefined) data.topicId = topicId || null;
+  if (topicId !== undefined) {
+    // Boş string → null. Dolu ise topic'in gerçekten var olduğunu doğrula
+    // ki Prisma generic FK error 500'üne düşmesin.
+    if (topicId) {
+      const topicExists = await prisma.articleTopic.findUnique({
+        where: { id: topicId },
+        select: { id: true },
+      });
+      if (!topicExists) {
+        return NextResponse.json(
+          { error: 'Seçilen üst başlık bulunamadı.' },
+          { status: 400 },
+        );
+      }
+    }
+    data.topicId = topicId || null;
+  }
 
   // Onay akışı için — canPublish'i olmayan admin yayın değişiklikleri
   // istiyorsa, makale PENDING_REVIEW'a düşer ve yeni bir review

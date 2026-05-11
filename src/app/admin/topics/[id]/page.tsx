@@ -151,7 +151,7 @@ export default function EditTopicPage({ params }: { params: Promise<{ id: string
       <form onSubmit={handleSubmit} className="space-y-4">
         {error && <FormError>{error}</FormError>}
 
-        <ReviewNotice section="ARTICLE" canPublish={canPublish} lastRejection={lastRejection} />
+        <ReviewNotice section="ARTICLE_TOPIC" canPublish={canPublish} lastRejection={lastRejection} />
 
         <div className="grid lg:grid-cols-[1fr_260px] gap-5">
           <div className="bg-zinc-900/40 rounded-lg border border-zinc-800 p-5 space-y-5">

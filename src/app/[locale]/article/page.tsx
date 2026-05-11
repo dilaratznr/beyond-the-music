@@ -139,7 +139,7 @@ export default async function ArticleListPage({
             {topics.length > 0 && (
               <div className="flex gap-2 flex-wrap items-center">
                 <span className="text-[10px] text-white/40 uppercase tracking-wider font-bold mr-1">
-                  {tr ? 'Üst Başlıklar' : 'Topics'}
+                  {dict.article?.topics ?? (tr ? 'Üst Başlıklar' : 'Topics')}
                 </span>
                 {topics.map((t) => (
                   <Link

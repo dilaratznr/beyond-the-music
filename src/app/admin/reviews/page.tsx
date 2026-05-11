@@ -27,6 +27,7 @@ interface Review {
 
 const SECTION_LABELS: Record<string, string> = {
   ARTICLE: 'Makale',
+  ARTICLE_TOPIC: 'Üst Başlık',
   ARTIST: 'Sanatçı',
   ALBUM: 'Albüm',
   GENRE: 'Tür',
@@ -39,6 +40,7 @@ const SECTION_LABELS: Record<string, string> = {
 
 const SECTION_HREF: Record<string, (id: string) => string> = {
   ARTICLE: (id) => `/admin/articles/${id}`,
+  ARTICLE_TOPIC: (id) => `/admin/topics/${id}`,
   ARTIST: (id) => `/admin/artists/${id}`,
   ALBUM: (id) => `/admin/albums/${id}`,
   GENRE: (id) => `/admin/genres/${id}`,

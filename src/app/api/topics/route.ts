@@ -8,7 +8,7 @@
  * sayfasında draft + pending görünmesi gerek).
  */
 import { NextRequest, NextResponse } from 'next/server';
-import { revalidateTag } from 'next/cache';
+import { revalidateTag, revalidatePath } from 'next/cache';
 import prisma from '@/lib/prisma';
 import { requireSectionAccess, isAdminRequest } from '@/lib/auth-guard';
 import { CACHE_TAGS } from '@/lib/db-cache';
@@ -72,18 +72,33 @@ export async function POST(request: NextRequest) {
 
   const slug = slugify(nameEn);
 
-  const topic = await prisma.articleTopic.create({
-    data: {
-      slug,
-      nameTr,
-      nameEn,
-      descriptionTr: descriptionTr || null,
-      descriptionEn: descriptionEn || null,
-      image: image || null,
-      order: order || 0,
-      status,
-    },
-  });
+  // Duplicate slug (aynı nameEn ile iki topic) — generic 500 yerine 409
+  // ile anlamlı bir hata mesajı dön ki kullanıcı admin formunda "bu isim
+  // zaten kullanılıyor" görsün.
+  let topic;
+  try {
+    topic = await prisma.articleTopic.create({
+      data: {
+        slug,
+        nameTr,
+        nameEn,
+        descriptionTr: descriptionTr || null,
+        descriptionEn: descriptionEn || null,
+        image: image || null,
+        order: order || 0,
+        status,
+      },
+    });
+  } catch (err) {
+    const code = (err as { code?: string } | null)?.code;
+    if (code === 'P2002') {
+      return NextResponse.json(
+        { error: `"${nameEn}" zaten kullanılıyor. Farklı bir isim seç.` },
+        { status: 409 },
+      );
+    }
+    throw err;
+  }
 
   await maybeCreateReviewOnCreate({
     section: 'ARTICLE_TOPIC',
@@ -105,8 +120,12 @@ export async function POST(request: NextRequest) {
   });
 
   // Topic değişince hem article hem topic cache'ini düşür — public liste
-  // ve detay sayfaları topic verisi okuyor.
+  // ve detay sayfaları topic verisi okuyor. ISR sayfaları (revalidate=30)
+  // unstable_cache kullanmadığı için `revalidateTag` tek başına yetmez;
+  // `revalidatePath` ile public rotaları da düşürüyoruz.
   revalidateTag(CACHE_TAGS.article, 'max');
   revalidateTag(CACHE_TAGS.articleTopic, 'max');
+  revalidatePath('/[locale]/article', 'page');
+  revalidatePath('/[locale]/article/topic/[slug]', 'page');
   return NextResponse.json({ ...topic, requiresReview }, { status: 201 });
 }

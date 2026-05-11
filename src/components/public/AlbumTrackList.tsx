@@ -114,7 +114,7 @@ export default function AlbumTrackList({ songs, locale, labels }: Props) {
             {hasExpandable && isOpen && (
               <div
                 id={`track-${song.id}`}
-                className="pb-6 pt-2 pl-13 pr-2 space-y-4"
+                className="pb-6 pt-2 pl-12 pr-2 space-y-4"
               >
                 {description && (
                   <div>

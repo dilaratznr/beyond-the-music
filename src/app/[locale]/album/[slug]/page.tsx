@@ -237,9 +237,9 @@ export default async function AlbumDetailPage({ params }: { params: Params }) {
                   deepCut: dict.artist.deepCuts,
                   expand: tr ? 'Aç' : 'Open',
                   collapse: tr ? 'Kapat' : 'Close',
-                  about: tr ? 'Şarkı Hakkında' : 'About',
-                  listenOnSpotify: tr ? 'Spotify' : 'Spotify',
-                  listenOnYouTube: tr ? 'YouTube' : 'YouTube',
+                  about: dict.song?.about ?? (tr ? 'Şarkı Hakkında' : 'About this song'),
+                  listenOnSpotify: dict.song?.listenOnSpotify ?? 'Spotify',
+                  listenOnYouTube: dict.song?.listenOnYouTube ?? 'YouTube',
                 }}
               />
             </section>

@@ -73,6 +73,11 @@
     "title": "Makaleler",
     "subtitle": "Müziğin etrafındaki kültürel anlatılar — tür, sanatçı ve sahne üzerine yazılar.",
     "all": "Tümü",
+    "topics": "Üst Başlıklar",
+    "topicEmpty": "Bu üst başlıkta henüz makale yok.",
+    "topicEmptyHint": "Yakında — kürasyon sürüyor",
+    "backToArticles": "← Makaleler",
+    "articleCountUnit": "makale",
     "categories": {
       "GENRE": "Tür",
       "CULTURAL_IMPACT": "Kültürel Etki",
@@ -84,6 +89,11 @@
       "DEEP_CUT": "Derin Kesit",
       "FASHION": "Moda"
     }
+  },
+  "song": {
+    "about": "Şarkı Hakkında",
+    "listenOnSpotify": "Spotify",
+    "listenOnYouTube": "YouTube"
   },
   "common": {
     "readMore": "Devamını Oku",

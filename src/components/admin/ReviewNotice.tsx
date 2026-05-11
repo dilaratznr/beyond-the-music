@@ -24,6 +24,7 @@ const SECTION_WORD: Record<string, string> = {
   GENRE: 'tür',
   LISTENING_PATH: 'rota',
   ARTICLE: 'makale',
+  ARTICLE_TOPIC: 'üst başlık',
 };
 
 function formatDate(raw: string | Date | null | undefined): string {

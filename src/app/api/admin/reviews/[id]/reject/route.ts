@@ -89,6 +89,16 @@ export async function POST(
       } else warnOrphan('dinleme rotası', review.id, review.entityId);
       break;
     }
+    case 'ARTICLE_TOPIC': {
+      // Makale üst başlığı — reddedilirse DRAFT'a düşer, editör notu görür.
+      const exists = await prisma.articleTopic.findUnique({ where: { id: review.entityId }, select: { id: true } });
+      if (exists) {
+        await prisma.articleTopic.update({ where: { id: exists.id }, data: { status: 'DRAFT' } });
+        revalidateTag(CACHE_TAGS.articleTopic, 'max');
+        revalidateTag(CACHE_TAGS.article, 'max');
+      } else warnOrphan('üst başlık', review.id, review.entityId);
+      break;
+    }
     default:
       console.warn(`[reviews/reject] Bilinmeyen section: ${review.section} (review ${review.id})`);
   }

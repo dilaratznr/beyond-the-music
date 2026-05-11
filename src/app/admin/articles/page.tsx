@@ -22,6 +22,12 @@ interface Article {
   createdAt: string;
   publishedAt: string | null;
   author: { name: string };
+  topic: { id: string; slug: string; nameTr: string; nameEn: string } | null;
+}
+
+interface TopicOption {
+  id: string;
+  nameTr: string;
 }
 const PER_PAGE = 15;
 
@@ -74,16 +80,22 @@ function ArticlesPageInner() {
   })();
   const [page, setPage] = useState(1);
   const [filter, setFilter] = useState(initialFilter);
+  const [topicFilter, setTopicFilter] = useState<string>('');
   const [bulkBusy, setBulkBusy] = useState(false);
   const [bulkErr, setBulkErr] = useState<string | null>(null);
 
   const queryParams = new URLSearchParams({ page: String(page), limit: String(PER_PAGE) });
   if (filter) queryParams.set('status', filter);
+  if (topicFilter) queryParams.set('topicId', topicFilter);
   const queryString = queryParams.toString();
 
   const { data: response, mutate, isLoading } = useSWR<{ items: Article[]; total: number }>(
     `/api/articles?${queryString}`,
   );
+
+  // Topic listesi — filtre dropdown'unda. Migration yapılmamışsa boş döner
+  // (graceful — Topic özelliği henüz aktif değilse filtre de gözükmez).
+  const { data: topics = [] } = useSWR<TopicOption[]>('/api/topics?all=true');
   const articles = response?.items ?? [];
   const total = response?.total ?? 0;
 
@@ -97,6 +109,11 @@ function ArticlesPageInner() {
 
   const applyFilter = useCallback((v: string) => {
     setFilter(v);
+    setPage(1);
+  }, []);
+
+  const applyTopicFilter = useCallback((v: string) => {
+    setTopicFilter(v);
     setPage(1);
   }, []);
 
@@ -168,7 +185,7 @@ function ArticlesPageInner() {
         </div>
       </div>
 
-      <div className="flex gap-1.5 mb-4 flex-wrap">
+      <div className="flex gap-1.5 mb-4 flex-wrap items-center">
         {FILTERS.map((f) => (
           <button
             key={f.v}
@@ -182,6 +199,27 @@ function ArticlesPageInner() {
             {f.l}
           </button>
         ))}
+        {topics.length > 0 && (
+          <>
+            <span className="w-px h-5 bg-zinc-800 mx-1" aria-hidden="true" />
+            <label htmlFor="topic-filter" className="text-[10px] uppercase tracking-wider text-zinc-500 font-semibold">
+              Üst Başlık
+            </label>
+            <select
+              id="topic-filter"
+              value={topicFilter}
+              onChange={(e) => applyTopicFilter(e.target.value)}
+              className="px-2.5 py-1.5 bg-zinc-900 border border-zinc-800 rounded-md text-[11px] text-zinc-200 hover:border-zinc-700 focus:border-zinc-500 outline-none focus:ring-2 focus:ring-zinc-500/20 transition-colors min-w-[140px]"
+            >
+              <option value="">Tümü</option>
+              {topics.map((t) => (
+                <option key={t.id} value={t.id}>
+                  {t.nameTr}
+                </option>
+              ))}
+            </select>
+          </>
+        )}
       </div>
 
       <BulkActionBar
@@ -234,6 +272,7 @@ function ArticlesPageInner() {
                     />
                   </th>
                   <th className="text-left px-4 py-2.5 font-semibold text-[10px] uppercase tracking-wider text-zinc-500">Başlık</th>
+                  <th className="text-left px-4 py-2.5 font-semibold text-[10px] uppercase tracking-wider text-zinc-500">Üst Başlık</th>
                   <th className="text-left px-4 py-2.5 font-semibold text-[10px] uppercase tracking-wider text-zinc-500">Kategori</th>
                   <th className="text-left px-4 py-2.5 font-semibold text-[10px] uppercase tracking-wider text-zinc-500 w-32">Durum</th>
                   <th className="text-left px-4 py-2.5 font-semibold text-[10px] uppercase tracking-wider text-zinc-500">Yazar</th>
@@ -244,7 +283,7 @@ function ArticlesPageInner() {
               <tbody className="divide-y divide-zinc-800/60">
                 {articles.length === 0 && (
                   <tr>
-                    <td colSpan={7} className="px-4 py-8 text-center text-zinc-500 text-xs">
+                    <td colSpan={8} className="px-4 py-8 text-center text-zinc-500 text-xs">
                       Henüz makale yok.
                     </td>
                   </tr>
@@ -279,6 +318,15 @@ function ArticlesPageInner() {
                       </td>
                       <td className="px-4 py-2 font-medium text-zinc-100 max-w-[280px] truncate">
                         {a.titleTr}
+                      </td>
+                      <td className="px-4 py-2 max-w-[180px]">
+                        {a.topic ? (
+                          <span className="inline-block px-2 py-0.5 rounded-full text-[10px] font-medium whitespace-nowrap bg-zinc-900/60 text-zinc-300 border border-zinc-800 truncate max-w-full">
+                            {a.topic.nameTr}
+                          </span>
+                        ) : (
+                          <span className="text-zinc-600 text-[11px]">—</span>
+                        )}
                       </td>
                       <td className="px-4 py-2">
                         <span

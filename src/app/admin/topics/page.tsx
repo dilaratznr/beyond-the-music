@@ -175,7 +175,7 @@ function TopicCard({
 
         <div className="flex items-center gap-0.5 flex-shrink-0 md:opacity-0 md:group-hover:opacity-100 md:focus-within:opacity-100 md:transition-opacity">
           <Link
-            href={`/${locale}/article?topic=${topic.slug}`}
+            href={`/${locale}/article/topic/${topic.slug}`}
             target="_blank"
             rel="noopener noreferrer"
             className="text-zinc-500 hover:text-zinc-100 w-7 h-7 flex items-center justify-center rounded-md hover:bg-zinc-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-500/40 transition-colors"

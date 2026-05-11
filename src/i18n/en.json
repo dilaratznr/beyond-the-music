@@ -73,6 +73,11 @@
     "title": "Articles",
     "subtitle": "Cultural narratives around music — pieces on genres, artists, and the wider scene.",
     "all": "All",
+    "topics": "Topics",
+    "topicEmpty": "No articles under this topic yet.",
+    "topicEmptyHint": "Coming soon — curation in progress",
+    "backToArticles": "← Articles",
+    "articleCountUnit": "articles",
     "categories": {
       "GENRE": "Genre",
       "CULTURAL_IMPACT": "Cultural Impact",
@@ -84,6 +89,11 @@
       "DEEP_CUT": "Deep Cut",
       "FASHION": "Fashion"
     }
+  },
+  "song": {
+    "about": "About this song",
+    "listenOnSpotify": "Spotify",
+    "listenOnYouTube": "YouTube"
   },
   "common": {
     "readMore": "Read More",
