@@ -390,30 +390,36 @@ export default function EditArticlePage({ params }: { params: Promise<{ id: stri
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
               <label htmlFor="art-topic" className="block text-sm font-semibold text-zinc-100 tracking-tight mb-1">Üst Başlık</label>
-              <select id="art-topic" value={form.topicId} onChange={(e) => setForm({ ...form, topicId: e.target.value })}
-                className="w-full px-4 py-2 bg-zinc-950 border border-zinc-800 hover:border-zinc-700 focus:border-zinc-500 rounded-lg outline-none text-zinc-100 focus:ring-zinc-500/20 focus:ring-2">
-                <option value="">Yok</option>
-                {topics.map((t) => <option key={t.id} value={t.id}>{t.nameTr}</option>)}
-              </select>
-              <p className="text-[10px] text-zinc-500 mt-1">
-                Soundtracks, Arşiv vb. — <Link href="/admin/topics/new" className="underline hover:text-zinc-300">yeni başlık ekle</Link>
-              </p>
+              <div className="flex gap-2">
+                <select id="art-topic" value={form.topicId} onChange={(e) => setForm({ ...form, topicId: e.target.value })}
+                  className="flex-1 min-w-0 px-4 py-2 bg-zinc-950 border border-zinc-800 hover:border-zinc-700 focus:border-zinc-500 rounded-lg outline-none text-zinc-100 focus:ring-zinc-500/20 focus:ring-2">
+                  <option value="">Yok</option>
+                  {topics.map((t) => <option key={t.id} value={t.id}>{t.nameTr}</option>)}
+                </select>
+                <QuickAddButton href="/admin/topics/new" label="Yeni üst başlık" />
+              </div>
             </div>
             <div>
               <label htmlFor="art-genre" className="block text-sm font-semibold text-zinc-100 tracking-tight mb-1">İlgili Tür</label>
-              <select id="art-genre" value={form.relatedGenreId} onChange={(e) => setForm({ ...form, relatedGenreId: e.target.value })}
-                className="w-full px-4 py-2 bg-zinc-950 border border-zinc-800 hover:border-zinc-700 focus:border-zinc-500 rounded-lg outline-none text-zinc-100 focus:ring-zinc-500/20 focus:ring-2">
-                <option value="">Yok</option>
-                {genres.map((g) => <option key={g.id} value={g.id}>{g.nameTr}</option>)}
-              </select>
+              <div className="flex gap-2">
+                <select id="art-genre" value={form.relatedGenreId} onChange={(e) => setForm({ ...form, relatedGenreId: e.target.value })}
+                  className="flex-1 min-w-0 px-4 py-2 bg-zinc-950 border border-zinc-800 hover:border-zinc-700 focus:border-zinc-500 rounded-lg outline-none text-zinc-100 focus:ring-zinc-500/20 focus:ring-2">
+                  <option value="">Yok</option>
+                  {genres.map((g) => <option key={g.id} value={g.id}>{g.nameTr}</option>)}
+                </select>
+                <QuickAddButton href="/admin/genres/new" label="Yeni tür" />
+              </div>
             </div>
             <div>
               <label htmlFor="art-artist" className="block text-sm font-semibold text-zinc-100 tracking-tight mb-1">İlgili Sanatçı</label>
-              <select id="art-artist" value={form.relatedArtistId} onChange={(e) => setForm({ ...form, relatedArtistId: e.target.value })}
-                className="w-full px-4 py-2 bg-zinc-950 border border-zinc-800 hover:border-zinc-700 focus:border-zinc-500 rounded-lg outline-none text-zinc-100 focus:ring-zinc-500/20 focus:ring-2">
-                <option value="">Yok</option>
-                {artists.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
-              </select>
+              <div className="flex gap-2">
+                <select id="art-artist" value={form.relatedArtistId} onChange={(e) => setForm({ ...form, relatedArtistId: e.target.value })}
+                  className="flex-1 min-w-0 px-4 py-2 bg-zinc-950 border border-zinc-800 hover:border-zinc-700 focus:border-zinc-500 rounded-lg outline-none text-zinc-100 focus:ring-zinc-500/20 focus:ring-2">
+                  <option value="">Yok</option>
+                  {artists.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
+                </select>
+                <QuickAddButton href="/admin/artists/new" label="Yeni sanatçı" />
+              </div>
             </div>
           </div>
         </div>
@@ -490,6 +496,28 @@ export default function EditArticlePage({ params }: { params: Promise<{ id: stri
         </div>
       </form>
     </div>
+  );
+}
+
+/**
+ * Dropdown'un sağına yerleşen küçük "+" butonu. Yeni sekmede ilgili
+ * "create" sayfasını açar; mevcut edit formu kaybolmaz.
+ */
+function QuickAddButton({ href, label }: { href: string; label: string }) {
+  return (
+    <Link
+      href={href}
+      target="_blank"
+      rel="noopener noreferrer"
+      title={`${label} (yeni sekmede aç)`}
+      aria-label={label}
+      className="flex-shrink-0 inline-flex items-center justify-center w-10 h-10 mt-px rounded-lg bg-zinc-950 border border-zinc-800 text-zinc-400 hover:text-white hover:bg-zinc-800 hover:border-zinc-700 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-500/40"
+    >
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
+        <line x1="12" y1="5" x2="12" y2="19" />
+        <line x1="5" y1="12" x2="19" y2="12" />
+      </svg>
+    </Link>
   );
 }
 
