@@ -2,6 +2,7 @@ export const revalidate = 30;
 
 import type { Metadata } from 'next';
 import prisma from '@/lib/prisma';
+import { isAdminRequest } from '@/lib/auth-guard';
 
 /**
  * Prerender every album at build time so <Link> prefetch carries the full
@@ -20,17 +21,27 @@ import { getDictionary } from '@/i18n';
 import { buildPageMetadata, stripHtml, SITE_URL } from '@/lib/seo';
 import { JsonLd } from '@/components/JsonLd';
 import AlbumTrackList from '@/components/public/AlbumTrackList';
+import PreviewBanner from '@/components/public/PreviewBanner';
 
 type Params = Promise<{ locale: string; slug: string }>;
+type SearchParams = Promise<{ preview?: string }>;
 
 export async function generateMetadata({
   params,
+  searchParams,
 }: {
   params: Params;
+  searchParams: SearchParams;
 }): Promise<Metadata> {
   const { locale, slug } = await params;
+  const sp = await searchParams;
+  const isPreviewRequested = sp?.preview === '1';
+  const isAdminPreview = isPreviewRequested && (await isAdminRequest());
+
+  // Preview modda DRAFT/PENDING album'ü de okumak için status filtresini
+  // gevşet; aksi halde yine sadece PUBLISHED.
   const album = await prisma.album.findFirst({
-    where: { slug, status: 'PUBLISHED' },
+    where: isAdminPreview ? { slug } : { slug, status: 'PUBLISHED' },
     select: {
       title: true,
       descriptionTr: true,
@@ -54,16 +65,26 @@ export async function generateMetadata({
     image: album.coverImage,
     type: 'article',
     publishedTime: album.releaseDate,
+    noIndex: isPreviewRequested,
   });
 }
 
-export default async function AlbumDetailPage({ params }: { params: Params }) {
+export default async function AlbumDetailPage({
+  params,
+  searchParams,
+}: {
+  params: Params;
+  searchParams: SearchParams;
+}) {
   const { locale, slug } = await params;
+  const sp = await searchParams;
+  const isPreviewRequested = sp?.preview === '1';
+  const isAdminPreview = isPreviewRequested && (await isAdminRequest());
   const dict = getDictionary(locale);
   const tr = locale === 'tr';
 
   const album = await prisma.album.findFirst({
-    where: { slug, status: 'PUBLISHED' },
+    where: isAdminPreview ? { slug } : { slug, status: 'PUBLISHED' },
     include: {
       artist: true,
       songs: { orderBy: [{ trackNumber: 'asc' }, { id: 'asc' }] },
@@ -71,6 +92,10 @@ export default async function AlbumDetailPage({ params }: { params: Params }) {
   });
 
   if (!album) notFound();
+  // Album bulundu ama yayında değil + admin preview yok → 404
+  if (album.status !== 'PUBLISHED' && !isAdminPreview) notFound();
+
+  const isPreviewMode = isAdminPreview && album.status !== 'PUBLISHED';
 
   const description = tr ? album.descriptionTr : album.descriptionEn;
   const year = album.releaseDate ? new Date(album.releaseDate).getFullYear() : null;
@@ -104,6 +129,15 @@ export default async function AlbumDetailPage({ params }: { params: Params }) {
   return (
     <div className="bg-[#0a0a0b] text-white">
       <JsonLd data={jsonLd} />
+
+      {isPreviewMode && (
+        <PreviewBanner
+          status={album.status}
+          publishedAt={album.releaseDate}
+          editHref={`/admin/albums/${album.id}`}
+          locale={locale}
+        />
+      )}
 
       {/* ▸▸▸ HERO — kapak sağ/sol tam-genişlik bokeh + sol altta editoryel
           meta. Görsel bol-renk olduğundan gradient ağırlığını koyu tutmak

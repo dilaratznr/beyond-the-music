@@ -27,6 +27,12 @@ interface PageMetaOptions {
   type?: 'article' | 'website' | 'profile';
   publishedTime?: Date | string | null;
   authorName?: string | null;
+  /**
+   * Arama motorları bu sayfayı indekslemesin. Admin "preview" akışında
+   * yayınlanmamış bir içeriği gerçek public URL'inde göstereceğimiz için
+   * kullanılır — DRAFT/SCHEDULED içeriğin Google'a sızmasını önler.
+   */
+  noIndex?: boolean;
 }
 
 export function buildPageMetadata({
@@ -38,6 +44,7 @@ export function buildPageMetadata({
   type = 'website',
   publishedTime,
   authorName,
+  noIndex = false,
 }: PageMetaOptions): Metadata {
   const otherLocale = locale === 'tr' ? 'en' : 'tr';
   const url = `${SITE_URL}/${locale}${path}`;
@@ -79,5 +86,14 @@ export function buildPageMetadata({
       description: desc,
       images: image ? [image] : undefined,
     },
+    ...(noIndex
+      ? {
+          robots: {
+            index: false,
+            follow: false,
+            googleBot: { index: false, follow: false },
+          },
+        }
+      : {}),
   };
 }

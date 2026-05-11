@@ -46,6 +46,10 @@ export default function EditAlbumPage({ params }: { params: Promise<{ id: string
   const [translating, setTranslating] = useState(false);
   const [error, setError] = useState('');
   const [songsReloadToken, setSongsReloadToken] = useState(0);
+  // Album slug + status — "Önizle" linki için. Yayında değilse `?preview=1`
+  // query'si ile public detay sayfasını açar; admin auth ile DRAFT görür.
+  const [slug, setSlug] = useState<string>('');
+  const [status, setStatus] = useState<string>('PUBLISHED');
   const [lastRejection, setLastRejection] = useState<{
     reviewNote: string | null;
     reviewedAt: string | null;
@@ -72,6 +76,8 @@ export default function EditAlbumPage({ params }: { params: Promise<{ id: string
             descriptionTr: album.descriptionTr || '',
             descriptionEn: album.descriptionEn || '',
           });
+          setSlug(album.slug || '');
+          setStatus(album.status || 'PUBLISHED');
           if (album.lastRejection) setLastRejection(album.lastRejection);
         }
         setArtists(Array.isArray(artistsList) ? artistsList : []);
@@ -145,12 +151,36 @@ export default function EditAlbumPage({ params }: { params: Promise<{ id: string
           <h1 className="text-xl font-semibold text-zinc-100 tracking-tight">Albüm Düzenle</h1>
           <p className="text-[13px] text-zinc-500 mt-0.5">{form.title || 'Albüm'} bilgilerini güncelle</p>
         </div>
-        <Link
-          href="/admin/albums"
-          className="text-[12px] text-zinc-500 hover:text-zinc-100 transition-colors"
-        >
-          ← Tüm Albümler
-        </Link>
+        <div className="flex gap-2 items-center">
+          {/* Önizleme — public album sayfasını yeni sekmede aç. Yayında değilse
+              `?preview=1` query'si ile gider; admin oturumu DRAFT/PENDING'i de
+              render eder. */}
+          {slug && (
+            <Link
+              href={
+                status === 'PUBLISHED'
+                  ? `/tr/album/${slug}`
+                  : `/tr/album/${slug}?preview=1`
+              }
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-[12px] font-medium text-zinc-300 bg-zinc-900 border border-zinc-800 hover:bg-zinc-800 hover:text-white rounded-md transition-colors"
+              title="Sitede önizle (yeni sekme)"
+            >
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                <circle cx="12" cy="12" r="3" />
+              </svg>
+              Önizle
+            </Link>
+          )}
+          <Link
+            href="/admin/albums"
+            className="text-[12px] text-zinc-500 hover:text-zinc-100 transition-colors"
+          >
+            ← Tüm Albümler
+          </Link>
+        </div>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-4">

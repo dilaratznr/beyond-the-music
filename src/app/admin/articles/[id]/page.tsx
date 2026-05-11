@@ -53,6 +53,8 @@ export default function EditArticlePage({ params }: { params: Promise<{ id: stri
   const [canPublish, setCanPublish] = useState<boolean>(false);
   // Son red edilmiş review notu — makale DRAFT'a alındıysa editöre
   // neden reddedildiği gösterilsin.
+  // Article slug — "Önizle" linki için (yayında değilse `?preview=1` ile gönderir).
+  const [slug, setSlug] = useState<string>('');
   const [lastRejection, setLastRejection] = useState<{
     reviewNote: string | null;
     reviewedAt: string | null;
@@ -114,6 +116,7 @@ export default function EditArticlePage({ params }: { params: Promise<{ id: stri
           };
           setForm(loaded);
           setInitialStatus(status);
+          setSlug(article.slug || '');
           // Establish the baseline for autosave diffing once the form is hydrated.
           baselineRef.current = JSON.stringify(loaded);
           // Son red edilen review varsa kaydet — form başlığı DRAFT
@@ -317,6 +320,29 @@ export default function EditArticlePage({ params }: { params: Promise<{ id: stri
           )}
         </div>
         <div className="flex gap-2 items-center">
+          {/* Önizleme — yeni sekmede public detay sayfasını açar. Yayında
+              değilse `?preview=1` query'si ile gider; admin oturumu olduğu
+              için server taraf DRAFT/SCHEDULED/PENDING'i de render eder.
+              Yayındaysa zaten temiz URL'i açarız (preview query gereksiz). */}
+          {slug && (
+            <Link
+              href={
+                initialStatus === 'PUBLISHED'
+                  ? `/tr/article/${slug}`
+                  : `/tr/article/${slug}?preview=1`
+              }
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-[12px] font-medium text-zinc-300 bg-zinc-900 border border-zinc-800 hover:bg-zinc-800 hover:text-white rounded-md transition-colors"
+              title="Sitede önizle (yeni sekme)"
+            >
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                <circle cx="12" cy="12" r="3" />
+              </svg>
+              Önizle
+            </Link>
+          )}
           <Link href="/admin/articles" className="text-zinc-500 hover:text-zinc-100 text-sm">← Geri</Link>
           <DeleteButton
             endpoint={`/api/articles/${id}`}

@@ -2,6 +2,7 @@ export const revalidate = 30;
 
 import type { Metadata } from 'next';
 import prisma from '@/lib/prisma';
+import { isAdminRequest } from '@/lib/auth-guard';
 
 /**
  * Prerender every published article at build time. `<Link>` can prefetch
@@ -26,15 +27,26 @@ import { JsonLd } from '@/components/JsonLd';
 // ürettiği <p>/<h*>/<a>/<img>/<iframe>(allowlisted host) markup'ını
 // korurken zararlıyı atar. Pure JS — jsdom yok, serverless'te güvenli.
 import { sanitizeArticleHtml } from '@/lib/sanitize-html';
+import PreviewBanner from '@/components/public/PreviewBanner';
 
 type Params = Promise<{ locale: string; slug: string }>;
+type SearchParams = Promise<{ preview?: string }>;
 
 export async function generateMetadata({
   params,
+  searchParams,
 }: {
   params: Params;
+  searchParams: SearchParams;
 }): Promise<Metadata> {
   const { locale, slug } = await params;
+  const sp = await searchParams;
+  // Preview modu: admin'in yayınlanmamış makaleyi gerçek public layout'ta
+  // görmesini sağlar. Sadece authenticated admin için açık; anonim ziyaretçi
+  // `?preview=1` URL'i bilse bile DRAFT'ı göremez (isAdminRequest kontrolü).
+  const isPreviewRequested = sp?.preview === '1';
+  const isAdminPreview = isPreviewRequested && (await isAdminRequest());
+
   const article = await prisma.article.findUnique({
     where: { slug },
     select: {
@@ -48,7 +60,11 @@ export async function generateMetadata({
       author: { select: { name: true } },
     },
   });
-  if (!article || article.status !== 'PUBLISHED') {
+  if (!article) {
+    return { title: locale === 'tr' ? 'Makale bulunamadı' : 'Article not found' };
+  }
+  // Yayında değilse: admin preview moduyla bakıyorsa OK, yoksa 404 metadata.
+  if (article.status !== 'PUBLISHED' && !isAdminPreview) {
     return { title: locale === 'tr' ? 'Makale bulunamadı' : 'Article not found' };
   }
   const title = locale === 'tr' ? article.titleTr : article.titleEn;
@@ -64,11 +80,23 @@ export async function generateMetadata({
     type: 'article',
     publishedTime: article.publishedAt,
     authorName: article.author.name,
+    // Preview modunda Google index'lemesin — yayınlanmamış içeriğin
+    // arama sonuçlarına sızmasını önler.
+    noIndex: isPreviewRequested,
   });
 }
 
-export default async function ArticleDetailPage({ params }: { params: Params }) {
+export default async function ArticleDetailPage({
+  params,
+  searchParams,
+}: {
+  params: Params;
+  searchParams: SearchParams;
+}) {
   const { locale, slug } = await params;
+  const sp = await searchParams;
+  const isPreviewRequested = sp?.preview === '1';
+  const isAdminPreview = isPreviewRequested && (await isAdminRequest());
 
   // We used to call `await publishDueArticles()` here so a visitor
   // hitting the URL exactly at publish time would see the article
@@ -87,7 +115,16 @@ export default async function ArticleDetailPage({ params }: { params: Params }) 
     },
   });
 
-  if (!article || article.status !== 'PUBLISHED') notFound();
+  if (!article) notFound();
+  // Yayında değilse sadece admin preview ile gösterilir; anonim ziyaretçi
+  // hâlâ 404 görür. Bu sayede arama motorları ve linki bilen biri DRAFT'ı
+  // göremez.
+  if (article.status !== 'PUBLISHED' && !isAdminPreview) notFound();
+
+  // Preview modunda mıyız? Admin yayındaki bir makaleye `?preview=1` ile
+  // bakıyorsa banner gösterilmez (zaten canlı); sadece yayında olmayanlar
+  // için banner aktif.
+  const isPreviewMode = isAdminPreview && article.status !== 'PUBLISHED';
 
   // Sidebar için "okumaya devam et" listesi. Aynı kategoriden makaleler
   // önce, sonra en yeni diğerleri (her zaman 6 öğe doldurmaya çalışıyoruz).
@@ -158,6 +195,15 @@ export default async function ArticleDetailPage({ params }: { params: Params }) 
   return (
     <div className="bg-[#0a0a0b] text-white min-h-screen">
       <JsonLd data={jsonLd} />
+
+      {isPreviewMode && (
+        <PreviewBanner
+          status={article.status}
+          publishedAt={article.publishedAt}
+          editHref={`/admin/articles/${article.id}`}
+          locale={locale}
+        />
+      )}
 
       {/* ▸▸▸ FULL-BLEED EDITORIAL HERO ▸▸▸
           Home sayfasındaki hero dilinin aynısı: arka plan görseli, çift
