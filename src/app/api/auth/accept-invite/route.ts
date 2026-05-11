@@ -4,6 +4,36 @@ import prisma from '@/lib/prisma';
 import { verifyInvitationToken } from '@/lib/user-invitations';
 import { validatePassword } from '@/lib/password-policy';
 import { audit, extractContext } from '@/lib/audit-log';
+import { rateLimit, getClientIp } from '@/lib/rate-limit';
+
+/**
+ * Public davet endpoint'i — token cuid/hash tabanlı olduğu için brute-force
+ * pratikte imkansız, ama log gürültüsünü ve kötü niyetli enumerasyon
+ * denemelerini sınırlamak için IP başına rate-limit uyguluyoruz.
+ * GET (token validasyonu) ve POST (şifre set) için ayrı pencereler.
+ */
+async function enforceInviteRateLimit(
+  request: NextRequest,
+  scope: 'lookup' | 'submit',
+): Promise<NextResponse | null> {
+  const ip = getClientIp(request);
+  // GET için pencere biraz daha gevşek (sayfa load'da çağrılır, kullanıcı
+  // F5 atarsa hemen tetiklenir). POST için sıkı — şifre set bir kez yapılır.
+  const limit = scope === 'lookup' ? 20 : 10;
+  const result = await rateLimit(`invite:${scope}:${ip}`, limit, 60_000);
+  if (!result.success) {
+    return NextResponse.json(
+      { error: 'Çok fazla deneme, lütfen birazdan tekrar dene.' },
+      {
+        status: 429,
+        headers: {
+          'Retry-After': String(Math.ceil(result.resetInMs / 1000)),
+        },
+      },
+    );
+  }
+  return null;
+}
 
 /**
  * GET /api/auth/accept-invite?token=xxx
@@ -12,6 +42,9 @@ import { audit, extractContext } from '@/lib/audit-log';
  *   göstersin diye. Token geçersizse 404 döner.
  */
 export async function GET(request: NextRequest) {
+  const limited = await enforceInviteRateLimit(request, 'lookup');
+  if (limited) return limited;
+
   const { searchParams } = new URL(request.url);
   const token = searchParams.get('token') || '';
 
@@ -39,6 +72,9 @@ export async function GET(request: NextRequest) {
  *   diğer açık davetleri de iptal edilir.
  */
 export async function POST(request: NextRequest) {
+  const limited = await enforceInviteRateLimit(request, 'submit');
+  if (limited) return limited;
+
   const body = await request.json().catch(() => ({}));
   const { token, password } = body as { token?: string; password?: string };
 

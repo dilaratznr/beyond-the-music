@@ -1,8 +1,9 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import QRCode from 'qrcode';
 import prisma from '@/lib/prisma';
 import { requireAuth } from '@/lib/auth-guard';
 import { generateTwoFactorSetup } from '@/lib/two-factor';
+import { rateLimit, getClientIp } from '@/lib/rate-limit';
 
 /**
  * POST /api/admin/2fa/setup
@@ -15,7 +16,7 @@ import { generateTwoFactorSetup } from '@/lib/two-factor';
  * yeniden başlatırsa eski secret invalidate olsun. Eğer 2FA zaten aktif
  * ise (`twoFactorEnabledAt` dolu) → 409 döner; önce disable etmesi lazım.
  */
-export async function POST() {
+export async function POST(request: NextRequest) {
   // allowPending: setup endpoint'i `tfaPending: 'enroll'` state'inde
   // çağrılır (kullanıcı yeni 2FA secret'i kuruyor). Pending bypass
   // burada amaçtır, başka admin endpoint'inde DEĞİL.
@@ -23,6 +24,25 @@ export async function POST() {
   if (error || !user) return error;
 
   const userId = (user as { id: string }).id;
+
+  // Çalınmış bir `tfaPending` JWT ile saldırgan bu endpoint'i tetikleyip
+  // sürekli yeni secret üreterek kullanıcının twoFactorSecret'ini sürekli
+  // üzerine yazabilir (DoS / DB write spam). Kullanıcı + IP başına dakikada
+  // 5 setup denemesi yeterince makul: gerçek kullanıcı QR'ı tarar bir kez
+  // başarılı olur, saldırgan döngüsü 429 ile durur.
+  const ip = getClientIp(request);
+  const result = await rateLimit(`2fa:setup:${userId}:${ip}`, 5, 60_000);
+  if (!result.success) {
+    return NextResponse.json(
+      { error: 'Çok fazla 2FA kurulum denemesi, lütfen birazdan tekrar dene.' },
+      {
+        status: 429,
+        headers: {
+          'Retry-After': String(Math.ceil(result.resetInMs / 1000)),
+        },
+      },
+    );
+  }
 
   const existing = await prisma.user.findUnique({
     where: { id: userId },

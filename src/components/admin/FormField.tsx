@@ -50,6 +50,7 @@ export function TextInput({
   min,
   max,
   step,
+  clearable,
 }: {
   id?: string;
   value: string | number;
@@ -62,22 +63,69 @@ export function TextInput({
   min?: number;
   max?: number;
   step?: number;
+  /**
+   * true ise input boş değilken sağ tarafta küçük "×" temizle butonu
+   * çıkar. URL alanları gibi tek tıkla sıfırlama bekleyen yerler için.
+   */
+  clearable?: boolean;
 }) {
+  const stringValue = typeof value === 'number' ? String(value) : value;
+  const showClear = clearable && !disabled && stringValue.length > 0;
+
+  // clearable kullanılmıyorsa eski sade <input> render'ı; geri uyumluluk
+  // için davranış aynen korunur.
+  if (!clearable) {
+    return (
+      <input
+        id={id}
+        type={type}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+        required={required}
+        disabled={disabled}
+        autoFocus={autoFocus}
+        min={min}
+        max={max}
+        step={step}
+        className={inputBase}
+      />
+    );
+  }
+
+  // clearable → input + sağda absolute "×" butonu. Padding-right input'ta
+  // butonun üstüne metin gitmemesi için artırılır.
   return (
-    <input
-      id={id}
-      type={type}
-      value={value}
-      onChange={(e) => onChange(e.target.value)}
-      placeholder={placeholder}
-      required={required}
-      disabled={disabled}
-      autoFocus={autoFocus}
-      min={min}
-      max={max}
-      step={step}
-      className={inputBase}
-    />
+    <div className="relative">
+      <input
+        id={id}
+        type={type}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+        required={required}
+        disabled={disabled}
+        autoFocus={autoFocus}
+        min={min}
+        max={max}
+        step={step}
+        className={`${inputBase} ${showClear ? 'pr-10' : ''}`}
+      />
+      {showClear && (
+        <button
+          type="button"
+          onClick={() => onChange('')}
+          aria-label="Alanı temizle"
+          title="Alanı temizle"
+          className="absolute right-2 top-1/2 -translate-y-1/2 w-6 h-6 inline-flex items-center justify-center rounded-md text-zinc-500 hover:text-white hover:bg-zinc-800 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-500/40"
+        >
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" aria-hidden="true">
+            <line x1="6" y1="6" x2="18" y2="18" />
+            <line x1="18" y1="6" x2="6" y2="18" />
+          </svg>
+        </button>
+      )}
+    </div>
   );
 }
 

@@ -2,6 +2,7 @@
   "nav": {
     "genre": "Genre",
     "artist": "Artist",
+    "song": "Songs",
     "article": "Articles",
     "architects": "The Architects",
     "theory": "The Theory",
@@ -91,9 +92,18 @@
     }
   },
   "song": {
+    "title": "Songs",
+    "subtitle": "Selected tracks from across the catalogue — each with its own story and player.",
     "about": "About this song",
     "listenOnSpotify": "Spotify",
-    "listenOnYouTube": "YouTube"
+    "listenOnYouTube": "YouTube",
+    "searchPlaceholder": "Search songs…",
+    "deepCutsOnly": "Deep Cuts only",
+    "allArtists": "All Artists",
+    "empty": "No songs published yet.",
+    "emptyHint": "Songs will appear here as albums are added",
+    "noResults": "No songs match your search",
+    "openAlbum": "Open album"
   },
   "common": {
     "readMore": "Read More",

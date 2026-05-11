@@ -2,6 +2,7 @@
   "nav": {
     "genre": "Tür",
     "artist": "Sanatçı",
+    "song": "Şarkılar",
     "article": "Makaleler",
     "architects": "Mimarlar",
     "theory": "Teori",
@@ -91,9 +92,18 @@
     }
   },
   "song": {
+    "title": "Şarkılar",
+    "subtitle": "Albümlerden seçilmiş parçalar — her satır kendi hikayesi ve player'ıyla.",
     "about": "Şarkı Hakkında",
     "listenOnSpotify": "Spotify",
-    "listenOnYouTube": "YouTube"
+    "listenOnYouTube": "YouTube",
+    "searchPlaceholder": "Şarkı ara…",
+    "deepCutsOnly": "Sadece Deep Cuts",
+    "allArtists": "Tüm Sanatçılar",
+    "empty": "Henüz yayında şarkı yok.",
+    "emptyHint": "Albümler eklendikçe burada listelenir",
+    "noResults": "Aramana uygun şarkı bulunamadı",
+    "openAlbum": "Albümü Aç"
   },
   "common": {
     "readMore": "Devamını Oku",

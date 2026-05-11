@@ -16,6 +16,10 @@ import { CACHE_TAGS } from '@/lib/db-cache';
 export const PUBLIC_SECTIONS = [
   { key: 'genre', settingKey: 'section_genre_enabled', labelKey: 'nav.genre', href: '/genre' },
   { key: 'artist', settingKey: 'section_artist_enabled', labelKey: 'nav.artist', href: '/artist' },
+  // Şarkılar — admin panelinde Song listesi var, public tarafta da
+  // editöryal bir keşif sayfası. Her şarkı kart olarak gözükür, tıklanınca
+  // Spotify/YouTube player + hikaye expand olur (AlbumTrackList paylaşılır).
+  { key: 'song', settingKey: 'section_song_enabled', labelKey: 'nav.song', href: '/song' },
   { key: 'article', settingKey: 'section_article_enabled', labelKey: 'nav.article', href: '/article' },
   { key: 'architects', settingKey: 'section_architects_enabled', labelKey: 'nav.architects', href: '/architects' },
   { key: 'theory', settingKey: 'section_theory_enabled', labelKey: 'nav.theory', href: '/theory' },

@@ -196,6 +196,7 @@ function NewSongForm() {
                 value={form.spotifyUrl}
                 onChange={(v) => update('spotifyUrl', v)}
                 placeholder="https://open.spotify.com/track/…"
+                clearable
               />
             </div>
             <div>
@@ -208,6 +209,7 @@ function NewSongForm() {
                 value={form.youtubeUrl}
                 onChange={(v) => update('youtubeUrl', v)}
                 placeholder="https://youtube.com/watch?v=…"
+                clearable
               />
             </div>
           </FormSection>

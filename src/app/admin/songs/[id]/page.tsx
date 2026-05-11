@@ -228,6 +228,7 @@ export default function EditSongPage({ params }: { params: Promise<{ id: string 
                 value={form.spotifyUrl}
                 onChange={(v) => update('spotifyUrl', v)}
                 placeholder="https://open.spotify.com/track/…"
+                clearable
               />
             </div>
             <div>
@@ -238,6 +239,7 @@ export default function EditSongPage({ params }: { params: Promise<{ id: string 
                 value={form.youtubeUrl}
                 onChange={(v) => update('youtubeUrl', v)}
                 placeholder="https://youtube.com/watch?v=…"
+                clearable
               />
             </div>
           </FormSection>

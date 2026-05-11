@@ -31,6 +31,7 @@ type Lang = 'tr' | 'en';
 const SECTION_TOGGLES: Array<{ key: string; labelTr: string; labelEn: string }> = [
   { key: 'section_genre_enabled', labelTr: 'Tür', labelEn: 'Genre' },
   { key: 'section_artist_enabled', labelTr: 'Sanatçı', labelEn: 'Artist' },
+  { key: 'section_song_enabled', labelTr: 'Şarkılar', labelEn: 'Songs' },
   { key: 'section_architects_enabled', labelTr: 'Mimarlar', labelEn: 'Architects' },
   { key: 'section_theory_enabled', labelTr: 'Teori', labelEn: 'Theory' },
   { key: 'section_listening_paths_enabled', labelTr: 'Dinleme Rotaları', labelEn: 'Listening Paths' },
