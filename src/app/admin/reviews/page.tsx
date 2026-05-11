@@ -73,6 +73,7 @@ export default function ReviewsPage() {
   const total = Array.isArray(response) ? response.length : response?.total ?? 0;
 
   // Filtre değişince sayfayı 1'e döndür — aksi halde boş sayfada kalabilirsin.
+   
   useEffect(() => {
     setPage(1);
   }, [filter]);

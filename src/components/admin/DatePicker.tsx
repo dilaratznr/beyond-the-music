@@ -103,10 +103,11 @@ export default function DatePicker({
   const [viewMonth, setViewMonth] = useState<Date>(startOfMonth(initialView));
 
   // value dışarıdan reset edilince (form clear vs.) görünüm de sıçrayan
-  // tarih takip etsin.
+  // tarih takip etsin. Effect içinde setState bilinçli — external prop
+  // change'e reaktif state senkronu, lint kuralı disable.
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (selected) setViewMonth(startOfMonth(selected));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [value]);
 
   // Outside click + Escape ile kapat.

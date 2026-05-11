@@ -214,7 +214,7 @@ function GenreCard({
     >
       <div className="group flex items-start gap-3 p-3 hover:bg-zinc-800/30 transition-colors">
         {main.image ? (
-          // eslint-disable-next-line @next/next/no-img-element
+           
           <img
             src={main.image}
             alt={main.nameTr}
@@ -310,7 +310,7 @@ function SubRow({
   return (
     <div className="group flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-zinc-800/50 transition-colors">
       {sub.image ? (
-        // eslint-disable-next-line @next/next/no-img-element
+         
         <img
           src={sub.image}
           alt={sub.nameTr}

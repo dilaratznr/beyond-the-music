@@ -116,6 +116,10 @@ URL'yi kendi reponun URL'i ile değiştir. Terminalden kimlik doğrulama kafa ka
 | `NEXTAUTH_URL` | `https://beyond-the-music.vercel.app` (ilk deploy URL'si; domain bağlanınca güncellenecek) |
 | `NEXTAUTH_SECRET` | 32 karakter rastgele string — üret: https://generate-secret.vercel.app/32 |
 | `NEXT_PUBLIC_APP_URL` | NEXTAUTH_URL ile aynı |
+| `NEXT_PUBLIC_SITE_URL` | NEXTAUTH_URL ile aynı (sitemap + robots.txt + OG için **zorunlu**, set edilmezse kod `beyondthemusic.app` fallback'ini kullanır) |
+| `CRON_SECRET` | 32+ karakter rastgele — `openssl rand -base64 32` ile üret. Audit log + token cleanup cron'ları bunu Bearer header ile çağırıyor |
+| `UPSTASH_REDIS_REST_URL` | Upstash Redis REST URL (multi-instance rate-limit için, bkz. Aşama 8a) |
+| `UPSTASH_REDIS_REST_TOKEN` | Upstash Redis REST Token |
 | `GEMINI_API_KEY` | (opsiyonel) https://aistudio.google.com/apikey — çeviri için |
 | `AWS_ACCESS_KEY_ID` | R2 Access Key ID |
 | `AWS_SECRET_ACCESS_KEY` | R2 Secret Access Key |

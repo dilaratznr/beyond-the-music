@@ -3,7 +3,7 @@
 // yaptığı için (db-cache'e bak) görünmesi için 30s beklemeye gerek yok.
 export const revalidate = 30;
 
-import { getDictionary, type Dictionary } from '@/i18n';
+import { getDictionary } from '@/i18n';
 import prisma from '@/lib/prisma';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
@@ -11,7 +11,7 @@ import ScrollReveal from '@/components/public/ScrollReveal';
 import EmptyState from '@/components/public/EmptyState';
 import PageHero from '@/components/public/PageHero';
 import { isSectionEnabled } from '@/lib/site-sections';
-import { stripHtml } from '@/lib/seo';
+import ArticleCard, { categoryLabel } from '@/components/public/ArticleCard';
 
 type ArticleListItem = Awaited<ReturnType<typeof loadArticles>>[number];
 
@@ -37,6 +37,7 @@ async function loadArticles() {
       author: { select: { name: true } },
       relatedGenre: { select: { nameTr: true, nameEn: true, slug: true } },
       relatedArtist: { select: { name: true, slug: true } },
+      topic: { select: { id: true, slug: true, nameTr: true, nameEn: true } },
     },
     // En yeni makaleler en üstte. featuredOrder atanmışsa onlar daha da
     // üstte (admin'in elle koyduğu sıra korunur).
@@ -47,107 +48,40 @@ async function loadArticles() {
   });
 }
 
-function categoryLabel(dict: Dictionary, category: string): string {
-  // article.categories sözlüğünden al; eşleşme yoksa enum'un kendisini
-  // human-readable hale getir (CULTURAL_IMPACT → "Cultural Impact").
-  const fromDict = (dict.article?.categories as Record<string, string> | undefined)?.[category];
-  if (fromDict) return fromDict;
-  return category
-    .split('_')
-    .map((w) => w.charAt(0) + w.slice(1).toLowerCase())
-    .join(' ');
-}
-
-function ArticleCard({
-  article,
-  locale,
-  variant = 'standard',
-}: {
-  article: ArticleListItem;
-  locale: string;
-  variant?: 'hero' | 'standard';
-}) {
-  const tr = locale === 'tr';
-  const title = tr ? article.titleTr : article.titleEn;
-  const content = tr ? article.contentTr : article.contentEn;
-  const excerpt = stripHtml(content, variant === 'hero' ? 220 : 140);
-  const dict = getDictionary(locale);
-  const catLabel = categoryLabel(dict, article.category);
-
-  if (variant === 'hero') {
-    return (
-      <Link
-        href={`/${locale}/article/${article.slug}`}
-        className="group relative block rounded-2xl overflow-hidden aspect-[16/9] md:aspect-[21/9] bg-gradient-to-br from-zinc-800 via-zinc-900 to-black hover-lift card-shine"
-      >
-        {article.featuredImage ? (
-          <img
-            src={article.featuredImage}
-            alt=""
-            loading="eager"
-            decoding="async"
-            className="absolute inset-0 w-full h-full object-cover opacity-60 group-hover:opacity-80 transition-opacity duration-700"
-          />
-        ) : (
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(255,255,255,0.08),transparent_50%)]" />
-        )}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent" />
-        <div className="absolute bottom-0 left-0 right-0 p-6 md:p-10 z-10">
-          <span className="inline-block px-3 py-1 bg-white/10 backdrop-blur-sm rounded-full text-[10px] font-bold text-white uppercase tracking-widest mb-4">
-            {catLabel}
-          </span>
-          <h3 className="text-2xl md:text-4xl lg:text-5xl font-black font-editorial leading-tight tracking-[-0.02em] max-w-3xl group-hover:underline decoration-2 underline-offset-4">
-            {title}
-          </h3>
-          {excerpt && (
-            <p className="text-zinc-300 text-sm md:text-base mt-3 max-w-2xl line-clamp-2 font-light">
-              {excerpt}
-            </p>
-          )}
-          <div className="text-zinc-500 text-[11px] mt-4 uppercase tracking-widest font-bold">
-            {article.author.name}
-          </div>
-        </div>
-      </Link>
-    );
+/**
+ * Yayında ve en az bir makaleye bağlı topic'leri listele. Admin
+ * panelinden eklenmiş ama hiç makalesi olmayan topic'i public sayfada
+ * göstermenin anlamı yok — boş chip'e tıklayan kullanıcı "Hiç makale
+ * bulunamadı" ekranıyla karşılaşır.
+ */
+async function loadTopicsWithArticles() {
+  // Migration yapılmamışsa (ArticleTopic tablosu DB'de henüz yoksa)
+  // sessizce boş döner — public sayfayı kırmamak için.
+  try {
+    return await prisma.articleTopic.findMany({
+      where: {
+        status: 'PUBLISHED',
+        articles: { some: { status: 'PUBLISHED' } },
+      },
+      select: {
+        id: true,
+        slug: true,
+        nameTr: true,
+        nameEn: true,
+        _count: { select: { articles: { where: { status: 'PUBLISHED' } } } },
+      },
+      orderBy: [{ order: 'asc' }, { nameTr: 'asc' }],
+    });
+  } catch (err) {
+    console.warn('[articles] topic listesi çekilemedi — migration yapıldı mı?', err);
+    return [] as Array<{
+      id: string;
+      slug: string;
+      nameTr: string;
+      nameEn: string;
+      _count: { articles: number };
+    }>;
   }
-
-  return (
-    <Link
-      href={`/${locale}/article/${article.slug}`}
-      className="group relative flex flex-col rounded-xl overflow-hidden bg-white/[0.02] border border-white/[0.04] hover:bg-white/[0.05] hover:border-white/10 transition-colors hover-lift"
-    >
-      <div className="relative aspect-[16/10] overflow-hidden bg-gradient-to-br from-zinc-800 to-zinc-950">
-        {article.featuredImage ? (
-          <img
-            src={article.featuredImage}
-            alt=""
-            loading="lazy"
-            decoding="async"
-            className="absolute inset-0 w-full h-full object-cover opacity-70 group-hover:opacity-100 transition-opacity duration-500"
-          />
-        ) : (
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_40%_30%,rgba(255,255,255,0.08),transparent_60%)]" />
-        )}
-        <span className="absolute top-3 left-3 px-2.5 py-1 bg-black/60 backdrop-blur-sm rounded-full text-[9px] font-bold text-white uppercase tracking-widest z-10">
-          {catLabel}
-        </span>
-      </div>
-      <div className="p-4 flex-1 flex flex-col">
-        <h3 className="text-base font-bold leading-snug line-clamp-2 group-hover:underline decoration-1 underline-offset-2">
-          {title}
-        </h3>
-        {excerpt && (
-          <p className="text-zinc-500 text-xs mt-2 line-clamp-3 leading-relaxed font-light flex-1">
-            {excerpt}
-          </p>
-        )}
-        <div className="text-zinc-600 text-[10px] mt-3 uppercase tracking-widest font-bold">
-          {article.author.name}
-        </div>
-      </div>
-    </Link>
-  );
 }
 
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }) {
@@ -169,7 +103,10 @@ export default async function ArticleListPage({
   const dict = getDictionary(locale);
   const tr = locale === 'tr';
 
-  const articles = await loadArticles();
+  const [articles, topics] = await Promise.all([
+    loadArticles(),
+    loadTopicsWithArticles(),
+  ]);
 
   // Kategori bazlı gruplama — listede her kategori kendi başlığı altında
   // hem tarama (filtre chip'i + scroll) hem de görsel ritim sağlar.
@@ -195,20 +132,43 @@ export default async function ArticleListPage({
         title={dict.article?.title ?? (tr ? 'Makaleler' : 'Articles')}
         subtitle={dict.article?.subtitle ?? ''}
         meta={
-          <div className="flex gap-2 flex-wrap">
-            {orderedCategories.map((cat) => {
-              const count = grouped.get(cat)?.length ?? 0;
-              return (
-                <a
-                  key={cat}
-                  href={`#cat-${cat}`}
-                  className="px-3.5 py-1.5 bg-white/[0.04] hover:bg-white/[0.08] text-white text-[11px] font-semibold rounded-full transition-colors border border-white/10 hover:border-white/20 uppercase tracking-wider"
-                >
-                  {categoryLabel(dict, cat)}
-                  <span className="text-white/40 ml-1.5 font-normal">{count}</span>
-                </a>
-              );
-            })}
+          <div className="space-y-3">
+            {/* Topic chip'leri — admin'in oluşturduğu üst başlıklar
+                (Soundtracks, Arşiv vb.). Her chip kendi detay sayfasına
+                gider. Hiç topic yoksa bu satır render edilmez. */}
+            {topics.length > 0 && (
+              <div className="flex gap-2 flex-wrap items-center">
+                <span className="text-[10px] text-white/40 uppercase tracking-wider font-bold mr-1">
+                  {tr ? 'Üst Başlıklar' : 'Topics'}
+                </span>
+                {topics.map((t) => (
+                  <Link
+                    key={t.id}
+                    href={`/${locale}/article/topic/${t.slug}`}
+                    className="px-3.5 py-1.5 bg-white text-zinc-950 hover:bg-zinc-200 text-[11px] font-semibold rounded-full transition-colors uppercase tracking-wider"
+                  >
+                    {tr ? t.nameTr : t.nameEn}
+                    <span className="text-zinc-500 ml-1.5 font-normal">{t._count.articles}</span>
+                  </Link>
+                ))}
+              </div>
+            )}
+            {/* Kategori chip'leri — sabit enum'a göre sayfa içi anchor'lar. */}
+            <div className="flex gap-2 flex-wrap">
+              {orderedCategories.map((cat) => {
+                const count = grouped.get(cat)?.length ?? 0;
+                return (
+                  <a
+                    key={cat}
+                    href={`#cat-${cat}`}
+                    className="px-3.5 py-1.5 bg-white/[0.04] hover:bg-white/[0.08] text-white text-[11px] font-semibold rounded-full transition-colors border border-white/10 hover:border-white/20 uppercase tracking-wider"
+                  >
+                    {categoryLabel(dict, cat)}
+                    <span className="text-white/40 ml-1.5 font-normal">{count}</span>
+                  </a>
+                );
+              })}
+            </div>
           </div>
         }
       />

@@ -83,7 +83,7 @@ export default function SmartImage(props: SmartImageProps) {
       .filter(Boolean)
       .join(" ");
     return (
-      // eslint-disable-next-line @next/next/no-img-element
+       
       <img
         src={src}
         alt={alt}
@@ -97,7 +97,7 @@ export default function SmartImage(props: SmartImageProps) {
   }
 
   return (
-    // eslint-disable-next-line @next/next/no-img-element
+     
     <img
       src={src}
       alt={alt}

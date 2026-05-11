@@ -25,6 +25,10 @@ export async function GET(request: NextRequest) {
   const limit = Math.min(Math.max(1, parseInt(searchParams.get('limit') || '20')), 100);
   const category = searchParams.get('category');
   const status = searchParams.get('status');
+  // Topic filter — public site uses slug (`?topic=soundtracks`),
+  // admin can pass either slug or id (`?topicId=...`).
+  const topicSlug = searchParams.get('topic');
+  const topicId = searchParams.get('topicId');
 
   // Public API shared between public site (anonymous) and admin panel.
   // Anonymous → force PUBLISHED only; admin → respect optional ?status filter.
@@ -32,6 +36,8 @@ export async function GET(request: NextRequest) {
   const isAdmin = await isAdminRequest();
   const where: Record<string, unknown> = {};
   if (category) where.category = category;
+  if (topicId) where.topicId = topicId;
+  else if (topicSlug) where.topic = { slug: topicSlug };
   if (isAdmin) {
     if (status) where.status = status;
   } else {
@@ -47,6 +53,7 @@ export async function GET(request: NextRequest) {
         author: { select: { name: true } },
         relatedGenre: { select: { nameTr: true, nameEn: true, slug: true } },
         relatedArtist: { select: { name: true, slug: true } },
+        topic: { select: { id: true, slug: true, nameTr: true, nameEn: true } },
       },
       orderBy: { createdAt: 'desc' },
       skip: (page - 1) * limit,
@@ -74,6 +81,7 @@ export async function POST(request: NextRequest) {
     scheduledFor,
     relatedGenreId,
     relatedArtistId,
+    topicId,
   } = body;
 
   if (!titleTr || !titleEn || !category) {
@@ -160,6 +168,7 @@ export async function POST(request: NextRequest) {
       publishedAt: resolvedPublishedAt,
       relatedGenreId: relatedGenreId || null,
       relatedArtistId: relatedArtistId || null,
+      topicId: topicId || null,
     },
   });
 

@@ -45,7 +45,7 @@ export default function Footer({ locale, dict, brand, contact, social }: FooterP
           <div className="md:col-span-5">
             <div className="flex items-center gap-2 mb-5">
               {brand.logoUrl ? (
-                // eslint-disable-next-line @next/next/no-img-element
+                 
                 <img
                   src={brand.logoUrl}
                   alt={brand.name}

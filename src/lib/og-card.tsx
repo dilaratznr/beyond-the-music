@@ -144,7 +144,9 @@ export function renderOgCard({
           }}
         >
           <div style={{ width: 40, height: 1, backgroundColor: '#52525b' }} />
-          beyondthemusic.app
+          {(process.env.NEXT_PUBLIC_SITE_URL || 'https://beyondthemusic.app')
+            .replace(/^https?:\/\//, '')
+            .replace(/\/$/, '')}
         </div>
       </div>
     </div>

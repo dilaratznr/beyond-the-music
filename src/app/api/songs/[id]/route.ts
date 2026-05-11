@@ -30,7 +30,17 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
 
   const { id } = await params;
   const body = await request.json();
-  const { title, albumId, trackNumber, duration, isDeepCut, spotifyUrl, youtubeUrl } = body;
+  const {
+    title,
+    albumId,
+    trackNumber,
+    duration,
+    isDeepCut,
+    spotifyUrl,
+    youtubeUrl,
+    descriptionTr,
+    descriptionEn,
+  } = body;
 
   const data: Record<string, unknown> = {};
   if (title !== undefined) data.title = title;
@@ -42,6 +52,8 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
   if (isDeepCut !== undefined) data.isDeepCut = Boolean(isDeepCut);
   if (spotifyUrl !== undefined) data.spotifyUrl = spotifyUrl || null;
   if (youtubeUrl !== undefined) data.youtubeUrl = youtubeUrl || null;
+  if (descriptionTr !== undefined) data.descriptionTr = descriptionTr || null;
+  if (descriptionEn !== undefined) data.descriptionEn = descriptionEn || null;
 
   const song = await prisma.song.update({ where: { id }, data });
 

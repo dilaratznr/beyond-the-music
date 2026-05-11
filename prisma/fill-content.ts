@@ -47,7 +47,10 @@ async function upsertArtist(data: {
   return prisma.artist.upsert({
     where: { slug: data.slug },
     update: {},
-    create: { ...data } as any,
+    // Prisma generated type's `create` is union'd over many models — `as never`
+    // is the idiomatic way to defer type-checking on a known-good payload
+    // built from a manually-typed function signature.
+    create: { ...data } as never,
   });
 }
 
@@ -71,7 +74,7 @@ async function upsertArticle(data: {
     create: {
       ...data,
       status: data.status ?? 'PUBLISHED',
-    } as any,
+    } as never,
   });
 }
 
@@ -87,7 +90,10 @@ async function upsertListeningPath(data: {
   return prisma.listeningPath.upsert({
     where: { slug: data.slug },
     update: {},
-    create: { ...data } as any,
+    // Prisma generated type's `create` is union'd over many models — `as never`
+    // is the idiomatic way to defer type-checking on a known-good payload
+    // built from a manually-typed function signature.
+    create: { ...data } as never,
   });
 }
 

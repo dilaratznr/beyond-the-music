@@ -6,7 +6,7 @@ import { getUserPermissions } from './permissions';
  * ContentReview (PENDING_REVIEW status). Phase 1: ARTICLE only.
  */
 
-export type ReviewSection = 'ARTICLE' | 'ARTIST' | 'ALBUM' | 'GENRE' | 'ARCHITECT' | 'LISTENING_PATH' | 'THEORY' | 'AI_MUSIC' | 'MEDIA';
+export type ReviewSection = 'ARTICLE' | 'ARTICLE_TOPIC' | 'ARTIST' | 'ALBUM' | 'GENRE' | 'ARCHITECT' | 'LISTENING_PATH' | 'THEORY' | 'AI_MUSIC' | 'MEDIA';
 
 export type ChangeType = 'CREATE' | 'EDIT';
 

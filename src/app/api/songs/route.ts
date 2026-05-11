@@ -55,7 +55,17 @@ export async function POST(request: NextRequest) {
   if (error || !user) return error;
 
   const body = await request.json();
-  const { title, albumId, trackNumber, duration, isDeepCut, spotifyUrl, youtubeUrl } = body;
+  const {
+    title,
+    albumId,
+    trackNumber,
+    duration,
+    isDeepCut,
+    spotifyUrl,
+    youtubeUrl,
+    descriptionTr,
+    descriptionEn,
+  } = body;
 
   if (!title || !albumId) {
     return NextResponse.json({ error: 'Title and album are required' }, { status: 400 });
@@ -74,6 +84,8 @@ export async function POST(request: NextRequest) {
       isDeepCut: Boolean(isDeepCut),
       spotifyUrl: spotifyUrl || null,
       youtubeUrl: youtubeUrl || null,
+      descriptionTr: descriptionTr || null,
+      descriptionEn: descriptionEn || null,
     },
   });
 

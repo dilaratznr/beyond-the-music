@@ -85,10 +85,18 @@ export default function FeaturedPage() {
 
   useEffect(() => {
     if (!featuredData) return;
+    // SWR fetch sonucunu lokal state'e kopyalıyoruz — kullanıcı drag/drop
+    // ettiğinde mutate ediliyor, kaydedilince sunucuyla senkron oluyor.
+    // React 19 `set-state-in-effect` kuralını bilinçli atlıyoruz: external
+    // data source (SWR) → local editable state pattern bu, useMemo'ya
+    // çevrilemez (state mutate edilebilir olmalı).
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setMax(featuredData.max ?? 12);
+     
     setArticleItems(
       (featuredData.articles as ArticleHit[]).map((a) => ({ kind: 'article' as const, ...a })),
     );
+     
     setAlbumItems(
       (featuredData.albums as AlbumHit[]).map((a) => ({ kind: 'album' as const, ...a })),
     );
@@ -362,7 +370,7 @@ function FeaturedList({
                 {i + 1}
               </span>
               {img ? (
-                /* eslint-disable-next-line @next/next/no-img-element */
+                 
                 <img
                   src={img}
                   alt=""
@@ -437,12 +445,14 @@ function PickerPanel({
   const [results, setResults] = useState<Item[]>([]);
   const [loading, setLoading] = useState(false);
 
-  // Reset query when switching tabs.
+  // Reset query when switching tabs. Effect-driven side reset — bilinçli pattern.
+   
   useEffect(() => {
     setQ('');
   }, [kind]);
 
-  // Debounced fetch.
+  // Debounced fetch — loading flag ve sonuç state'leri search query'ye reaktif.
+   
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
@@ -530,7 +540,7 @@ function PickerPanel({
                 }`}
               >
                 {img ? (
-                  /* eslint-disable-next-line @next/next/no-img-element */
+                   
                   <img
                     src={img}
                     alt=""

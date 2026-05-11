@@ -4,7 +4,11 @@
  */
 
 interface PageHeroProps {
-  eyebrow: string;
+  /**
+   * Üst etiket — basit metin veya navigation link gibi bir ReactNode olabilir.
+   * (örn. topic detay sayfasında "← Makaleler" linki.)
+   */
+  eyebrow: React.ReactNode;
   title: string;
   subtitle?: string;
   meta?: React.ReactNode;          // Bottom meta row (e.g., "12 artists · 5 subgenres")

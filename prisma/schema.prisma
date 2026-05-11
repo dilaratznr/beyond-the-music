@@ -269,6 +269,10 @@ model Song {
   isDeepCut   Boolean @default(false)
   spotifyUrl  String?
   youtubeUrl  String?
+  /// Şarkı hakkında kısa not / hikaye — public album sayfasında
+  /// Spotify/YouTube embed player'ın yanında render edilir.
+  descriptionTr String? @map("description_tr") @db.Text
+  descriptionEn String? @map("description_en") @db.Text
   listeningPathItems ListeningPathItem[] @relation("SongPathItems")
 }
 
@@ -316,10 +320,44 @@ model Article {
   relatedGenre    Genre?         @relation("GenreArticles", fields: [relatedGenreId], references: [id])
   relatedArtistId String?
   relatedArtist   Artist?        @relation("ArtistArticles", fields: [relatedArtistId], references: [id])
+  /// Kullanıcı tarafından oluşturulan üst başlık (Topic). Sabit
+  /// `ArticleCategory` enum'undan bağımsız bir gruplama katmanı —
+  /// admin "Soundtracks", "Arşiv" gibi kendi konularını açar ve
+  /// makaleleri bu konuların altına toplar.
+  topicId        String?         @map("topic_id")
+  topic          ArticleTopic?   @relation(fields: [topicId], references: [id], onDelete: SetNull)
   createdAt      DateTime        @default(now())
   updatedAt      DateTime        @updatedAt
 
   @@index([featuredOrder])
+  @@index([topicId])
+}
+
+/// Makale üst başlığı / konusu — admin tarafından serbestçe oluşturulur
+/// ve birden çok makaleyi gruplar. `ArticleCategory` sabit enum'undan
+/// bağımsız bir katman: aynı makale hem CURATED_MOVEMENT kategorisinde
+/// hem "Soundtracks" topic'inde olabilir.
+///
+/// Genre ile aynı pattern: slug + i18n alanları + EntityStatus akışı
+/// (canPublish yetkisi olmayan kullanıcının create/edit'i PENDING_REVIEW'a
+/// düşer). Topic silinirse altındaki makaleler `topicId=null` olur
+/// (`onDelete: SetNull`) — içerik kaybolmaz.
+model ArticleTopic {
+  id             String       @id @default(cuid())
+  slug           String       @unique
+  nameTr         String       @map("name_tr")
+  nameEn         String       @map("name_en")
+  descriptionTr  String?      @map("description_tr") @db.Text
+  descriptionEn  String?      @map("description_en") @db.Text
+  image          String?
+  order          Int          @default(0)
+  status         EntityStatus @default(PUBLISHED)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  articles       Article[]
+
+  @@index([status])
+  @@index([order])
 }
 
 model ListeningPath {

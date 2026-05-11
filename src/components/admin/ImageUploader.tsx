@@ -29,6 +29,7 @@ export default function ImageUploader({
     | 'genre'
     | 'article'
     | 'architect'
+    | 'topic'
     | 'listening-path'
     | 'hero'
     | 'logo'
@@ -158,7 +159,7 @@ export default function ImageUploader({
         <div
           className={`relative ${aspectClass} w-full max-w-[220px] rounded-md overflow-hidden border border-zinc-800 bg-zinc-900 group`}
         >
-          {/* eslint-disable-next-line @next/next/no-img-element */}
+          { }
           <img src={value} alt="" className="w-full h-full object-cover" />
           <button
             type="button"

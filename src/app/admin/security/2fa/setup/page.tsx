@@ -51,6 +51,9 @@ export default function TwoFactorSetupPage() {
     fetcher: (url) => fetch(url).then((r) => r.json()),
   });
 
+  // SWR'den /api/users/me cevabı geldiğinde state'i 'manage'a yükselt —
+  // server-driven branch transition, useMemo'a dönüştürülemez.
+   
   useEffect(() => {
     if (state.kind === 'idle' && me?.twoFactorEnabled && !isOnboarding) {
       setState({ kind: 'manage' });
@@ -244,7 +247,7 @@ export default function TwoFactorSetupPage() {
 
             <div className="grid md:grid-cols-[auto_1fr] gap-6 items-start">
               <div className="bg-white p-3 rounded-lg inline-block w-fit">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
+                { }
                 <img src={state.qrDataUrl} alt="2FA QR kod" width={200} height={200} />
               </div>
 
@@ -394,7 +397,7 @@ export default function TwoFactorSetupPage() {
             )}
 
             <p className="text-sm text-zinc-400 mb-6 leading-relaxed">
-              Hesabın iki adımlı doğrulamayla korunuyor. Her login'de
+              Hesabın iki adımlı doğrulamayla korunuyor. Her login&apos;de
               authenticator uygulamasından bir kod istenir.
             </p>
 
@@ -435,7 +438,7 @@ export default function TwoFactorSetupPage() {
         {state.kind === 'disabling' && (
           <div className="rounded-2xl border border-rose-500/30 bg-zinc-900/40 p-8">
             <h1 className="text-lg font-semibold text-zinc-100 tracking-tight mb-2">
-              2FA'yı kapatmak için doğrulama
+              2FA&apos;yı kapatmak için doğrulama
             </h1>
             <p className="text-sm text-zinc-400 mb-6 leading-relaxed">
               Authenticator uygulamasındaki <strong>6 haneli kodu</strong> ya

@@ -123,7 +123,8 @@ export default function CommandPalette() {
   }, [open]);
 
   // Autofocus input when opening. We reset state on close so the next open
-  // starts fresh.
+  // starts fresh. Reset = side-effect-driven state, lint disable bilinçli.
+   
   useEffect(() => {
     if (open) {
       const t = setTimeout(() => inputRef.current?.focus(), 10);
@@ -137,6 +138,7 @@ export default function CommandPalette() {
 
   // Debounced server search. We cancel in-flight requests via an ignore flag
   // — simpler than AbortController for this scale.
+   
   useEffect(() => {
     if (!open) return;
     const query = q.trim();
@@ -200,7 +202,7 @@ export default function CommandPalette() {
         node: (
           <>
             {h.image ? (
-              /* eslint-disable-next-line @next/next/no-img-element */
+               
               <img
                 src={h.image}
                 alt=""

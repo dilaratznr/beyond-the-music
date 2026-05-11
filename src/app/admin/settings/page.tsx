@@ -52,6 +52,9 @@ export default function SettingsPage() {
     '/api/settings'
   );
 
+  // SWR fetch'i lokal editable state'e kopyala — kullanıcı form alanları
+  // değiştirdiğinde mutate ediliyor, kaydedilince server'a PUT atılıyor.
+   
   useEffect(() => {
     setSettings(settingsData || {});
     setDirty(false);

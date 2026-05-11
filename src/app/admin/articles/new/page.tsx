@@ -38,9 +38,13 @@ export default function NewArticlePage() {
     featuredImage: '',
     relatedGenreId: '',
     relatedArtistId: '',
+    // Kullanıcı tanımlı üst başlık (Soundtracks, Arşiv vb.). Opsiyonel —
+    // boş gönderilirse makale topic'siz kayıt edilir.
+    topicId: '',
   });
   const [genres, setGenres] = useState<{ id: string; nameTr: string }[]>([]);
   const [artists, setArtists] = useState<{ id: string; name: string }[]>([]);
+  const [topics, setTopics] = useState<{ id: string; nameTr: string }[]>([]);
   const [canPublish, setCanPublish] = useState<boolean>(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -51,6 +55,19 @@ export default function NewArticlePage() {
   useEffect(() => {
     fetch('/api/genres?all=true').then((r) => r.json()).then(setGenres);
     fetch('/api/artists?all=true').then((r) => r.json()).then(setArtists);
+    fetch('/api/topics?all=true')
+      .then((r) => r.json())
+      .then((data: unknown) => {
+        if (Array.isArray(data)) {
+          setTopics(
+            (data as Array<{ id: string; nameTr: string }>).map((t) => ({
+              id: t.id,
+              nameTr: t.nameTr,
+            })),
+          );
+        }
+      })
+      .catch(() => {});
     // Yayın yetkisi kontrolü. Yoksa form "Onaya Gönder" moduna geçer —
     // Publish/Schedule seçenekleri gizlenir, yerine tek bir onay akışı.
     fetch('/api/users/me')
@@ -110,6 +127,7 @@ export default function NewArticlePage() {
         featuredImage: form.featuredImage || null,
         relatedGenreId: form.relatedGenreId || null,
         relatedArtistId: form.relatedArtistId || null,
+        topicId: form.topicId || null,
       }),
     });
     const data = await res.json();
@@ -189,7 +207,28 @@ export default function NewArticlePage() {
             label="Öne Çıkan Görsel"
             aspect="wide"
           />
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <label htmlFor="art-topic" className="block text-sm font-semibold text-zinc-100 tracking-tight mb-1">
+                Üst Başlık
+              </label>
+              <select
+                id="art-topic"
+                value={form.topicId}
+                onChange={(e) => setForm({ ...form, topicId: e.target.value })}
+                className="w-full px-4 py-2 bg-zinc-950 border border-zinc-800 hover:border-zinc-700 focus:border-zinc-500 rounded-lg outline-none text-zinc-100 focus:ring-zinc-500/20 focus:ring-2"
+              >
+                <option value="">Yok</option>
+                {topics.map((t) => (
+                  <option key={t.id} value={t.id}>
+                    {t.nameTr}
+                  </option>
+                ))}
+              </select>
+              <p className="text-[10px] text-zinc-500 mt-1">
+                Soundtracks, Arşiv vb. — <Link href="/admin/topics/new" className="underline hover:text-zinc-300">yeni başlık ekle</Link>
+              </p>
+            </div>
             <div>
               <label htmlFor="art-genre" className="block text-sm font-semibold text-zinc-100 tracking-tight mb-1">
                 İlgili Tür

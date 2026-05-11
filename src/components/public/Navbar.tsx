@@ -80,7 +80,7 @@ export default function Navbar({ locale, sections, brand }: NavbarProps) {
           {brand.logoUrl ? (
             // Admin'den yüklenen logo — `h-8` ile navbar yüksekliğine
             // (h-14 = 56px) sığıyor, `w-auto` en-boy oranını korur.
-            // eslint-disable-next-line @next/next/no-img-element
+             
             <img
               src={brand.logoUrl}
               alt={brand.name}

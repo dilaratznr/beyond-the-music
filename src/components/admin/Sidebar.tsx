@@ -14,6 +14,7 @@ import {
   IconSong,
   IconArchitect,
   IconArticle,
+  IconTopic,
   IconPath,
   IconUsers,
   IconVideo,
@@ -54,6 +55,9 @@ const contentItems: { href: string; label: string; icon: IconComp; section: stri
   { href: '/admin/songs', label: 'Şarkılar', icon: IconSong, section: 'ALBUM' },
   { href: '/admin/architects', label: 'Mimarlar', icon: IconArchitect, section: 'ARCHITECT' },
   { href: '/admin/articles', label: 'Makaleler', icon: IconArticle, section: 'ARTICLE' },
+  // Topic — kullanıcı tanımlı makale üst başlıkları (Soundtracks, Arşiv vb.).
+  // Article permission'ı altında çalışır; ayrı section flag tanımlamadık.
+  { href: '/admin/topics', label: 'Üst Başlıklar', icon: IconTopic, section: 'ARTICLE' },
   { href: '/admin/listening-paths', label: 'Dinleme Rotaları', icon: IconPath, section: 'LISTENING_PATH' },
 ];
 

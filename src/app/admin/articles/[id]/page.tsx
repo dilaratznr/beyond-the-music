@@ -41,9 +41,11 @@ export default function EditArticlePage({ params }: { params: Promise<{ id: stri
     featuredImage: '',
     relatedGenreId: '',
     relatedArtistId: '',
+    topicId: '',
   });
   const [genres, setGenres] = useState<{ id: string; nameTr: string }[]>([]);
   const [artists, setArtists] = useState<{ id: string; name: string }[]>([]);
+  const [topics, setTopics] = useState<{ id: string; nameTr: string }[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
@@ -85,8 +87,9 @@ export default function EditArticlePage({ params }: { params: Promise<{ id: stri
       fetch(`/api/articles/${id}`).then((r) => r.json()),
       fetch('/api/genres?all=true').then((r) => r.json()),
       fetch('/api/artists?all=true').then((r) => r.json()),
+      fetch('/api/topics?all=true').then((r) => r.json()).catch(() => []),
     ])
-      .then(([article, genresList, artistsList]) => {
+      .then(([article, genresList, artistsList, topicsList]) => {
         if (article?.error) {
           setError(article.error);
         } else {
@@ -107,6 +110,7 @@ export default function EditArticlePage({ params }: { params: Promise<{ id: stri
             featuredImage: article.featuredImage || '',
             relatedGenreId: article.relatedGenreId || '',
             relatedArtistId: article.relatedArtistId || '',
+            topicId: article.topicId || '',
           };
           setForm(loaded);
           setInitialStatus(status);
@@ -121,6 +125,14 @@ export default function EditArticlePage({ params }: { params: Promise<{ id: stri
         }
         setGenres(Array.isArray(genresList) ? genresList : []);
         setArtists(Array.isArray(artistsList) ? artistsList : []);
+        setTopics(
+          Array.isArray(topicsList)
+            ? (topicsList as Array<{ id: string; nameTr: string }>).map((t) => ({
+                id: t.id,
+                nameTr: t.nameTr,
+              }))
+            : [],
+        );
       })
       .finally(() => setLoading(false));
   }, [id]);
@@ -159,6 +171,7 @@ export default function EditArticlePage({ params }: { params: Promise<{ id: stri
             featuredImage: form.featuredImage || null,
             relatedGenreId: form.relatedGenreId || null,
             relatedArtistId: form.relatedArtistId || null,
+            topicId: form.topicId || null,
           }),
         });
         if (!res.ok) throw new Error('autosave failed');
@@ -241,6 +254,7 @@ export default function EditArticlePage({ params }: { params: Promise<{ id: stri
         featuredImage: form.featuredImage || null,
         relatedGenreId: form.relatedGenreId || null,
         relatedArtistId: form.relatedArtistId || null,
+        topicId: form.topicId || null,
       }),
     });
     const data = await res.json();
@@ -373,7 +387,18 @@ export default function EditArticlePage({ params }: { params: Promise<{ id: stri
             label="Öne Çıkan Görsel"
             aspect="wide"
           />
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <label htmlFor="art-topic" className="block text-sm font-semibold text-zinc-100 tracking-tight mb-1">Üst Başlık</label>
+              <select id="art-topic" value={form.topicId} onChange={(e) => setForm({ ...form, topicId: e.target.value })}
+                className="w-full px-4 py-2 bg-zinc-950 border border-zinc-800 hover:border-zinc-700 focus:border-zinc-500 rounded-lg outline-none text-zinc-100 focus:ring-zinc-500/20 focus:ring-2">
+                <option value="">Yok</option>
+                {topics.map((t) => <option key={t.id} value={t.id}>{t.nameTr}</option>)}
+              </select>
+              <p className="text-[10px] text-zinc-500 mt-1">
+                Soundtracks, Arşiv vb. — <Link href="/admin/topics/new" className="underline hover:text-zinc-300">yeni başlık ekle</Link>
+              </p>
+            </div>
             <div>
               <label htmlFor="art-genre" className="block text-sm font-semibold text-zinc-100 tracking-tight mb-1">İlgili Tür</label>
               <select id="art-genre" value={form.relatedGenreId} onChange={(e) => setForm({ ...form, relatedGenreId: e.target.value })}

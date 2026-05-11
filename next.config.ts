@@ -36,6 +36,10 @@ const PUBLIC_CSP = [
 
 const nextConfig: NextConfig = {
   devIndicators: false,
+  // Not: Next.js 16'da `next build` ESLint'i otomatik çalıştırmıyor (eski
+  // `next lint` kaldırıldı). Lint kontrolü `npm run lint` ile manuel —
+  // build sürecini stylistic kurallar bloklamaz, sadece TypeScript hataları
+  // (typescript.ignoreBuildErrors default false) deploy'u durdurur.
   images: {
     // Güvenlik notu: Önceden `hostname: '**'` idi — Next'in image
     // optimization servisi arbitrary HTTPS URL'leri fetch edip

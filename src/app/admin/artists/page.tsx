@@ -100,7 +100,7 @@ export default function ArtistsPage() {
                   aria-label={`${a.name} düzenle`}
                 >
                   {a.image ? (
-                    /* eslint-disable-next-line @next/next/no-img-element */
+                     
                     <img
                       src={a.image}
                       alt={a.name}

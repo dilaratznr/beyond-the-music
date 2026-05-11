@@ -9,11 +9,13 @@ import { FormSkeleton } from '@/components/admin/Loading';
 import {
   FieldLabel,
   TextInput,
+  TextArea,
   Select,
   FormSection,
   FormActions,
   FormError,
 } from '@/components/admin/FormField';
+import { translatePairs } from '@/lib/translate-client';
 
 interface AlbumOption {
   id: string;
@@ -34,10 +36,16 @@ export default function EditSongPage({ params }: { params: Promise<{ id: string 
     isDeepCut: false,
     spotifyUrl: '',
     youtubeUrl: '',
+    // Şarkı hakkında kısa not — public album sayfasında Spotify/YouTube
+    // embed player'ın yanında render edilir. Plain text; rich text gerekirse
+    // ileride RichEditor'a geçilebilir.
+    descriptionTr: '',
+    descriptionEn: '',
   });
   const [albums, setAlbums] = useState<AlbumOption[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [translating, setTranslating] = useState(false);
   const [error, setError] = useState('');
 
   useEffect(() => {
@@ -59,6 +67,8 @@ export default function EditSongPage({ params }: { params: Promise<{ id: string 
             isDeepCut: Boolean(song.isDeepCut),
             spotifyUrl: song.spotifyUrl || '',
             youtubeUrl: song.youtubeUrl || '',
+            descriptionTr: song.descriptionTr || '',
+            descriptionEn: song.descriptionEn || '',
           });
         }
         const list = Array.isArray(albumsList) ? albumsList : albumsList.items || [];
@@ -82,12 +92,26 @@ export default function EditSongPage({ params }: { params: Promise<{ id: string 
     setSaving(true);
     setError('');
 
+    // descriptionTr boş değilse ama EN boş ise otomatik çevir.
+    setTranslating(true);
+    const translations = await translatePairs([
+      {
+        key: 'descriptionEn',
+        sourceText: form.descriptionTr,
+        targetText: form.descriptionEn,
+      },
+    ]);
+    setTranslating(false);
+
     const res = await fetch(`/api/songs/${id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         ...form,
+        ...translations,
         trackNumber: form.trackNumber === '' ? null : Number(form.trackNumber),
+        descriptionTr: form.descriptionTr || null,
+        descriptionEn: (translations.descriptionEn ?? form.descriptionEn) || null,
       }),
     });
     const data = await res.json();
@@ -195,7 +219,7 @@ export default function EditSongPage({ params }: { params: Promise<{ id: string 
             </label>
           </FormSection>
 
-          <FormSection title="Bağlantılar" description="Dinleme bağlantıları opsiyonel.">
+          <FormSection title="Bağlantılar" description="Dinleme bağlantıları opsiyonel — public sayfada embed player olarak da gömülür.">
             <div>
               <FieldLabel htmlFor="song-spotify">Spotify</FieldLabel>
               <TextInput
@@ -217,12 +241,40 @@ export default function EditSongPage({ params }: { params: Promise<{ id: string 
               />
             </div>
           </FormSection>
+
+          <FormSection
+            title="Açıklama"
+            description="Şarkı hakkında kısa not — public albüm sayfasında player'ın yanında görünür."
+          >
+            <div>
+              <FieldLabel htmlFor="song-desc-tr">Açıklama (TR)</FieldLabel>
+              <TextArea
+                id="song-desc-tr"
+                value={form.descriptionTr}
+                onChange={(v) => update('descriptionTr', v)}
+                placeholder="Şarkının hikayesi, müzikal/kültürel bağlamı…"
+                rows={4}
+              />
+            </div>
+            <div>
+              <FieldLabel htmlFor="song-desc-en" hint="Boş bırakırsan otomatik çevrilir">
+                Açıklama (EN)
+              </FieldLabel>
+              <TextArea
+                id="song-desc-en"
+                value={form.descriptionEn}
+                onChange={(v) => update('descriptionEn', v)}
+                placeholder="Short English description…"
+                rows={4}
+              />
+            </div>
+          </FormSection>
         </div>
 
         <FormActions
           cancelHref="/admin/songs"
           submitLabel="Kaydet"
-          submittingLabel="Kaydediliyor…"
+          submittingLabel={translating ? 'Çevriliyor…' : 'Kaydediliyor…'}
           submitting={saving}
           disabled={!form.title || !form.albumId}
           extra={

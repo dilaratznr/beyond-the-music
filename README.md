@@ -83,7 +83,7 @@ src/
 ├── components/
 │   ├── public/          # Site görünür bileşenleri
 │   └── admin/           # Panel bileşenleri
-├── lib/                 # prisma, auth, seo, image-storage, site-config, …
+├── lib/                 # prisma, auth, seo, image-storage, site-contact, …
 └── i18n.ts              # next-intl ayarları
 
 prisma/

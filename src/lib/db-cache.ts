@@ -25,6 +25,10 @@ export const CACHE_TAGS = {
   song: 'song',
   architect: 'architect',
   article: 'article',
+  // Kullanıcı tarafından oluşturulan makale üst başlıkları (Soundtracks,
+  // Arşiv, ...). Article ile ayrı invalidate edebilmek için ayrı tag —
+  // sadece topic CRUD yaparken article cache'inin tamamını düşürmemek için.
+  articleTopic: 'articleTopic',
   listeningPath: 'listeningPath',
   user: 'user',
   mediaItem: 'mediaItem',

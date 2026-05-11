@@ -18,6 +18,7 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
       author: { select: { id: true, name: true } },
       relatedGenre: { select: { id: true, nameTr: true, nameEn: true, slug: true } },
       relatedArtist: { select: { id: true, name: true, slug: true } },
+      topic: { select: { id: true, slug: true, nameTr: true, nameEn: true } },
     },
   });
 
@@ -96,6 +97,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
     scheduledFor,
     relatedGenreId,
     relatedArtistId,
+    topicId,
   } = body;
 
   const data: Record<string, unknown> = {};
@@ -120,6 +122,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
   }
   if (relatedGenreId !== undefined) data.relatedGenreId = relatedGenreId || null;
   if (relatedArtistId !== undefined) data.relatedArtistId = relatedArtistId || null;
+  if (topicId !== undefined) data.topicId = topicId || null;
 
   // Onay akışı için — canPublish'i olmayan admin yayın değişiklikleri
   // istiyorsa, makale PENDING_REVIEW'a düşer ve yeni bir review

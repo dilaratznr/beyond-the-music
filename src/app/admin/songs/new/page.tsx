@@ -7,11 +7,13 @@ import { useToast } from '@/components/admin/Toast';
 import {
   FieldLabel,
   TextInput,
+  TextArea,
   Select,
   FormSection,
   FormActions,
   FormError,
 } from '@/components/admin/FormField';
+import { translatePairs } from '@/lib/translate-client';
 
 interface AlbumOption {
   id: string;
@@ -33,10 +35,13 @@ function NewSongForm() {
     isDeepCut: false,
     spotifyUrl: '',
     youtubeUrl: '',
+    descriptionTr: '',
+    descriptionEn: '',
   });
   const [albums, setAlbums] = useState<AlbumOption[]>([]);
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [translating, setTranslating] = useState(false);
 
   useEffect(() => {
     fetch('/api/albums?page=1&limit=500')
@@ -56,12 +61,25 @@ function NewSongForm() {
     setSubmitting(true);
     setError('');
 
+    setTranslating(true);
+    const translations = await translatePairs([
+      {
+        key: 'descriptionEn',
+        sourceText: form.descriptionTr,
+        targetText: form.descriptionEn,
+      },
+    ]);
+    setTranslating(false);
+
     const res = await fetch('/api/songs', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         ...form,
+        ...translations,
         trackNumber: form.trackNumber ? Number(form.trackNumber) : null,
+        descriptionTr: form.descriptionTr || null,
+        descriptionEn: (translations.descriptionEn ?? form.descriptionEn) || null,
       }),
     });
     const data = await res.json();
@@ -167,7 +185,7 @@ function NewSongForm() {
             </label>
           </FormSection>
 
-          <FormSection title="Bağlantılar" description="Dinleme bağlantıları opsiyonel.">
+          <FormSection title="Bağlantılar" description="Dinleme bağlantıları opsiyonel — public sayfada embed player olarak da gömülür.">
             <div>
               <FieldLabel htmlFor="song-spotify" hint="https://open.spotify.com/track/…">
                 Spotify
@@ -193,12 +211,40 @@ function NewSongForm() {
               />
             </div>
           </FormSection>
+
+          <FormSection
+            title="Açıklama"
+            description="Şarkı hakkında kısa not — public albüm sayfasında player'ın yanında görünür."
+          >
+            <div>
+              <FieldLabel htmlFor="song-desc-tr">Açıklama (TR)</FieldLabel>
+              <TextArea
+                id="song-desc-tr"
+                value={form.descriptionTr}
+                onChange={(v) => update('descriptionTr', v)}
+                placeholder="Şarkının hikayesi, müzikal/kültürel bağlamı…"
+                rows={4}
+              />
+            </div>
+            <div>
+              <FieldLabel htmlFor="song-desc-en" hint="Boş bırakırsan otomatik çevrilir">
+                Açıklama (EN)
+              </FieldLabel>
+              <TextArea
+                id="song-desc-en"
+                value={form.descriptionEn}
+                onChange={(v) => update('descriptionEn', v)}
+                placeholder="Short English description…"
+                rows={4}
+              />
+            </div>
+          </FormSection>
         </div>
 
         <FormActions
           cancelHref={prefillAlbumId ? `/admin/albums/${prefillAlbumId}` : '/admin/songs'}
           submitLabel="Şarkı Ekle"
-          submittingLabel="Ekleniyor…"
+          submittingLabel={translating ? 'Çevriliyor…' : 'Ekleniyor…'}
           submitting={submitting}
           disabled={!form.title || !form.albumId}
         />

@@ -19,8 +19,33 @@ describe('validateImageUrl', () => {
     expect(validateImageUrl('https://r2.example.com/x.png').ok).toBe(true);
   });
 
-  it('http:// URL kabul eder', () => {
-    expect(validateImageUrl('http://localhost:3000/x.png').ok).toBe(true);
+  it('http:// URL kabul eder (public domain)', () => {
+    expect(validateImageUrl('http://example.com/x.png').ok).toBe(true);
+  });
+
+  // SSRF blocklist'i — internal/cloud-metadata adreslerine fetch'i engeller
+  it('localhost reddeder (SSRF guard)', () => {
+    expect(validateImageUrl('http://localhost:3000/x.png').ok).toBe(false);
+  });
+
+  it('127.0.0.1 reddeder (SSRF guard)', () => {
+    expect(validateImageUrl('http://127.0.0.1/x.png').ok).toBe(false);
+  });
+
+  it('AWS metadata service reddeder (SSRF guard)', () => {
+    expect(validateImageUrl('http://169.254.169.254/latest/meta-data/').ok).toBe(false);
+  });
+
+  it('private network 10.x reddeder (SSRF guard)', () => {
+    expect(validateImageUrl('http://10.0.0.1/x.png').ok).toBe(false);
+  });
+
+  it('private network 192.168.x reddeder (SSRF guard)', () => {
+    expect(validateImageUrl('http://192.168.1.1/x.png').ok).toBe(false);
+  });
+
+  it('private network 172.16-31 reddeder (SSRF guard)', () => {
+    expect(validateImageUrl('http://172.20.0.1/x.png').ok).toBe(false);
   });
 
   it('javascript: protocol reddeder', () => {

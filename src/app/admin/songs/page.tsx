@@ -250,7 +250,7 @@ export default function SongsPage() {
                       className="block w-11 h-11 rounded overflow-hidden bg-zinc-800 ring-1 ring-zinc-800 group-hover:ring-zinc-700 transition-all"
                     >
                       {s.album?.coverImage ? (
-                        /* eslint-disable-next-line @next/next/no-img-element */
+                         
                         <img
                           src={s.album.coverImage}
                           alt={s.album.title}

@@ -19,6 +19,7 @@ import { notFound } from 'next/navigation';
 import { getDictionary } from '@/i18n';
 import { buildPageMetadata, stripHtml, SITE_URL } from '@/lib/seo';
 import { JsonLd } from '@/components/JsonLd';
+import AlbumTrackList from '@/components/public/AlbumTrackList';
 
 type Params = Promise<{ locale: string; slug: string }>;
 
@@ -219,53 +220,28 @@ export default async function AlbumDetailPage({ params }: { params: Params }) {
               <p id="album-tracks" className="text-zinc-500 text-[11px] tracking-[0.3em] uppercase font-bold mb-6">
                 {dict.artist.songs}
               </p>
-              <ol className="border-t border-white/10">
-                {album.songs.map((song, idx) => (
-                  <li
-                    key={song.id}
-                    className="flex items-center gap-5 py-4 border-b border-white/10 hover:bg-white/[0.02] transition-colors"
-                  >
-                    <span className="text-zinc-600 text-[11px] font-mono w-8 flex-shrink-0">
-                      {String(song.trackNumber ?? idx + 1).padStart(2, '0')}
-                    </span>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm text-zinc-200 truncate">{song.title}</p>
-                      {song.isDeepCut && (
-                        <span className="text-[9px] uppercase tracking-widest text-zinc-500 font-semibold mt-0.5 inline-block">
-                          {dict.artist.deepCuts}
-                        </span>
-                      )}
-                    </div>
-                    <div className="flex gap-4 text-[11px] flex-shrink-0 items-center uppercase tracking-wider font-semibold">
-                      {song.spotifyUrl && (
-                        <a
-                          href={song.spotifyUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-zinc-400 hover:text-white transition-colors"
-                        >
-                          Spotify ↗
-                        </a>
-                      )}
-                      {song.youtubeUrl && (
-                        <a
-                          href={song.youtubeUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-zinc-400 hover:text-white transition-colors"
-                        >
-                          YouTube ↗
-                        </a>
-                      )}
-                      {song.duration && (
-                        <span className="text-zinc-500 font-mono normal-case tracking-normal font-normal">
-                          {song.duration}
-                        </span>
-                      )}
-                    </div>
-                  </li>
-                ))}
-              </ol>
+              <AlbumTrackList
+                songs={album.songs.map((s) => ({
+                  id: s.id,
+                  title: s.title,
+                  trackNumber: s.trackNumber,
+                  duration: s.duration,
+                  isDeepCut: s.isDeepCut,
+                  spotifyUrl: s.spotifyUrl,
+                  youtubeUrl: s.youtubeUrl,
+                  descriptionTr: s.descriptionTr,
+                  descriptionEn: s.descriptionEn,
+                }))}
+                locale={locale}
+                labels={{
+                  deepCut: dict.artist.deepCuts,
+                  expand: tr ? 'Aç' : 'Open',
+                  collapse: tr ? 'Kapat' : 'Close',
+                  about: tr ? 'Şarkı Hakkında' : 'About',
+                  listenOnSpotify: tr ? 'Spotify' : 'Spotify',
+                  listenOnYouTube: tr ? 'YouTube' : 'YouTube',
+                }}
+              />
             </section>
           )}
         </div>

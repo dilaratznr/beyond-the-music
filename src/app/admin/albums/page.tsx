@@ -155,7 +155,7 @@ export default function AlbumsPage() {
                     aria-label={`${a.title} düzenle`}
                   >
                     {a.coverImage ? (
-                      /* eslint-disable-next-line @next/next/no-img-element */
+                       
                       <img
                         src={a.coverImage}
                         alt={a.title}

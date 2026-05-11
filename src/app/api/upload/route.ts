@@ -24,6 +24,7 @@ const ALLOWED_CATEGORIES = new Set([
   'genre',
   'article',
   'architect',
+  'topic',
   'listening-path',
   'hero',
   'logo',

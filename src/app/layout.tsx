@@ -65,6 +65,9 @@ export const metadata: Metadata = {
   },
   icons: {
     icon: "/favicon.ico",
+    // apple-icon.tsx (programmatic, 180×180) Next.js convention ile otomatik
+    // <link rel="apple-touch-icon"> üretiyor — burada manuel referansa
+    // gerek yok.
   },
   formatDetection: {
     email: false,
