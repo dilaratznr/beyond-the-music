@@ -42,7 +42,6 @@ interface Props {
     listenOnYouTube: string;
     openAlbum: string;
     searchPlaceholder: string;
-    deepCutsOnly: string;
     allArtists: string;
     noResults: string;
   };
@@ -50,7 +49,6 @@ interface Props {
 
 export default function SongExplorer({ songs, locale, labels }: Props) {
   const [query, setQuery] = useState('');
-  const [deepCutsOnly, setDeepCutsOnly] = useState(false);
   const [artistId, setArtistId] = useState<string>('');
 
   // Sanatçı dropdown'u için unique listeyi türet — aynı sanatçının birden
@@ -73,7 +71,6 @@ export default function SongExplorer({ songs, locale, labels }: Props) {
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     return songs.filter((s) => {
-      if (deepCutsOnly && !s.isDeepCut) return false;
       if (artistId && s.album.artist.id !== artistId) return false;
       if (q) {
         const hay = `${s.title} ${s.album.title} ${s.album.artist.name}`.toLowerCase();
@@ -81,7 +78,7 @@ export default function SongExplorer({ songs, locale, labels }: Props) {
       }
       return true;
     });
-  }, [songs, query, deepCutsOnly, artistId]);
+  }, [songs, query, artistId]);
 
   return (
     <div className="space-y-6">
@@ -110,17 +107,6 @@ export default function SongExplorer({ songs, locale, labels }: Props) {
             ))}
           </select>
         )}
-        <label className="inline-flex items-center gap-2 px-3 py-1.5 cursor-pointer select-none">
-          <input
-            type="checkbox"
-            checked={deepCutsOnly}
-            onChange={(e) => setDeepCutsOnly(e.target.checked)}
-            className="w-4 h-4 rounded border-zinc-600 bg-black/40 accent-white"
-          />
-          <span className="text-[11px] uppercase tracking-wider font-semibold text-zinc-300">
-            {labels.deepCutsOnly}
-          </span>
-        </label>
         <span className="text-[11px] text-zinc-500 ml-auto">
           {filtered.length} / {songs.length}
         </span>

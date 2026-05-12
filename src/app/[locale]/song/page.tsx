@@ -113,7 +113,6 @@ export default async function SongListPage({
               listenOnYouTube: dict.song?.listenOnYouTube ?? 'YouTube',
               openAlbum: dict.song?.openAlbum ?? (tr ? 'Albümü Aç' : 'Open album'),
               searchPlaceholder: dict.song?.searchPlaceholder ?? (tr ? 'Şarkı ara…' : 'Search songs…'),
-              deepCutsOnly: dict.song?.deepCutsOnly ?? (tr ? 'Sadece Deep Cuts' : 'Deep Cuts only'),
               allArtists: dict.song?.allArtists ?? (tr ? 'Tüm Sanatçılar' : 'All Artists'),
               noResults: dict.song?.noResults ?? (tr ? 'Aramana uygun şarkı bulunamadı' : 'No songs match your search'),
             }}
