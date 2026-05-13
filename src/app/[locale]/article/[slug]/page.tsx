@@ -215,6 +215,7 @@ export default async function ArticleDetailPage({
             <img
               src={article.featuredImage}
               alt=""
+              aria-hidden="true"
               className="absolute inset-0 w-full h-full object-cover"
             />
           ) : (
@@ -331,6 +332,7 @@ export default async function ArticleDetailPage({
                             <img
                               src={rel.featuredImage}
                               alt=""
+                              aria-hidden="true"
                               loading="lazy"
                               decoding="async"
                               className="absolute inset-0 w-full h-full object-cover opacity-75 group-hover:opacity-100 transition-opacity duration-500"

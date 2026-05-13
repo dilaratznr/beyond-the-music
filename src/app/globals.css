@@ -34,6 +34,29 @@ body {
 
 html { scroll-behavior: smooth; }
 
+/* ─── Accessibility: prefers-reduced-motion ─────────────────────────
+ *
+ * macOS/iOS "Reduce Motion", Windows "Animations off", Android
+ * "Remove animations" — bu kullanıcılar agresif geçişlerden vestibüler
+ * rahatsızlık duyabiliyor (WCAG 2.3.3, 2.2.2). Aşağıdaki blok TÜM
+ * CSS-driven animasyonları neredeyse sıfır süreye iner. GSAP/JS bazlı
+ * animasyonlar useReducedMotion hook'uyla ayrıca devre dışı bırakılır
+ * (src/components/public/SmoothScroll.tsx vb.).
+ *
+ * 0s yerine 0.01ms — bazı listener'lar `animationend`/`transitionend`
+ * event'ini bekliyor; tamamen 0 verirsek event hiç tetiklenmez.
+ */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
 ::selection { background: rgba(255, 255, 255, 0.15); color: white; }
 
 ::-webkit-scrollbar { width: 4px; }

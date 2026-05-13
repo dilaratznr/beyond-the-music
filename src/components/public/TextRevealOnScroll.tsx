@@ -1,12 +1,18 @@
 'use client';
 
 import { useRef, useEffect, useState } from 'react';
+import { useReducedMotion } from '@/lib/use-reduced-motion';
 
 export default function TextRevealOnScroll({ text, className = '' }: { text: string; className?: string }) {
+  const reduced = useReducedMotion();
   const ref = useRef<HTMLDivElement>(null);
   const [progress, setProgress] = useState(0);
 
   useEffect(() => {
+    if (reduced) {
+      setProgress(1); // her kelime tamamen görünür, hareket yok
+      return;
+    }
     function onScroll() {
       if (!ref.current) return;
       const rect = ref.current.getBoundingClientRect();
@@ -17,7 +23,7 @@ export default function TextRevealOnScroll({ text, className = '' }: { text: str
     window.addEventListener('scroll', onScroll, { passive: true });
     onScroll();
     return () => window.removeEventListener('scroll', onScroll);
-  }, []);
+  }, [reduced]);
 
   const words = text.split(' ');
 
@@ -30,8 +36,8 @@ export default function TextRevealOnScroll({ text, className = '' }: { text: str
             <span key={i} className="inline-block mr-[0.25em]"
               style={{
                 color: `rgba(255,255,255,${0.08 + wp * 0.92})`,
-                transform: `translateY(${(1 - wp) * 4}px)`,
-                transition: 'color 0.15s ease, transform 0.15s ease',
+                transform: reduced ? 'none' : `translateY(${(1 - wp) * 4}px)`,
+                transition: reduced ? 'none' : 'color 0.15s ease, transform 0.15s ease',
               }}>
               {word}
             </span>

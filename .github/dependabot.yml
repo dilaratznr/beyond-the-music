@@ -1,0 +1,34 @@
+# Dependabot — haftalık güvenlik ve sürüm güncellemeleri.
+#
+# `groups` ile minor + patch güncellemelerini tek PR'da topluyoruz (ufak
+# patch'ler için 10 ayrı PR bildirim spam'i olur). Major güncellemeler
+# (Next 16→17 gibi) ayrı PR olarak gelir — manuel review hak ediyorlar.
+#
+# `open-pull-requests-limit: 5` aynı anda kuyrukta 5'ten fazla Dependabot
+# PR'ı tutmaz; biriken kuyruğu temizleyene kadar yenisini açmaz.
+
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: '09:00'
+      timezone: Europe/Istanbul
+    open-pull-requests-limit: 5
+    groups:
+      minor-and-patch:
+        update-types:
+          - minor
+          - patch
+    # Postinstall'da `prisma generate` koşulduğu için scripts gerekli;
+    # ignore-scripts yapamayız. Güvenlik açısı: dependency'lerden gelen
+    # postinstall script'leri Dependabot PR review'inde manuel taranır.
+    versioning-strategy: increase
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
+    open-pull-requests-limit: 3

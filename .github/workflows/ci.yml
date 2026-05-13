@@ -85,3 +85,59 @@ jobs:
           # script'inden çıkarmak yerine, bu workflow `next build`'i
           # doğrudan çağırıyor (yukarıda).
           SKIP_DB_PUSH: '1'
+
+  e2e:
+    name: Playwright smoke
+    runs-on: ubuntu-latest
+    # smoke.spec.ts: TR/EN render, robots, sitemap, /admin/login redirect,
+    # cron auth, rate limit. DB seed'ine bağımlı değil — boş DB'de geçer.
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: ci
+          POSTGRES_PASSWORD: ci
+          POSTGRES_DB: ci
+        ports: ['5432:5432']
+        # GitHub Actions service container'ları için healthcheck:
+        # next dev `prisma client` ilk query'sini atana kadar postgres'in
+        # gerçekten ayakta olduğunu garanti etmek için.
+        options: >-
+          --health-cmd "pg_isready -U ci"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      - run: npm ci
+      # Şema'yı boş test DB'sine pushla — seed YOK (smoke testleri boş
+      # state'te çalışacak şekilde yazılmış).
+      - run: npx prisma db push --skip-generate
+        env:
+          DATABASE_URL: postgresql://ci:ci@localhost:5432/ci
+      # Playwright Chromium binary'sini cache'lemek istenirse ayrı cache
+      # action gerekir; smoke seti küçük, her run'da fresh install OK.
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:e2e
+        env:
+          DATABASE_URL: postgresql://ci:ci@localhost:5432/ci
+          NEXTAUTH_URL: http://localhost:3000
+          NEXTAUTH_SECRET: ci-e2e-only-not-a-real-secret
+          NEXT_PUBLIC_APP_URL: http://localhost:3000
+          # CRON_SECRET set EDİLMİYOR — smoke testlerinden biri "secret
+          # yokken /api/cron/* 401 dönmeli" davranışını doğruluyor.
+          CI: 'true'
+      # Test düşerse trace/screenshot/log'ları artifact olarak yükle —
+      # PR yorumundan tıklanabilir, lokalde reproduce gerekmiyor.
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-report
+          path: |
+            playwright-report/
+            test-results/
+          retention-days: 7

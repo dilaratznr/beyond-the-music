@@ -151,6 +151,7 @@ export default async function AlbumDetailPage({
               <img
                 src={album.coverImage}
                 alt=""
+                aria-hidden="true"
                 className="absolute inset-0 w-full h-full object-cover scale-110 blur-2xl opacity-45"
               />
               <div className="absolute inset-0 bg-[#0a0a0b]/30" />

@@ -118,7 +118,7 @@ function SearchResults() {
                 className="group flex items-center gap-5 py-5 border-b border-white/10 hover:bg-white/[0.02] transition-colors -mx-4 px-4 rounded-sm"
               >
                 {r.image ? (
-                  <img src={r.image} alt="" className="w-16 h-16 rounded-lg object-cover flex-shrink-0" />
+                  <img src={r.image} alt="" aria-hidden="true" className="w-16 h-16 rounded-lg object-cover flex-shrink-0" />
                 ) : (
                   <div className="w-16 h-16 rounded-lg bg-gradient-to-br from-zinc-800 to-zinc-950 flex items-center justify-center font-editorial font-black text-white/20 text-2xl flex-shrink-0">
                     {r.title.charAt(0).toUpperCase()}

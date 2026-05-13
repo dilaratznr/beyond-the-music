@@ -3,6 +3,7 @@ import { revalidateTag } from 'next/cache';
 import prisma from '@/lib/prisma';
 import { requireAuth } from '@/lib/auth-guard';
 import { CACHE_TAGS } from '@/lib/db-cache';
+import { validateSettingsPayload } from '@/lib/site-settings-schema';
 
 /**
  * GET /api/settings — admin tarafı tüm SiteSetting anahtarlarını okur.
@@ -32,17 +33,45 @@ export async function PUT(request: NextRequest) {
   const { error } = await requireAuth('SUPER_ADMIN');
   if (error) return error;
 
-  const body = await request.json();
-
-  for (const [key, value] of Object.entries(body)) {
-    if (typeof value !== 'string') continue;
-    await prisma.siteSetting.upsert({
-      where: { key },
-      update: { value },
-      create: { key, value },
-    });
+  let body: Record<string, unknown>;
+  try {
+    body = await request.json();
+  } catch {
+    return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
   }
 
+  // Allowlist + per-field validation. Bilinmeyen key, geçersiz URL,
+  // `javascript:` protokolü, kötü JSON, sınır aşımı — hepsi burada
+  // yakalanır. Tek bir geçersiz alan tüm batch'i reddetmek yerine,
+  // kabul edilenleri yazıp reddedilenleri response'da listeliyoruz —
+  // admin UI hangi alanın neden reddedildiğini gösterebilsin diye.
+  const { accepted, rejected } = validateSettingsPayload(body);
+
+  // Hepsi reddedildiyse hiç DB'ye yazma + 400 dön. Aksi halde "yazıldı"
+  // diyen 200 ama gerçekte hiçbir şey değişmemiş hayal kırıklığı olurdu.
+  if (accepted.length === 0 && rejected.length > 0) {
+    return NextResponse.json(
+      { error: 'Geçerli alan yok', rejected },
+      { status: 400 },
+    );
+  }
+
+  // Tek transaction'da yaz — tek tek upsert'lerin yarısı geçip yarısı
+  // network hatasıyla düşse SiteSetting tutarsız kalırdı.
+  await prisma.$transaction(
+    accepted.map((field) =>
+      prisma.siteSetting.upsert({
+        where: { key: field.key },
+        update: { value: field.value },
+        create: { key: field.key, value: field.value },
+      }),
+    ),
+  );
+
   revalidateTag(CACHE_TAGS.settings, 'max');
-  return NextResponse.json({ success: true });
+  return NextResponse.json({
+    success: true,
+    written: accepted.length,
+    rejected: rejected.length > 0 ? rejected : undefined,
+  });
 }

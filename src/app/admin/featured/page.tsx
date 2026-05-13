@@ -374,6 +374,7 @@ function FeaturedList({
                 <img
                   src={img}
                   alt=""
+                  aria-hidden="true"
                   className="w-9 h-9 rounded-md object-cover flex-shrink-0 ring-1 ring-zinc-800"
                 />
               ) : (
@@ -544,6 +545,7 @@ function PickerPanel({
                   <img
                     src={img}
                     alt=""
+                    aria-hidden="true"
                     className="w-8 h-8 rounded object-cover flex-shrink-0 ring-1 ring-zinc-800"
                   />
                 ) : (

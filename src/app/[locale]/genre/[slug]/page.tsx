@@ -131,7 +131,7 @@ export default async function GenreDetailPage({ params }: { params: Params }) {
       <section className="relative w-full min-h-[60vh] md:min-h-[70vh] flex items-end overflow-hidden">
         <div className="absolute inset-0">
           {genre.image ? (
-            <img src={genre.image} alt="" className="absolute inset-0 w-full h-full object-cover opacity-60" />
+            <img src={genre.image} alt="" aria-hidden="true" className="absolute inset-0 w-full h-full object-cover opacity-60" />
           ) : (
             <>
               <div className="absolute inset-0 bg-gradient-to-br from-zinc-800 via-zinc-900 to-[#0a0a0b]" />
@@ -231,7 +231,7 @@ export default async function GenreDetailPage({ params }: { params: Params }) {
                     >
                       <div className="w-20 h-20 md:w-28 md:h-28 flex-shrink-0 relative overflow-hidden rounded-lg bg-zinc-900">
                         {article.featuredImage ? (
-                          <img src={article.featuredImage} alt="" className="absolute inset-0 w-full h-full object-cover" />
+                          <img src={article.featuredImage} alt="" aria-hidden="true" className="absolute inset-0 w-full h-full object-cover" />
                         ) : (
                           <>
                             <div className="absolute inset-0 bg-gradient-to-br from-zinc-800 to-zinc-950" />
@@ -306,7 +306,7 @@ export default async function GenreDetailPage({ params }: { params: Params }) {
                     >
                       <span className="w-10 h-10 rounded-full flex-shrink-0 overflow-hidden bg-zinc-900 relative">
                         {artist.image ? (
-                          <img src={artist.image} alt="" className="absolute inset-0 w-full h-full object-cover" />
+                          <img src={artist.image} alt="" aria-hidden="true" className="absolute inset-0 w-full h-full object-cover" />
                         ) : (
                           <span className="absolute inset-0 flex items-center justify-center text-white/20 text-sm">♪</span>
                         )}

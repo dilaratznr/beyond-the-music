@@ -43,7 +43,7 @@ export default function HeroVideoCarousel({ videos, fallbackImage }: { videos: V
   }, [current]);
 
   if (activeVideos.length === 0) {
-    return <img src={fallbackImage} alt="" className="w-full h-full object-cover animate-ken-burns" />;
+    return <img src={fallbackImage} alt="" aria-hidden="true" className="w-full h-full object-cover animate-ken-burns" />;
   }
 
   const src = activeVideos[current]?.url;

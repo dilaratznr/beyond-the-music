@@ -122,7 +122,7 @@ export default async function ArtistDetailPage({ params }: { params: Params }) {
         <div className="absolute inset-0">
           {artist.image ? (
             <>
-              <img src={artist.image} alt="" className="absolute inset-0 w-full h-full object-cover opacity-55" />
+              <img src={artist.image} alt="" aria-hidden="true" className="absolute inset-0 w-full h-full object-cover opacity-55" />
               <div className="absolute inset-0 bg-gradient-to-r from-[#0a0a0b] via-black/60 to-transparent" />
             </>
           ) : (
@@ -291,7 +291,7 @@ export default async function ArtistDetailPage({ params }: { params: Params }) {
                     >
                       <div className="w-20 h-20 md:w-24 md:h-24 flex-shrink-0 relative overflow-hidden rounded-lg bg-zinc-900">
                         {article.featuredImage ? (
-                          <img src={article.featuredImage} alt="" className="absolute inset-0 w-full h-full object-cover" />
+                          <img src={article.featuredImage} alt="" aria-hidden="true" className="absolute inset-0 w-full h-full object-cover" />
                         ) : (
                           <>
                             <div className="absolute inset-0 bg-gradient-to-br from-zinc-800 to-zinc-950" />

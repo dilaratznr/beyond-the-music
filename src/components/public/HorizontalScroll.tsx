@@ -1,6 +1,7 @@
 'use client';
 
 import { useRef, useEffect, useLayoutEffect, useState } from 'react';
+import { useReducedMotion } from '@/lib/use-reduced-motion';
 
 interface Props {
   children: React.ReactNode;
@@ -10,14 +11,22 @@ interface Props {
 /**
  * Pin+translate horizontal scroll. Transform via ref (avoid state re-renders).
  * Vertical alignment: items-center with -mt for optical center on pin.
+ *
+ * `prefers-reduced-motion: reduce`: pin + horizontal translate desenini
+ * tamamen devre dışı bırak — içerik düz dikey scroll'la, normal flex
+ * row olarak (gerekirse wrap) render edilir. Vestibüler rahatsızlık
+ * yaşayan kullanıcı için zorlayıcı yatay-pin akışı kaybolur, makale
+ * akışı doğal bir liste gibi davranır.
  */
 export default function HorizontalScroll({ children, className = '' }: Props) {
+  const reduced = useReducedMotion();
   const containerRef = useRef<HTMLDivElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const [sectionHeight, setSectionHeight] = useState<number | null>(null);
 
   // Measure overflow & set section height.
   useLayoutEffect(() => {
+    if (reduced) return; // pin/translate yok → ölçüme gerek yok
     function measure() {
       const scroll = scrollRef.current;
       if (!scroll) return;
@@ -36,9 +45,10 @@ export default function HorizontalScroll({ children, className = '' }: Props) {
       window.removeEventListener('resize', measure);
       ro?.disconnect();
     };
-  }, []);
+  }, [reduced]);
 
   useEffect(() => {
+    if (reduced) return;
     const container = containerRef.current;
     const scroll = scrollRef.current;
     if (!container || !scroll || !sectionHeight) return;
@@ -73,7 +83,19 @@ export default function HorizontalScroll({ children, className = '' }: Props) {
       window.removeEventListener('scroll', onScroll);
       if (rafId) cancelAnimationFrame(rafId);
     };
-  }, [sectionHeight]);
+  }, [sectionHeight, reduced]);
+
+  // Reduced motion: pin + horizontal translate desenini bırak, dikey
+  // listede yatay scroll'lu basit bir row göster (mobil flow'a benziyor).
+  if (reduced) {
+    return (
+      <div className={`relative ${className}`}>
+        <div className="flex gap-4 md:gap-5 px-6 lg:px-10 xl:px-14 overflow-x-auto">
+          {children}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div

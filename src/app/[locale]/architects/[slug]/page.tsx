@@ -113,7 +113,7 @@ export default async function ArchitectDetailPage({ params }: { params: Params }
         <div className="absolute inset-0">
           {architect.image ? (
             <>
-              <img src={architect.image} alt="" className="absolute inset-0 w-full h-full object-cover opacity-55" />
+              <img src={architect.image} alt="" aria-hidden="true" className="absolute inset-0 w-full h-full object-cover opacity-55" />
               <div className="absolute inset-0 bg-gradient-to-r from-[#0a0a0b] via-black/60 to-transparent" />
             </>
           ) : (
@@ -190,7 +190,7 @@ export default async function ArchitectDetailPage({ params }: { params: Params }
                   >
                     <div className="w-14 h-14 md:w-16 md:h-16 flex-shrink-0 rounded-full overflow-hidden relative bg-zinc-900">
                       {artist.image ? (
-                        <img src={artist.image} alt="" className="absolute inset-0 w-full h-full object-cover" />
+                        <img src={artist.image} alt="" aria-hidden="true" className="absolute inset-0 w-full h-full object-cover" />
                       ) : (
                         <span className="absolute inset-0 flex items-center justify-center font-editorial font-black text-white/15 text-2xl">
                           {artist.name.charAt(0)}

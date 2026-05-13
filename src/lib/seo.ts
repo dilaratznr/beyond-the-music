@@ -3,6 +3,20 @@ import type { Metadata } from 'next';
 export const SITE_URL =
   process.env.NEXT_PUBLIC_SITE_URL || 'https://beyondthemusic.app';
 
+/**
+ * X / Twitter Card için resmi platform handle'ı. `@` ile başlar. Set
+ * edilmezse twitter.site / twitter.creator alanları çıkmaz (geçerli
+ * ama analytics impressions kaybı). Env üzerinden override edilebilir:
+ *   NEXT_PUBLIC_TWITTER_HANDLE=@beyondthemusic
+ */
+const TWITTER_HANDLE = process.env.NEXT_PUBLIC_TWITTER_HANDLE || '@beyondthemusic';
+
+/** OG image canonical boyutu — Facebook/Twitter/LinkedIn tarayıcıları
+ *  width+height verilmezse fetch sırasında image'i discover'lamak için
+ *  bir round-trip daha atıyor; vermek share preview'i hızlandırıyor. */
+const OG_IMAGE_WIDTH = 1200;
+const OG_IMAGE_HEIGHT = 630;
+
 export function stripHtml(html: string | null | undefined, max = 160): string {
   if (!html) return '';
   const text = html
@@ -74,7 +88,16 @@ export function buildPageMetadata({
       title,
       description: desc,
       url,
-      images: image ? [{ url: image }] : undefined,
+      images: image
+        ? [
+            {
+              url: image,
+              width: OG_IMAGE_WIDTH,
+              height: OG_IMAGE_HEIGHT,
+              alt: title,
+            },
+          ]
+        : undefined,
       ...(type === 'article' && publishedTime
         ? { publishedTime: new Date(publishedTime).toISOString() }
         : {}),
@@ -82,6 +105,11 @@ export function buildPageMetadata({
     },
     twitter: {
       card: image ? 'summary_large_image' : 'summary',
+      // `site` = içeriğin yayıncısı, `creator` = makale yazarı (varsa).
+      // Article tipinde authorName geliyorsa creator'a koyamayız çünkü
+      // yazar adı X handle'ı değil — fallback site handle'ı.
+      site: TWITTER_HANDLE,
+      creator: TWITTER_HANDLE,
       title,
       description: desc,
       images: image ? [image] : undefined,

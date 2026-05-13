@@ -57,6 +57,7 @@ export default function ArticleCard({
           <img
             src={article.featuredImage}
             alt=""
+            aria-hidden="true"
             loading="eager"
             decoding="async"
             className="absolute inset-0 w-full h-full object-cover opacity-60 group-hover:opacity-80 transition-opacity duration-700"
@@ -95,6 +96,7 @@ export default function ArticleCard({
           <img
             src={article.featuredImage}
             alt=""
+            aria-hidden="true"
             loading="lazy"
             decoding="async"
             className="absolute inset-0 w-full h-full object-cover opacity-70 group-hover:opacity-100 transition-opacity duration-500"

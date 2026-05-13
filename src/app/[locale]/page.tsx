@@ -233,7 +233,7 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
               <div className="lg:col-span-7 gsap-slide-left">
                 <Link href={`/${locale}/article/${articles[0].slug}`} className="group relative block rounded-2xl overflow-hidden aspect-[16/10] img-reveal card-shine bg-gradient-to-br from-zinc-800 via-zinc-900 to-black">
                   {articles[0].featuredImage ? (
-                    <img src={articles[0].featuredImage} alt="" loading="lazy" decoding="async" className="absolute inset-0 w-full h-full object-cover" />
+                    <img src={articles[0].featuredImage} alt="" aria-hidden="true" loading="lazy" decoding="async" className="absolute inset-0 w-full h-full object-cover" />
                   ) : (
                     <>
                       <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(255,255,255,0.08),transparent_50%)]" />
@@ -254,7 +254,7 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
                     <Link key={a.id} href={`/${locale}/article/${a.slug}`} className="group flex gap-4 rounded-xl bg-white/[0.02] border border-white/[0.04] overflow-hidden hover:bg-white/[0.05] transition-colors">
                       <div className="w-24 h-20 flex-shrink-0 overflow-hidden relative bg-gradient-to-br from-zinc-800 to-zinc-950">
                         {a.featuredImage ? (
-                          <img src={a.featuredImage} alt="" loading="lazy" decoding="async" className="w-full h-full object-cover" />
+                          <img src={a.featuredImage} alt="" aria-hidden="true" loading="lazy" decoding="async" className="w-full h-full object-cover" />
                         ) : (
                           <div className="absolute inset-0 bg-[radial-gradient(circle_at_40%_30%,rgba(255,255,255,0.1),transparent_60%)]" />
                         )}
@@ -318,7 +318,7 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
               { href: `/${locale}/ai-music`, img: 'https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?w=800&q=80', title: 'AI MUSIC', sub: tr ? 'Algoritmik üretim' : 'Algorithmic production' },
             ].map((c) => (
               <Link key={c.href} href={c.href} className="group relative block rounded-2xl overflow-hidden aspect-[3/4] bg-zinc-800 img-zoom hover-lift card-shine">
-                <img src={c.img} alt="" loading="lazy" decoding="async" className="absolute inset-0 w-full h-full object-cover opacity-30 group-hover:opacity-50 transition-opacity duration-700" />
+                <img src={c.img} alt="" aria-hidden="true" loading="lazy" decoding="async" className="absolute inset-0 w-full h-full object-cover opacity-30 group-hover:opacity-50 transition-opacity duration-700" />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent" />
                 <div className="absolute bottom-0 left-0 right-0 p-6 z-10">
                   <h3 className="text-2xl md:text-3xl font-black font-editorial text-white tracking-[-0.02em]">{c.title}</h3>
@@ -362,7 +362,7 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
                   className={`flex-shrink-0 w-[240px] group relative block rounded-2xl overflow-hidden aspect-[9/16] bg-gradient-to-br ${palettes[i % palettes.length]} img-zoom hover-lift card-shine`}
                 >
                   {p.image ? (
-                    <img src={p.image} alt="" loading="lazy" decoding="async" className="absolute inset-0 w-full h-full object-cover opacity-40 group-hover:opacity-60 transition-opacity duration-500" />
+                    <img src={p.image} alt="" aria-hidden="true" loading="lazy" decoding="async" className="absolute inset-0 w-full h-full object-cover opacity-40 group-hover:opacity-60 transition-opacity duration-500" />
                   ) : (
                     <>
                       {/* Fallback: sadece gradient + diagonal tarama;
@@ -387,7 +387,7 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
       {/* ▸▸▸ SCENE 8: CULTURE BANNER - parallax ▸▸▸ */}
       <section className="relative min-h-screen flex items-center overflow-hidden">
         <div className="absolute inset-0 depth-slow">
-          <img src={s.culture_banner_image || 'https://images.unsplash.com/photo-1519892300165-cb5542fb47c7?w=1920&q=80'} alt="" loading="lazy" decoding="async" className="w-full h-[130%] -mt-[15%] object-cover opacity-15" />
+          <img src={s.culture_banner_image || 'https://images.unsplash.com/photo-1519892300165-cb5542fb47c7?w=1920&q=80'} alt="" aria-hidden="true" loading="lazy" decoding="async" className="w-full h-[130%] -mt-[15%] object-cover opacity-15" />
         </div>
         <div className="relative z-10 max-w-5xl mx-auto px-6 text-center gsap-fade-up py-20">
           <p className="text-[10px] uppercase tracking-[0.4em] text-zinc-600 font-bold mb-6">{tr ? 'Moda · Müzik · Kültür' : 'Fashion · Music · Culture'}</p>

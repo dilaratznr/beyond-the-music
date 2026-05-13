@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useReducedMotion } from '@/lib/use-reduced-motion';
 
 interface SplashIntroProps {
   title?: string;
@@ -11,11 +12,20 @@ export default function SplashIntro({
   title = 'BEYOND THE MUSIC',
   tagline = 'müziğin ötesinde',
 }: SplashIntroProps) {
+  const reduced = useReducedMotion();
   const [scrollY, setScrollY] = useState(0);
   const [hidden, setHidden] = useState(false);
   const [vh, setVh] = useState(800);
 
   useEffect(() => {
+    // Reduced motion: splash'i hiç gösterme — sessionStorage işaretle ve
+    // anında gizle. Scroll'la kapanmasını bekleyen büyük perde animasyonu
+    // vestibüler rahatsızlık için en saldırgan elementlerden biri.
+    if (reduced) {
+      sessionStorage.setItem('btm-intro', '1');
+      setHidden(true);
+      return;
+    }
     // Defer initial state reads to next microtask so the effect body is a pure subscription
     const id = requestAnimationFrame(() => {
       if (sessionStorage.getItem('btm-intro')) {
@@ -37,7 +47,7 @@ export default function SplashIntro({
       cancelAnimationFrame(id);
       window.removeEventListener('scroll', onScroll);
     };
-  }, []);
+  }, [reduced]);
 
   if (hidden) return null;
 
