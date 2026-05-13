@@ -4,8 +4,9 @@ import { useCallback, useState } from 'react';
 import useSWR from 'swr';
 import { useToast } from '@/components/admin/Toast';
 import ImageUploader from '@/components/admin/ImageUploader';
-import { TableSkeleton } from '@/components/admin/Loading';
+import { TableSkeleton, InlineLoading } from '@/components/admin/Loading';
 import { useConfirm } from '@/components/admin/useConfirm';
+import { usePageAccess } from '@/components/admin/usePageAccess';
 
 interface HeroVideo {
   id: string;
@@ -20,6 +21,10 @@ const inputCls =
   'w-full px-3 py-2 text-sm text-zinc-100 bg-zinc-950 border border-zinc-800 rounded-md outline-none transition-colors hover:border-zinc-700 focus:border-zinc-500 focus:ring-2 focus:ring-zinc-500/20 placeholder:text-zinc-600';
 
 export default function HeroVideosPage() {
+  // Hero videoları sadece Super Admin yönetebilir — Sidebar'da gizli ama
+  // URL ile gelen yetkisiz kullanıcı için defense-in-depth redirect.
+  const { ready } = usePageAccess({ require: 'SUPER_ADMIN' });
+
   const [newUrl, setNewUrl] = useState('');
   const [newDuration, setNewDuration] = useState(10);
   const [newTitle, setNewTitle] = useState('');
@@ -135,6 +140,8 @@ export default function HeroVideosPage() {
 
   const activeCount = videos.filter((v) => v.isActive).length;
   const totalDuration = videos.filter((v) => v.isActive).reduce((sum, v) => sum + v.duration, 0);
+
+  if (!ready) return <InlineLoading />;
 
   return (
     <div className="max-w-3xl">

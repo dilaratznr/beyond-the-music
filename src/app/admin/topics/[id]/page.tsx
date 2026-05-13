@@ -23,11 +23,16 @@ import {
 import { translatePairs } from '@/lib/translate-client';
 import { useCanPublish } from '@/components/admin/useCanPublish';
 import ReviewNotice from '@/components/admin/ReviewNotice';
+import { usePageAccess } from '@/components/admin/usePageAccess';
+import { InlineLoading } from '@/components/admin/Loading';
 
 export default function EditTopicPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const router = useRouter();
   const { toast } = useToast();
+  // ARTICLE.canEdit gerekli — sayfa-seviyesinde defense-in-depth.
+  // Yetkisi olmayan editör formu doldurup submit'te 403 görmesin.
+  const { ready: accessReady } = usePageAccess({ section: 'ARTICLE', action: 'canEdit' });
 
   const [form, setForm] = useState({
     nameTr: '',
@@ -116,6 +121,8 @@ export default function EditTopicPage({ params }: { params: Promise<{ id: string
     toast('Üst başlık güncellendi');
     router.push('/admin/topics');
   }
+
+  if (!accessReady) return <InlineLoading />;
 
   if (loading) {
     return (

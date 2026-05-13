@@ -13,6 +13,8 @@ import {
   TextArea,
   FormError,
 } from '@/components/admin/FormField';
+import { InlineLoading } from '@/components/admin/Loading';
+import { usePageAccess } from '@/components/admin/usePageAccess';
 import { IconExternal } from '@/components/admin/Icons';
 import { SettingsSkeleton } from '@/components/admin/Loading';
 import {
@@ -39,6 +41,11 @@ const SECTION_TOGGLES: Array<{ key: string; labelTr: string; labelEn: string }> 
 ];
 
 export default function SettingsPage() {
+  // Site ayarları (iletişim, sosyal, branding, sections, fonts, custom nav)
+  // sadece Super Admin'in işi. Sidebar zaten gizliyor; defense-in-depth
+  // için sayfa-seviyesinde redirect.
+  const { ready } = usePageAccess({ require: 'SUPER_ADMIN' });
+
   const { data: session } = useSession();
   const isSuperAdmin = session?.user?.role === 'SUPER_ADMIN';
   const { toast } = useToast();
@@ -104,6 +111,8 @@ export default function SettingsPage() {
       setSaving(false);
     }
   }
+
+  if (!ready) return <InlineLoading />;
 
   if (isLoading) {
     return (

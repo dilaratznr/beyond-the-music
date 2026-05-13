@@ -19,8 +19,13 @@ import {
 } from '@/components/admin/FormField';
 import { translatePairs } from '@/lib/translate-client';
 import { useCanPublish } from '@/components/admin/useCanPublish';
+import { usePageAccess } from '@/components/admin/usePageAccess';
+import { InlineLoading } from '@/components/admin/Loading';
 
 export default function NewTopicPage() {
+  // ARTICLE.canCreate gerekli — yetkisi olmayan editör boş forma
+  // gelmesin, API submit'te 403 görmektense direkt dashboard'a dön.
+  const { ready } = usePageAccess({ section: 'ARTICLE', action: 'canCreate' });
   const [form, setForm] = useState({
     nameTr: '',
     nameEn: '',
@@ -84,6 +89,8 @@ export default function NewTopicPage() {
     toast('Üst başlık oluşturuldu');
     router.push('/admin/topics');
   }
+
+  if (!ready) return <InlineLoading />;
 
   return (
     <div className="max-w-5xl">

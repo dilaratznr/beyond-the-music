@@ -11,10 +11,11 @@ import Link from 'next/link';
 import useSWR from 'swr';
 import DeleteButton from '@/components/admin/DeleteButton';
 import { IconExternal, IconPlus } from '@/components/admin/Icons';
-import { Skeleton } from '@/components/admin/Loading';
+import { Skeleton, InlineLoading } from '@/components/admin/Loading';
 import { useClientLocale } from '@/components/admin/useClientLocale';
 import { useSearchShortcut } from '@/components/admin/useSearchShortcut';
 import StatusPill from '@/components/admin/StatusPill';
+import { usePageAccess } from '@/components/admin/usePageAccess';
 
 interface Topic {
   id: string;
@@ -28,13 +29,20 @@ interface Topic {
 }
 
 export default function TopicsPage() {
+  // Topics ARTICLE permission'ı altında — herhangi bir ARTICLE CRUD
+  // yetkisi olmayan kullanıcı bu sayfayı görmesin (Sidebar zaten
+  // gizliyordu, defense-in-depth katmanı).
+  const { ready } = usePageAccess({ section: 'ARTICLE' });
+
   const [query, setQuery] = useState('');
   const searchRef = useRef<HTMLInputElement>(null);
   const locale = useClientLocale();
 
   useSearchShortcut(searchRef, { onClear: () => setQuery('') });
 
-  const { data: topics = [], mutate, isLoading, error } = useSWR<Topic[]>('/api/topics?all=true');
+  const { data: topics = [], mutate, isLoading, error } = useSWR<Topic[]>(
+    ready ? '/api/topics?all=true' : null,
+  );
 
   const reload = useCallback(() => {
     mutate();
@@ -49,6 +57,8 @@ export default function TopicsPage() {
   }, [topics, q]);
 
   const hasResults = filtered.length > 0;
+
+  if (!ready) return <InlineLoading />;
 
   return (
     <div>

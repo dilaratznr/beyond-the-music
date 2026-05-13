@@ -321,7 +321,7 @@ export default function EditUserPage() {
                     </p>
                     <p className="text-[11px] text-zinc-500 mt-1">
                       Kullanıcı telefonunu veya yedek kodlarını kaybetmişse
-                      sıfırla. Sonraki login'de tekrar setup'a yönlendirilir.
+                      sıfırla. Sonraki girişte tekrar setup&apos;a yönlendirilir.
                     </p>
                   </div>
                   <button
