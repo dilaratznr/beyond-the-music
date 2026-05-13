@@ -337,34 +337,63 @@ export default function UsersPage() {
                     >
                       {roleInfo?.labelTr ?? user.role}
                     </span>
-                    {user.role !== 'SUPER_ADMIN' ? (
-                      <div className="flex gap-1">
-                        <Link
-                          href={`/admin/users/${user.id}`}
-                          className="px-2.5 py-1 bg-zinc-900 text-zinc-300 text-[11px] rounded-md hover:bg-zinc-800 hover:text-white font-medium transition-colors border border-zinc-800"
-                        >
-                          Düzenle
-                        </Link>
-                        <button
-                          onClick={() => toggleActive(user)}
-                          disabled={isMe}
-                          className="px-2.5 py-1 text-[11px] rounded-md font-medium border bg-zinc-900 text-zinc-300 border-zinc-800 hover:border-zinc-700 hover:bg-zinc-800 hover:text-white transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-                        >
-                          {user.isActive ? 'Pasifleştir' : 'Aktifleştir'}
-                        </button>
-                        <button
-                          onClick={() => deleteUser(user)}
-                          disabled={isMe}
-                          className="px-2.5 py-1 bg-zinc-900 text-zinc-300 text-[11px] rounded-md hover:border-zinc-700 hover:bg-zinc-800 hover:text-white font-medium transition-colors border border-zinc-800 disabled:opacity-40 disabled:cursor-not-allowed"
-                        >
-                          Sil
-                        </button>
-                      </div>
-                    ) : (
-                      <span className="px-2 py-1 text-[10px] text-zinc-500 italic">
-                        Korumalı hesap
-                      </span>
-                    )}
+                    {/* Super Admin'ler de düzenlenebilir, pasifleştirilebilir ve
+                        silinebilir — Super Admin'ler kendi takımlarındaki diğer
+                        Super Admin'lerin yetkilerini yönetebilmeli. İki güvenlik
+                        ağı: (a) kendini kilitleme (self-edit hep disabled),
+                        (b) son aktif Super Admin'i pasifleştirme/silme yasak
+                        (UI burada disabled, API tarafı da reddediyor). */}
+                    {(() => {
+                      const isLastActiveSuperAdmin =
+                        user.role === 'SUPER_ADMIN' &&
+                        user.isActive &&
+                        users.filter(
+                          (u) => u.role === 'SUPER_ADMIN' && u.isActive,
+                        ).length <= 1;
+                      const deactivateDisabled = isMe || isLastActiveSuperAdmin;
+                      const deleteDisabled =
+                        isMe ||
+                        (user.role === 'SUPER_ADMIN' &&
+                          users.filter((u) => u.role === 'SUPER_ADMIN').length <= 1);
+                      return (
+                        <div className="flex gap-1">
+                          <Link
+                            href={`/admin/users/${user.id}`}
+                            className="px-2.5 py-1 bg-zinc-900 text-zinc-300 text-[11px] rounded-md hover:bg-zinc-800 hover:text-white font-medium transition-colors border border-zinc-800"
+                          >
+                            Düzenle
+                          </Link>
+                          <button
+                            onClick={() => toggleActive(user)}
+                            disabled={deactivateDisabled}
+                            title={
+                              isMe
+                                ? 'Kendinizi pasife alamazsınız'
+                                : isLastActiveSuperAdmin
+                                  ? 'Son aktif Super Admin pasifleştirilemez'
+                                  : undefined
+                            }
+                            className="px-2.5 py-1 text-[11px] rounded-md font-medium border bg-zinc-900 text-zinc-300 border-zinc-800 hover:border-zinc-700 hover:bg-zinc-800 hover:text-white transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                          >
+                            {user.isActive ? 'Pasifleştir' : 'Aktifleştir'}
+                          </button>
+                          <button
+                            onClick={() => deleteUser(user)}
+                            disabled={deleteDisabled}
+                            title={
+                              isMe
+                                ? 'Kendinizi silemezsiniz'
+                                : deleteDisabled
+                                  ? 'Son Super Admin silinemez'
+                                  : undefined
+                            }
+                            className="px-2.5 py-1 bg-zinc-900 text-zinc-300 text-[11px] rounded-md hover:border-zinc-700 hover:bg-zinc-800 hover:text-white font-medium transition-colors border border-zinc-800 disabled:opacity-40 disabled:cursor-not-allowed"
+                          >
+                            Sil
+                          </button>
+                        </div>
+                      );
+                    })()}
                   </div>
                 </div>
                 {user.role !== 'SUPER_ADMIN' && user.permissions.length > 0 && (

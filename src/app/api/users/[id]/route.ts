@@ -87,6 +87,35 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
     );
   }
 
+  // Son aktif Super Admin koruması: sistemde başka aktif Super Admin
+  // kalmıyorsa bu kullanıcının (a) rolünü düşürmek veya (b) pasife
+  // çekmek yasak. Aksi halde "hata yaptım, geri alayım" senaryosunda
+  // sistemde admin paneline girebilecek kimse kalmaz. UI butonları
+  // zaten disabled, ama direkt fetch ile API'ye gelen istek de aynı
+  // güvenlik ağına takılmalı.
+  if (before?.role === 'SUPER_ADMIN') {
+    const willDemote = role && role !== 'SUPER_ADMIN';
+    const willDeactivate = isActive === false;
+    if (willDemote || willDeactivate) {
+      const otherActiveSuperAdmins = await prisma.user.count({
+        where: {
+          role: 'SUPER_ADMIN',
+          isActive: true,
+          NOT: { id },
+        },
+      });
+      if (otherActiveSuperAdmins === 0) {
+        return NextResponse.json(
+          {
+            error:
+              'Son aktif Super Admin: rolü düşürülemez veya pasife alınamaz. Önce başka bir Super Admin tanımlayın.',
+          },
+          { status: 400 },
+        );
+      }
+    }
+  }
+
   const updateData: Record<string, unknown> = {};
   if (name) updateData.name = name;
   // Email opsiyonel: boş string null'a düşer (alanı temizleme niyeti). undefined
@@ -176,6 +205,31 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
   // Prevent self-deletion
   if (user!.id === id) {
     return NextResponse.json({ error: 'Cannot delete yourself' }, { status: 400 });
+  }
+
+  // Son Super Admin koruması: silinmek istenen kullanıcı SUPER_ADMIN ise
+  // ve sistemde başka SUPER_ADMIN yoksa silmeyi reddet. UI Sil butonu
+  // disabled olsa da API'ye direkt çağrı bu güvenlik ağına takılmalı.
+  // İsActive durumundan bağımsız: pasif olsa bile silindiğinde geriye
+  // hiç super admin kalmaz → kurtarma akışı sadece DB'ye direkt erişimle
+  // mümkün olur. Bunu önlüyoruz.
+  const target = await prisma.user.findUnique({
+    where: { id },
+    select: { role: true },
+  });
+  if (target?.role === 'SUPER_ADMIN') {
+    const otherSuperAdmins = await prisma.user.count({
+      where: { role: 'SUPER_ADMIN', NOT: { id } },
+    });
+    if (otherSuperAdmins === 0) {
+      return NextResponse.json(
+        {
+          error:
+            'Son Super Admin silinemez. Önce başka bir Super Admin tanımlayın.',
+        },
+        { status: 400 },
+      );
+    }
   }
 
   // Article.author onDelete yönlendirmesi yok → Prisma foreign key
