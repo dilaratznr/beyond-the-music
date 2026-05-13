@@ -8,6 +8,7 @@ import { isSectionEnabled } from '@/lib/site-sections';
 import PageHero from '@/components/public/PageHero';
 import EmptyState from '@/components/public/EmptyState';
 import CardImage from '@/components/public/CardImage';
+import PublicListSearch from '@/components/public/PublicListSearch';
 
 // Kart arka plan paleti — görseli olmayan makaleler için stabil, slug
 // hash'iyle seçilen gradient. Her kart benzersiz bir "üretilmiş" görünüm
@@ -64,31 +65,40 @@ export default async function TheoryPage({ params }: { params: Promise<{ locale:
       {/* Articles grid */}
       <div className="max-w-[1480px] mx-auto px-6 lg:px-10 xl:px-14 py-12 md:py-16">
         {articles.length > 0 ? (
-          <div className="gsap-stagger grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {articles.map((a) => {
-              const title = tr ? a.titleTr : a.titleEn;
-              return (
-                <Link key={a.id} href={`/${locale}/article/${a.slug}`}
-                  className="group relative block rounded-xl overflow-hidden bg-white/[0.02] border border-white/5 hover:bg-white/[0.05] transition-colors">
-                  {/* Görsel eksikse artık boş alan değil, CardImage fallback
-                      (gradient + watermark harf) — görselsiz kayıtlar için
-                      tutarlı bir görsel doldurma. */}
-                  <div className="relative w-full h-40 overflow-hidden bg-zinc-900">
-                    <CardImage
-                      src={a.featuredImage}
-                      letter={title?.charAt(0) ?? '♪'}
-                      gradientClass={paletteForSlug(a.slug)}
-                      imgClassName="opacity-60 group-hover:opacity-80 transition-opacity duration-500"
-                    />
-                  </div>
-                  <div className="p-5">
-                    <h3 className="text-sm font-bold group-hover:underline">{title}</h3>
-                    <p className="text-[10px] text-zinc-500 mt-2">{a.author.name}</p>
-                  </div>
-                </Link>
-              );
-            })}
-          </div>
+          <PublicListSearch
+            placeholder={tr ? 'Başlık veya yazar ara…' : 'Search title or author…'}
+            emptyText={tr ? 'Sonuç bulunamadı' : 'No results'}
+          >
+            <div className="gsap-stagger grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {articles.map((a) => {
+                const title = tr ? a.titleTr : a.titleEn;
+                return (
+                  <Link
+                    key={a.id}
+                    href={`/${locale}/article/${a.slug}`}
+                    className="group relative block rounded-xl overflow-hidden bg-white/[0.02] border border-white/5 hover:bg-white/[0.05] transition-colors"
+                    data-searchable={`${a.titleTr} ${a.titleEn} ${a.author.name}`}
+                  >
+                    {/* Görsel eksikse artık boş alan değil, CardImage fallback
+                        (gradient + watermark harf) — görselsiz kayıtlar için
+                        tutarlı bir görsel doldurma. */}
+                    <div className="relative w-full h-40 overflow-hidden bg-zinc-900">
+                      <CardImage
+                        src={a.featuredImage}
+                        letter={title?.charAt(0) ?? '♪'}
+                        gradientClass={paletteForSlug(a.slug)}
+                        imgClassName="opacity-60 group-hover:opacity-80 transition-opacity duration-500"
+                      />
+                    </div>
+                    <div className="p-5">
+                      <h3 className="text-sm font-bold group-hover:underline">{title}</h3>
+                      <p className="text-[10px] text-zinc-500 mt-2">{a.author.name}</p>
+                    </div>
+                  </Link>
+                );
+              })}
+            </div>
+          </PublicListSearch>
         ) : (
           <EmptyState
             title={tr ? 'Henüz teori makalesi yayınlanmadı.' : 'No theory articles published yet.'}

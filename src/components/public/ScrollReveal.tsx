@@ -7,9 +7,18 @@ interface Props {
   className?: string;
   delay?: number;
   direction?: 'up' | 'down' | 'left' | 'right' | 'scale' | 'none';
+  /** Public list pages için — PublicListSearch buna göre filtreler.
+   *  Set edilince wrapper div'e `data-searchable` attribute olarak yazılır. */
+  dataSearchable?: string;
 }
 
-export default function ScrollReveal({ children, className = '', delay = 0, direction = 'up' }: Props) {
+export default function ScrollReveal({
+  children,
+  className = '',
+  delay = 0,
+  direction = 'up',
+  dataSearchable,
+}: Props) {
   const ref = useRef<HTMLDivElement>(null);
   const [visible, setVisible] = useState(false);
 
@@ -37,6 +46,7 @@ export default function ScrollReveal({ children, className = '', delay = 0, dire
     <div
       ref={ref}
       className={className}
+      data-searchable={dataSearchable}
       style={{
         opacity: visible ? 1 : 0,
         transform: visible ? 'none' : transforms[direction],

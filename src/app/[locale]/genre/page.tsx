@@ -7,6 +7,7 @@ import { notFound } from 'next/navigation';
 import { isSectionEnabled } from '@/lib/site-sections';
 import PageHero from '@/components/public/PageHero';
 import CardImage from '@/components/public/CardImage';
+import PublicListSearch from '@/components/public/PublicListSearch';
 
 // Her türe farklı bir gradient paleti — görsel yüklenemezse kartların
 // birbirinden ayırt edilebilmesi için. Tur slug'ının bir hash'iyle
@@ -65,37 +66,52 @@ export default async function GenrePage({ params }: { params: Promise<{ locale: 
 
       {/* Genre Grid */}
       <div className="max-w-[1480px] mx-auto px-6 lg:px-10 xl:px-14 py-12">
-        <div className="gsap-stagger grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-3">
-          {genres.map((g) => {
-            const name = tr ? g.nameTr : g.nameEn;
-            return (
-              <Link key={g.id} href={`/${locale}/genre/${g.slug}`}
-                className="group relative block rounded-xl overflow-hidden aspect-[3/4] bg-zinc-900 hover-lift">
-                <CardImage src={g.image} letter={name.charAt(0)} gradientClass={pickGradient(g.slug)} />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/10 to-transparent" />
-                <div className="absolute bottom-0 left-0 right-0 p-3 z-10">
-                  <h3 className="text-white font-bold text-xs">{name}</h3>
-                  <p className="text-white/40 text-[9px] mt-0.5">{g._count.artists} {tr ? 'sanatçı' : 'artists'} · {g.children.length} {tr ? 'alt tür' : 'sub'}</p>
-                </div>
-              </Link>
-            );
-          })}
-        </div>
-
-        {/* Subgenres */}
-        {allSubgenres.length > 0 && (
-          <div className="mt-16">
-            <h2 className="text-lg font-bold mb-6">{dict.genre.subgenre}</h2>
-            <div className="flex flex-wrap gap-2">
-              {allSubgenres.map((sub) => (
-                <Link key={sub.id} href={`/${locale}/genre/${sub.slug}`}
-                  className="px-3 py-1.5 bg-white/5 border border-white/5 rounded-full text-xs text-zinc-400 hover:text-white hover:bg-white/10 transition-colors">
-                  {locale === 'tr' ? sub.nameTr : sub.nameEn}
-                </Link>
-              ))}
+        <PublicListSearch
+          placeholder={tr ? 'Tür ara…' : 'Search genre…'}
+          emptyText={tr ? 'Sonuç bulunamadı' : 'No results'}
+        >
+          <div data-search-section>
+            <div className="gsap-stagger grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-3">
+              {genres.map((g) => {
+                const name = tr ? g.nameTr : g.nameEn;
+                return (
+                  <Link
+                    key={g.id}
+                    href={`/${locale}/genre/${g.slug}`}
+                    className="group relative block rounded-xl overflow-hidden aspect-[3/4] bg-zinc-900 hover-lift"
+                    data-searchable={`${g.nameTr} ${g.nameEn}`}
+                  >
+                    <CardImage src={g.image} letter={name.charAt(0)} gradientClass={pickGradient(g.slug)} />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/10 to-transparent" />
+                    <div className="absolute bottom-0 left-0 right-0 p-3 z-10">
+                      <h3 className="text-white font-bold text-xs">{name}</h3>
+                      <p className="text-white/40 text-[9px] mt-0.5">{g._count.artists} {tr ? 'sanatçı' : 'artists'} · {g.children.length} {tr ? 'alt tür' : 'sub'}</p>
+                    </div>
+                  </Link>
+                );
+              })}
             </div>
           </div>
-        )}
+
+          {/* Subgenres */}
+          {allSubgenres.length > 0 && (
+            <div className="mt-16" data-search-section>
+              <h2 className="text-lg font-bold mb-6">{dict.genre.subgenre}</h2>
+              <div className="flex flex-wrap gap-2">
+                {allSubgenres.map((sub) => (
+                  <Link
+                    key={sub.id}
+                    href={`/${locale}/genre/${sub.slug}`}
+                    className="px-3 py-1.5 bg-white/5 border border-white/5 rounded-full text-xs text-zinc-400 hover:text-white hover:bg-white/10 transition-colors"
+                    data-searchable={`${sub.nameTr} ${sub.nameEn}`}
+                  >
+                    {locale === 'tr' ? sub.nameTr : sub.nameEn}
+                  </Link>
+                ))}
+              </div>
+            </div>
+          )}
+        </PublicListSearch>
       </div>
     </div>
   );

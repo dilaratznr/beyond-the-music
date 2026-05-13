@@ -12,6 +12,7 @@ import EmptyState from '@/components/public/EmptyState';
 import PageHero from '@/components/public/PageHero';
 import { isSectionEnabled } from '@/lib/site-sections';
 import ArticleCard, { categoryLabel } from '@/components/public/ArticleCard';
+import PublicListSearch from '@/components/public/PublicListSearch';
 
 type ArticleListItem = Awaited<ReturnType<typeof loadArticles>>[number];
 
@@ -173,42 +174,62 @@ export default async function ArticleListPage({
         }
       />
 
-      <div className="max-w-[1480px] mx-auto px-6 lg:px-10 xl:px-14 py-12 space-y-16">
-        {articles.length === 0 && (
+      <div className="max-w-[1480px] mx-auto px-6 lg:px-10 xl:px-14 py-12">
+        {articles.length === 0 ? (
           <EmptyState
             title={tr ? 'Henüz yayında makale yok.' : 'No articles published yet.'}
             hint={tr ? 'Yakında — kürasyon sürüyor' : 'Coming soon — curation in progress'}
           />
+        ) : (
+          <PublicListSearch
+            placeholder={tr ? 'Başlık, yazar veya kategori ara…' : 'Search title, author or category…'}
+            emptyText={tr ? 'Sonuç bulunamadı' : 'No results'}
+          >
+            <div className="space-y-16">
+              {featured && (
+                <ScrollReveal
+                  direction="up"
+                  dataSearchable={`${featured.titleTr} ${featured.titleEn} ${featured.author.name} ${categoryLabel(dict, featured.category)}`}
+                >
+                  <ArticleCard article={featured} locale={locale} variant="hero" />
+                </ScrollReveal>
+              )}
+
+              {orderedCategories.map((cat) => {
+                // Hero olarak kullandığımız makaleyi bu kategorinin listesinden
+                // çıkar — aynı yazı iki kez görünmesin.
+                const list = (grouped.get(cat) ?? []).filter((a) => a.id !== featured?.id);
+                if (list.length === 0) return null;
+                const catName = categoryLabel(dict, cat);
+                return (
+                  <section
+                    key={cat}
+                    id={`cat-${cat}`}
+                    className="scroll-mt-24"
+                    data-search-section
+                  >
+                    <h2 className="text-lg font-bold mb-5 flex items-center gap-2">
+                      {catName}
+                      <span className="text-xs text-zinc-600 font-normal">({list.length})</span>
+                    </h2>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                      {list.map((a, i) => (
+                        <ScrollReveal
+                          key={a.id}
+                          delay={i * 40}
+                          direction="up"
+                          dataSearchable={`${a.titleTr} ${a.titleEn} ${a.author.name} ${catName}`}
+                        >
+                          <ArticleCard article={a} locale={locale} />
+                        </ScrollReveal>
+                      ))}
+                    </div>
+                  </section>
+                );
+              })}
+            </div>
+          </PublicListSearch>
         )}
-
-        {featured && (
-          <ScrollReveal direction="up">
-            <ArticleCard article={featured} locale={locale} variant="hero" />
-          </ScrollReveal>
-        )}
-
-        {orderedCategories.map((cat) => {
-          // Hero olarak kullandığımız makaleyi bu kategorinin listesinden
-          // çıkar — aynı yazı iki kez görünmesin.
-          const list = (grouped.get(cat) ?? []).filter((a) => a.id !== featured?.id);
-          if (list.length === 0) return null;
-          return (
-            <section key={cat} id={`cat-${cat}`} className="scroll-mt-24">
-              <h2 className="text-lg font-bold mb-5 flex items-center gap-2">
-                {categoryLabel(dict, cat)}
-                <span className="text-xs text-zinc-600 font-normal">({list.length})</span>
-              </h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {list.map((a, i) => (
-                  <ScrollReveal key={a.id} delay={i * 40} direction="up">
-                    <ArticleCard article={a} locale={locale} />
-                  </ScrollReveal>
-                ))}
-              </div>
-            </section>
-          );
-        })}
-
       </div>
     </div>
   );

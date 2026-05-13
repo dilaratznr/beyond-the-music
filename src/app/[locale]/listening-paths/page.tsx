@@ -8,6 +8,7 @@ import { isSectionEnabled } from '@/lib/site-sections';
 import PageHero from '@/components/public/PageHero';
 import EmptyState from '@/components/public/EmptyState';
 import CardImage from '@/components/public/CardImage';
+import PublicListSearch from '@/components/public/PublicListSearch';
 
 const PATH_PALETTES = [
   'from-emerald-900/55 to-zinc-950', 'from-rose-900/55 to-zinc-950',
@@ -60,6 +61,10 @@ export default async function ListeningPathsPage({ params }: { params: Promise<{
 
       <div className="max-w-[1480px] mx-auto px-6 lg:px-10 xl:px-14 py-12 md:py-16">
         {paths.length > 0 ? (
+          <PublicListSearch
+            placeholder={tr ? 'Rota veya tür ara…' : 'Search path or type…'}
+            emptyText={tr ? 'Sonuç bulunamadı' : 'No results'}
+          >
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
             {paths.map((p) => {
               const title = tr ? p.titleTr : p.titleEn;
@@ -70,11 +75,13 @@ export default async function ListeningPathsPage({ params }: { params: Promise<{
                 n === 0
                   ? tr ? 'Henüz parça yok' : 'No tracks yet'
                   : `${n} ${tr ? 'parça' : 'tracks'}`;
+              const searchable = `${p.titleTr} ${p.titleEn} ${typeLabels[p.type] || p.type}`;
               return (
                 <Link
                   key={p.id}
                   href={`/${locale}/listening-paths/${p.slug}`}
                   className="group relative rounded-xl overflow-hidden aspect-[4/5] bg-zinc-900 hover-lift block"
+                  data-searchable={searchable}
                 >
                   <CardImage
                     src={p.image}
@@ -101,6 +108,7 @@ export default async function ListeningPathsPage({ params }: { params: Promise<{
               );
             })}
           </div>
+          </PublicListSearch>
         ) : (
           <EmptyState
             title={tr ? 'Henüz dinleme rotası yok.' : 'No listening paths yet.'}

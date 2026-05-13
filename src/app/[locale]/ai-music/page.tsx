@@ -8,6 +8,7 @@ import { isSectionEnabled } from '@/lib/site-sections';
 import PageHero from '@/components/public/PageHero';
 import EmptyState from '@/components/public/EmptyState';
 import CardImage from '@/components/public/CardImage';
+import PublicListSearch from '@/components/public/PublicListSearch';
 
 // Görseli olmayan makale kartları için slug-hash ile seçilen stabil
 // palet. Her kart benzersiz bir üretilmiş görünüm alıyor.
@@ -60,31 +61,40 @@ export default async function AiMusicPage({ params }: { params: Promise<{ locale
 
       <div className="max-w-[1480px] mx-auto px-6 lg:px-10 xl:px-14 py-12 md:py-16">
         {articles.length > 0 ? (
-          <div className="grid md:grid-cols-2 gap-5">
-            {articles.map((a) => {
-              const title = tr ? a.titleTr : a.titleEn;
-              return (
-                <Link key={a.id} href={`/${locale}/article/${a.slug}`}
-                  className="group bg-white/[0.02] border border-white/5 rounded-xl overflow-hidden hover:bg-white/[0.05] hover-lift transition-colors">
-                  {/* Görsel yoksa boş alan yerine CardImage fallback
-                      (gradient + watermark) — görselsiz kayıtlar için
-                      tutarlı bir görsel doldurma. */}
-                  <div className="relative w-full h-44 overflow-hidden bg-zinc-900 img-zoom">
-                    <CardImage
-                      src={a.featuredImage}
-                      letter={title?.charAt(0) ?? '♪'}
-                      gradientClass={paletteForSlug(a.slug)}
-                      imgClassName="opacity-90 group-hover:opacity-100 transition-opacity duration-500"
-                    />
-                  </div>
-                  <div className="p-5">
-                    <h3 className="font-editorial text-base md:text-lg font-semibold tracking-[-0.01em] group-hover:underline decoration-1 underline-offset-4">{title}</h3>
-                    <p className="text-[11px] text-zinc-500 mt-2 uppercase tracking-wider">{a.author.name}</p>
-                  </div>
-                </Link>
-              );
-            })}
-          </div>
+          <PublicListSearch
+            placeholder={tr ? 'Başlık veya yazar ara…' : 'Search title or author…'}
+            emptyText={tr ? 'Sonuç bulunamadı' : 'No results'}
+          >
+            <div className="grid md:grid-cols-2 gap-5">
+              {articles.map((a) => {
+                const title = tr ? a.titleTr : a.titleEn;
+                return (
+                  <Link
+                    key={a.id}
+                    href={`/${locale}/article/${a.slug}`}
+                    className="group bg-white/[0.02] border border-white/5 rounded-xl overflow-hidden hover:bg-white/[0.05] hover-lift transition-colors"
+                    data-searchable={`${a.titleTr} ${a.titleEn} ${a.author.name}`}
+                  >
+                    {/* Görsel yoksa boş alan yerine CardImage fallback
+                        (gradient + watermark) — görselsiz kayıtlar için
+                        tutarlı bir görsel doldurma. */}
+                    <div className="relative w-full h-44 overflow-hidden bg-zinc-900 img-zoom">
+                      <CardImage
+                        src={a.featuredImage}
+                        letter={title?.charAt(0) ?? '♪'}
+                        gradientClass={paletteForSlug(a.slug)}
+                        imgClassName="opacity-90 group-hover:opacity-100 transition-opacity duration-500"
+                      />
+                    </div>
+                    <div className="p-5">
+                      <h3 className="font-editorial text-base md:text-lg font-semibold tracking-[-0.01em] group-hover:underline decoration-1 underline-offset-4">{title}</h3>
+                      <p className="text-[11px] text-zinc-500 mt-2 uppercase tracking-wider">{a.author.name}</p>
+                    </div>
+                  </Link>
+                );
+              })}
+            </div>
+          </PublicListSearch>
         ) : (
           <EmptyState
             title={tr ? 'AI müzik yazıları henüz yayında değil.' : 'AI music pieces not yet published.'}

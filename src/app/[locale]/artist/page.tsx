@@ -8,6 +8,7 @@ import ScrollReveal from '@/components/public/ScrollReveal';
 import EmptyState from '@/components/public/EmptyState';
 import PageHero from '@/components/public/PageHero';
 import CardImage from '@/components/public/CardImage';
+import PublicListSearch from '@/components/public/PublicListSearch';
 import { isSectionEnabled } from '@/lib/site-sections';
 
 // Görsel yoksa sanatçı kartının arka plan paleti — slug hash'ine göre
@@ -56,7 +57,15 @@ function ArtistGrid({ list, locale }: { list: ArtistWithRelations[]; locale: str
   return (
     <>
       {list.map((a, i) => (
-        <ScrollReveal key={a.id} delay={i * 40} direction="up">
+        <ScrollReveal
+          key={a.id}
+          delay={i * 40}
+          direction="up"
+          // PublicListSearch tarafından gözlenir; sanatçı adı + tür
+          // isimlerini taşı ki "miles" veya "jazz" araması ikisini de
+          // bulsun. Lowercase normalize edilmiyor — wrapper kendi yapıyor.
+          dataSearchable={`${a.name} ${a.genres.map((g) => `${g.genre.nameTr} ${g.genre.nameEn}`).join(' ')}`}
+        >
           <Link
             href={`/${locale}/artist/${a.slug}`}
             className="group relative block rounded-xl overflow-hidden aspect-[3/4] bg-zinc-900 hover-lift"
@@ -120,40 +129,47 @@ export default async function ArtistPage({ params }: { params: Promise<{ locale:
         }
       />
 
-      <div className="max-w-[1480px] mx-auto px-6 lg:px-10 xl:px-14 py-12 space-y-14">
-        {soloArtists.length > 0 && (
-          <section id="solo" className="scroll-mt-24">
-            <h2 className="text-lg font-bold mb-5 flex items-center gap-2">
-              {dict.artist.solo}
-              <span className="text-xs text-zinc-600 font-normal">({soloArtists.length})</span>
-            </h2>
-            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-3">
-              <ArtistGrid list={soloArtists} locale={locale} />
-            </div>
-          </section>
-        )}
-        {groups.length > 0 && (
-          <section id="group" className="scroll-mt-24">
-            <h2 className="text-lg font-bold mb-5 flex items-center gap-2">
-              {dict.artist.group}
-              <span className="text-xs text-zinc-600 font-normal">({groups.length})</span>
-            </h2>
-            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-3">
-              <ArtistGrid list={groups} locale={locale} />
-            </div>
-          </section>
-        )}
-        {composers.length > 0 && (
-          <section id="composer" className="scroll-mt-24">
-            <h2 className="text-lg font-bold mb-5 flex items-center gap-2">
-              {dict.artist.composer}
-              <span className="text-xs text-zinc-600 font-normal">({composers.length})</span>
-            </h2>
-            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-3">
-              <ArtistGrid list={composers} locale={locale} />
-            </div>
-          </section>
-        )}
+      <div className="max-w-[1480px] mx-auto px-6 lg:px-10 xl:px-14 py-12">
+        <PublicListSearch
+          placeholder={tr ? 'Sanatçı veya tür ara…' : 'Search artist or genre…'}
+          emptyText={tr ? 'Sonuç bulunamadı' : 'No results'}
+        >
+          <div className="space-y-14">
+            {soloArtists.length > 0 && (
+              <section id="solo" className="scroll-mt-24" data-search-section>
+                <h2 className="text-lg font-bold mb-5 flex items-center gap-2">
+                  {dict.artist.solo}
+                  <span className="text-xs text-zinc-600 font-normal">({soloArtists.length})</span>
+                </h2>
+                <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-3">
+                  <ArtistGrid list={soloArtists} locale={locale} />
+                </div>
+              </section>
+            )}
+            {groups.length > 0 && (
+              <section id="group" className="scroll-mt-24" data-search-section>
+                <h2 className="text-lg font-bold mb-5 flex items-center gap-2">
+                  {dict.artist.group}
+                  <span className="text-xs text-zinc-600 font-normal">({groups.length})</span>
+                </h2>
+                <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-3">
+                  <ArtistGrid list={groups} locale={locale} />
+                </div>
+              </section>
+            )}
+            {composers.length > 0 && (
+              <section id="composer" className="scroll-mt-24" data-search-section>
+                <h2 className="text-lg font-bold mb-5 flex items-center gap-2">
+                  {dict.artist.composer}
+                  <span className="text-xs text-zinc-600 font-normal">({composers.length})</span>
+                </h2>
+                <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-3">
+                  <ArtistGrid list={composers} locale={locale} />
+                </div>
+              </section>
+            )}
+          </div>
+        </PublicListSearch>
       </div>
     </div>
   );
