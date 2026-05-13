@@ -130,7 +130,12 @@ export default function NewArticlePage() {
         topicId: form.topicId || null,
       }),
     });
-    const data = await res.json();
+    let data: { error?: string } = {};
+    try {
+      data = await res.json();
+    } catch {
+      data = { error: 'Sunucu yanıtı çözümlenemedi (yeniden deneyin)' };
+    }
     setLoading(false);
     if (!res.ok) {
       setError(data.error || 'Kaydedilemedi');

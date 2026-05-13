@@ -96,7 +96,12 @@ export default function NewArtistPage() {
         image: form.image || null,
       }),
     });
-    const data = await res.json();
+    let data: { error?: string } = {};
+    try {
+      data = await res.json();
+    } catch {
+      data = { error: 'Sunucu yanıtı çözümlenemedi (yeniden deneyin)' };
+    }
     setSubmitting(false);
     if (!res.ok) {
       setError(data.error || 'Kaydedilemedi');

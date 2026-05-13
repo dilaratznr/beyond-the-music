@@ -82,7 +82,15 @@ export default function NewAlbumPage() {
         coverImage: form.coverImage || null,
       }),
     });
-    const data = await res.json();
+    // JSON parse'i kendi try/catch'inde — server HTML 500 dönerse parse
+    // hatası fırlatıyordu ve setSubmitting(false) hiç çalışmadığı için
+    // buton sonsuza kadar "Kaydediliyor..." takılıyordu.
+    let data: { error?: string } = {};
+    try {
+      data = await res.json();
+    } catch {
+      data = { error: 'Sunucu yanıtı çözümlenemedi (yeniden deneyin)' };
+    }
     setSubmitting(false);
     if (!res.ok) {
       setError(data.error || 'Kaydedilemedi');

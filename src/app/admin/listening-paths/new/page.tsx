@@ -39,7 +39,12 @@ export default function NewListeningPathPage() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ ...form, image: form.image || null }),
     });
-    const data = await res.json();
+    let data: { error?: string } = {};
+    try {
+      data = await res.json();
+    } catch {
+      data = { error: 'Sunucu yanıtı çözümlenemedi (yeniden deneyin)' };
+    }
     setLoading(false);
     if (!res.ok) {
       setError(data.error || 'Kaydedilemedi');

@@ -69,40 +69,61 @@ export default function NewGenrePage() {
     setSubmitting(true);
     setError('');
 
-    // Auto-translate nameTr → nameEn and descriptionTr → descriptionEn when
-    // the EN side is empty. Name is a single noun phrase, description is prose.
-    setTranslating(true);
-    const translations = await translatePairs([
-      { key: 'nameEn', sourceText: form.nameTr, targetText: form.nameEn },
-      {
-        key: 'descriptionEn',
-        sourceText: form.descriptionTr,
-        targetText: form.descriptionEn,
-      },
-    ]);
-    setTranslating(false);
+    // Tüm akışı try/finally'e al — daha önce `await res.json()` HTML
+    // 500 sayfasında parse hatası fırlattığında setSubmitting(false) hiç
+    // çalışmıyordu, buton sonsuza kadar "Oluşturuluyor…" kalıyordu.
+    try {
+      // Auto-translate nameTr → nameEn and descriptionTr → descriptionEn when
+      // the EN side is empty. Name is a single noun phrase, description is prose.
+      setTranslating(true);
+      const translations = await translatePairs([
+        { key: 'nameEn', sourceText: form.nameTr, targetText: form.nameEn },
+        {
+          key: 'descriptionEn',
+          sourceText: form.descriptionTr,
+          targetText: form.descriptionEn,
+        },
+      ]);
+      setTranslating(false);
 
-    const res = await fetch('/api/genres', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        ...form,
-        ...translations,
-        image: form.image || null,
-        parentId: form.parentId || null,
-      }),
-    });
+      const res = await fetch('/api/genres', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...form,
+          ...translations,
+          image: form.image || null,
+          parentId: form.parentId || null,
+        }),
+      });
 
-    const data = await res.json();
-    setSubmitting(false);
+      // JSON parse'i kendi try/catch'inde — server JSON dönmediyse (HTML
+      // 500 vb.) graceful bir hata göster, sessizce hang'lemesin.
+      let data: { error?: string } = {};
+      try {
+        data = await res.json();
+      } catch {
+        data = { error: 'Sunucu yanıtı çözümlenemedi (yeniden deneyin)' };
+      }
 
-    if (!res.ok) {
-      setError(data.error || 'Kaydedilemedi');
-      toast(data.error || 'Kaydedilemedi', 'error');
-      return;
+      if (!res.ok) {
+        setError(data.error || 'Kaydedilemedi');
+        toast(data.error || 'Kaydedilemedi', 'error');
+        return;
+      }
+      toast('Tür oluşturuldu');
+      router.push('/admin/genres');
+    } catch (err) {
+      console.error('[genres/new] submit failed:', err);
+      const msg = err instanceof Error ? err.message : 'Ağ hatası, lütfen tekrar deneyin';
+      setError(msg);
+      toast(msg, 'error');
+    } finally {
+      // Translating state'ini de garantile — try block içindeki erken
+      // exception bırakıyor olabilirdi.
+      setTranslating(false);
+      setSubmitting(false);
     }
-    toast('Tür oluşturuldu');
-    router.push('/admin/genres');
   }
 
   return (
