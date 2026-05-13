@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import useSWR from 'swr';
 import Pagination from '@/components/admin/Pagination';
@@ -8,15 +8,29 @@ import DeleteButton from '@/components/admin/DeleteButton';
 import BulkActionBar, { BulkCheckbox } from '@/components/admin/BulkActionBar';
 import { useBulkSelection } from '@/lib/bulk-selection';
 import StatusPill from '@/components/admin/StatusPill';
+import SearchInput from '@/components/admin/SearchInput';
+import { useSearchShortcut } from '@/components/admin/useSearchShortcut';
 
 interface Album { id: string; title: string; slug: string; coverImage: string | null; artist: { name: string }; _count: { songs: number }; releaseDate: string | null; status: string; }
 const PER_PAGE = 15;
 
 export default function AlbumsPage() {
   const [page, setPage] = useState(1);
+  const [query, setQuery] = useState('');
+  const searchRef = useRef<HTMLInputElement>(null);
+  useSearchShortcut(searchRef, { onClear: () => setQuery('') });
 
+  // Arama yazıldığında sayfa 1'e dön — aksi halde 4. sayfada arama yapıp
+  // "sonuç yok" görüp şaşırırdı kullanıcı (gerçekte 1. sayfada vardı).
+  useEffect(() => {
+    setPage(1);
+  }, [query]);
+
+  // SWR key'inde q varsa URL'e ekleniyor — sunucu tarafında prisma where
+  // OR'u devreye girer. Boş query'de yine eski endpoint görünür.
+  const qParam = query.trim() ? `&q=${encodeURIComponent(query.trim())}` : '';
   const { data: response, mutate, isLoading } = useSWR<{ items: Album[]; total: number }>(
-    `/api/albums?page=${page}&limit=${PER_PAGE}`,
+    `/api/albums?page=${page}&limit=${PER_PAGE}${qParam}`,
   );
   const albums = response?.items ?? [];
   const total = response?.total ?? 0;
@@ -39,12 +53,20 @@ export default function AlbumsPage() {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-5">
+      <div className="flex items-center justify-between mb-5 gap-4 flex-wrap">
         <div>
           <h1 className="text-xl font-semibold text-zinc-100 tracking-tight">Albümler</h1>
-          <p className="text-[13px] text-zinc-500 mt-0.5">{total} albüm</p>
+          <p className="text-[13px] text-zinc-500 mt-0.5">
+            {query.trim() ? `"${query.trim()}" için ${total} sonuç` : `${total} albüm`}
+          </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
+          <SearchInput
+            value={query}
+            onChange={setQuery}
+            placeholder="Albüm veya sanatçı ara…"
+            inputRef={searchRef}
+          />
           {pageIds.length > 0 && (
             // The outer <button> handles the click — the visual checkbox is a
             // decorative <span> so we don't nest <button> inside <button>
@@ -121,6 +143,12 @@ export default function AlbumsPage() {
               </div>
             </div>
           ))}
+        </div>
+      ) : albums.length === 0 ? (
+        <div className="text-center py-16 text-zinc-500 text-sm">
+          {query.trim()
+            ? `"${query.trim()}" için sonuç bulunamadı`
+            : 'Henüz albüm eklenmedi'}
         </div>
       ) : (
         <>

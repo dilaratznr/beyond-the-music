@@ -22,10 +22,20 @@ export async function GET(request: NextRequest) {
   const albumId = searchParams.get('albumId');
   const isDeepCut = searchParams.get('isDeepCut');
   const all = searchParams.get('all') === 'true';
+  const q = searchParams.get('q')?.trim() || '';
 
   const where: Record<string, unknown> = {};
   if (albumId) where.albumId = albumId;
   if (isDeepCut === 'true') where.isDeepCut = true;
+  if (q) {
+    // Şarkı adı VEYA albüm başlığı VEYA sanatçı adı. Songs Album'e
+    // nested ediliyor, artist da Album üzerinden.
+    where.OR = [
+      { title: { contains: q, mode: 'insensitive' } },
+      { album: { title: { contains: q, mode: 'insensitive' } } },
+      { album: { artist: { name: { contains: q, mode: 'insensitive' } } } },
+    ];
+  }
 
   if (all) {
     const songs = await prisma.song.findMany({

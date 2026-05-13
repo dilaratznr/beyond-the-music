@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import useSWR from 'swr';
 import Pagination from '@/components/admin/Pagination';
@@ -8,6 +8,8 @@ import DeleteButton from '@/components/admin/DeleteButton';
 import { IconExternal } from '@/components/admin/Icons';
 import { TableSkeleton } from '@/components/admin/Loading';
 import StatusPill from '@/components/admin/StatusPill';
+import SearchInput from '@/components/admin/SearchInput';
+import { useSearchShortcut } from '@/components/admin/useSearchShortcut';
 
 interface LP {
   id: string;
@@ -37,9 +39,17 @@ const TYPE_PILL_CLASSNAME =
 
 export default function ListeningPathsPage() {
   const [page, setPage] = useState(1);
+  const [query, setQuery] = useState('');
+  const searchRef = useRef<HTMLInputElement>(null);
+  useSearchShortcut(searchRef, { onClear: () => setQuery('') });
 
+  useEffect(() => {
+    setPage(1);
+  }, [query]);
+
+  const qParam = query.trim() ? `&q=${encodeURIComponent(query.trim())}` : '';
   const { data: response, mutate, isLoading } = useSWR<{ items: LP[]; total: number }>(
-    `/api/listening-paths?page=${page}&limit=${PER_PAGE}`,
+    `/api/listening-paths?page=${page}&limit=${PER_PAGE}${qParam}`,
   );
   // total ve paths SWR cache'inden derive — state'te tutmaya gerek yok
   // (önceki sürümde setTotal render sırasında çağrılıp sonsuz loop yapıyordu).
@@ -56,17 +66,27 @@ export default function ListeningPathsPage() {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-5">
+      <div className="flex items-center justify-between mb-5 gap-4 flex-wrap">
         <div>
           <h1 className="text-xl font-semibold text-zinc-100 tracking-tight">Dinleme Rotaları</h1>
-          <p className="text-[13px] text-zinc-500 mt-0.5">{total} rota</p>
+          <p className="text-[13px] text-zinc-500 mt-0.5">
+            {query.trim() ? `"${query.trim()}" için ${total} sonuç` : `${total} rota`}
+          </p>
         </div>
-        <Link
-          href="/admin/listening-paths/new"
-          className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white text-zinc-950 rounded-md text-xs font-semibold hover:bg-zinc-200 transition-colors"
-        >
-          + Yeni Rota
-        </Link>
+        <div className="flex items-center gap-2 flex-wrap">
+          <SearchInput
+            value={query}
+            onChange={setQuery}
+            placeholder="Rota başlığı ara…"
+            inputRef={searchRef}
+          />
+          <Link
+            href="/admin/listening-paths/new"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white text-zinc-950 rounded-md text-xs font-semibold hover:bg-zinc-200 transition-colors whitespace-nowrap"
+          >
+            + Yeni Rota
+          </Link>
+        </div>
       </div>
       {isLoading ? (
         <TableSkeleton rows={PER_PAGE} />
@@ -86,7 +106,9 @@ export default function ListeningPathsPage() {
                 {paths.length === 0 && (
                   <tr>
                     <td colSpan={4} className="px-4 py-8 text-center text-zinc-500 text-xs">
-                      Henüz rota yok.
+                      {query.trim()
+                        ? `"${query.trim()}" için sonuç bulunamadı`
+                        : 'Henüz rota yok.'}
                     </td>
                   </tr>
                 )}

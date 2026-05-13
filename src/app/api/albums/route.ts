@@ -17,6 +17,8 @@ export async function GET(request: NextRequest) {
   // DoS guard: ?limit=999999 ile DB'yi taratamasınlar — 100'le sınırlandır.
   const limit = Math.min(Math.max(1, parseInt(searchParams.get('limit') || '20')), 100);
   const artistId = searchParams.get('artistId');
+  // Admin liste sayfasından arama. Boş string'i normalize et.
+  const q = searchParams.get('q')?.trim() || '';
 
   // Anonymous visitors only see PUBLISHED. Admin panel uses the same endpoint
   // for its album list page; auth cookie identifies them and they get all rows.
@@ -24,6 +26,14 @@ export async function GET(request: NextRequest) {
   const where: Record<string, unknown> = {};
   if (artistId) where.artistId = artistId;
   if (!isAdmin) where.status = 'PUBLISHED';
+  if (q) {
+    // Albüm başlığı VEYA sanatçı adı eşleşmesi. Insensitive contains —
+    // ufak DB'lerde index'siz yeterli, yüksek hacimde pg_trgm önerilir.
+    where.OR = [
+      { title: { contains: q, mode: 'insensitive' } },
+      { artist: { name: { contains: q, mode: 'insensitive' } } },
+    ];
+  }
 
   const [items, total] = await Promise.all([
     prisma.album.findMany({ where, include: { artist: { select: { name: true, slug: true } }, _count: { select: { songs: true } } }, orderBy: { releaseDate: 'desc' }, skip: (page - 1) * limit, take: limit }),

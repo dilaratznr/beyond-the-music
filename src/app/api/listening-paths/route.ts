@@ -15,10 +15,17 @@ export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const page = parseInt(searchParams.get('page') || '1');
   const limit = Math.min(Math.max(1, parseInt(searchParams.get('limit') || '20')), 100);
+  const q = searchParams.get('q')?.trim() || '';
 
   // Public ↔ admin shared. Anonymous never sees DRAFT/PENDING_REVIEW paths.
   const isAdmin = await isAdminRequest();
-  const where = isAdmin ? {} : { status: 'PUBLISHED' as const };
+  const where: Record<string, unknown> = isAdmin ? {} : { status: 'PUBLISHED' };
+  if (q) {
+    where.OR = [
+      { titleTr: { contains: q, mode: 'insensitive' } },
+      { titleEn: { contains: q, mode: 'insensitive' } },
+    ];
+  }
 
   const [items, total] = await Promise.all([
     prisma.listeningPath.findMany({ where, include: { _count: { select: { items: true } } }, orderBy: { createdAt: 'desc' }, skip: (page - 1) * limit, take: limit }),

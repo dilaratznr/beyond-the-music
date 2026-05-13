@@ -16,9 +16,13 @@ export async function GET(request: NextRequest) {
   const page = parseInt(searchParams.get('page') || '1');
   const limit = Math.min(Math.max(1, parseInt(searchParams.get('limit') || '20')), 100);
   const type = searchParams.get('type');
+  const q = searchParams.get('q')?.trim() || '';
 
   const where: Record<string, unknown> = {};
   if (type) where.type = type;
+  if (q) {
+    where.name = { contains: q, mode: 'insensitive' };
+  }
 
   const [items, total] = await Promise.all([
     prisma.architect.findMany({ where, include: { _count: { select: { artists: true } } }, orderBy: { name: 'asc' }, skip: (page - 1) * limit, take: limit }),

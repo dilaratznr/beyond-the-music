@@ -6,7 +6,7 @@
 - **Next.js 16** (App Router) + **React 19** + **TypeScript**
 - **Prisma 6** + **PostgreSQL**
 - **NextAuth 4** (admin oturumu)
-- **Tailwind 4** + **GSAP** + **Lenis** (smooth scroll)
+- **Tailwind 4** + **GSAP** (scroll animasyonları)
 - **TipTap 3** (rich text editor)
 - **next-intl** (TR/EN i18n)
 

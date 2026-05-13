@@ -1,12 +1,14 @@
 'use client';
 
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import useSWR from 'swr';
 import Pagination from '@/components/admin/Pagination';
 import DeleteButton from '@/components/admin/DeleteButton';
 import { IconExternal } from '@/components/admin/Icons';
 import StatusPill from '@/components/admin/StatusPill';
+import SearchInput from '@/components/admin/SearchInput';
+import { useSearchShortcut } from '@/components/admin/useSearchShortcut';
 
 interface Artist {
   id: string;
@@ -34,9 +36,17 @@ const TYPE_PILL_CLASSNAME =
 
 export default function ArtistsPage() {
   const [page, setPage] = useState(1);
+  const [query, setQuery] = useState('');
+  const searchRef = useRef<HTMLInputElement>(null);
+  useSearchShortcut(searchRef, { onClear: () => setQuery('') });
 
+  useEffect(() => {
+    setPage(1);
+  }, [query]);
+
+  const qParam = query.trim() ? `&q=${encodeURIComponent(query.trim())}` : '';
   const { data: response, mutate, isLoading } = useSWR<{ items: Artist[]; total: number }>(
-    `/api/artists?page=${page}&limit=${PER_PAGE}`,
+    `/api/artists?page=${page}&limit=${PER_PAGE}${qParam}`,
   );
   const artists = response?.items ?? [];
   const total = response?.total ?? 0;
@@ -51,19 +61,29 @@ export default function ArtistsPage() {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-5">
+      <div className="flex items-center justify-between mb-5 gap-4 flex-wrap">
         <div>
           <h1 className="text-xl font-semibold text-zinc-100 tracking-tight">Sanatçılar</h1>
           <p className="text-[13px] text-zinc-500 mt-0.5">
-            {total} sanatçı · {artists.reduce((s, a) => s + a._count.albums, 0)} albüm bu sayfada
+            {query.trim()
+              ? `"${query.trim()}" için ${total} sonuç`
+              : `${total} sanatçı · ${artists.reduce((s, a) => s + a._count.albums, 0)} albüm bu sayfada`}
           </p>
         </div>
-        <Link
-          href="/admin/artists/new"
-          className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white text-zinc-950 rounded-md text-xs font-semibold hover:bg-zinc-200 transition-colors"
-        >
-          + Yeni Sanatçı
-        </Link>
+        <div className="flex items-center gap-2 flex-wrap">
+          <SearchInput
+            value={query}
+            onChange={setQuery}
+            placeholder="Sanatçı ara…"
+            inputRef={searchRef}
+          />
+          <Link
+            href="/admin/artists/new"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white text-zinc-950 rounded-md text-xs font-semibold hover:bg-zinc-200 transition-colors whitespace-nowrap"
+          >
+            + Yeni Sanatçı
+          </Link>
+        </div>
       </div>
 
       {isLoading ? (
@@ -83,8 +103,16 @@ export default function ArtistsPage() {
         </div>
       ) : artists.length === 0 ? (
         <div className="text-center py-16 bg-zinc-900/40 rounded-lg border border-zinc-800">
-          <p className="text-sm text-zinc-100 font-medium">Henüz sanatçı eklenmedi</p>
-          <p className="text-xs text-zinc-500 mt-1">Sağ üstten yeni bir sanatçı ekleyebilirsin</p>
+          <p className="text-sm text-zinc-100 font-medium">
+            {query.trim()
+              ? `"${query.trim()}" için sonuç bulunamadı`
+              : 'Henüz sanatçı eklenmedi'}
+          </p>
+          {!query.trim() && (
+            <p className="text-xs text-zinc-500 mt-1">
+              Sağ üstten yeni bir sanatçı ekleyebilirsin
+            </p>
+          )}
         </div>
       ) : (
         <>

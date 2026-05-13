@@ -1,6 +1,6 @@
 'use client';
 
-import { Suspense, useCallback, useMemo, useState } from 'react';
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import useSWR from 'swr';
@@ -12,6 +12,8 @@ import { TableSkeleton } from '@/components/admin/Loading';
 import BulkActionBar, { BulkCheckbox } from '@/components/admin/BulkActionBar';
 import { useBulkSelection } from '@/lib/bulk-selection';
 import { useConfirm } from '@/components/admin/useConfirm';
+import SearchInput from '@/components/admin/SearchInput';
+import { useSearchShortcut } from '@/components/admin/useSearchShortcut';
 
 interface Article {
   id: string;
@@ -83,10 +85,19 @@ function ArticlesPageInner() {
   const [topicFilter, setTopicFilter] = useState<string>('');
   const [bulkBusy, setBulkBusy] = useState(false);
   const [bulkErr, setBulkErr] = useState<string | null>(null);
+  const [query, setQuery] = useState('');
+  const searchRef = useRef<HTMLInputElement>(null);
+  useSearchShortcut(searchRef, { onClear: () => setQuery('') });
+
+  // Arama yazıldığında sayfa 1'e geri dön.
+  useEffect(() => {
+    setPage(1);
+  }, [query]);
 
   const queryParams = new URLSearchParams({ page: String(page), limit: String(PER_PAGE) });
   if (filter) queryParams.set('status', filter);
   if (topicFilter) queryParams.set('topicId', topicFilter);
+  if (query.trim()) queryParams.set('q', query.trim());
   const queryString = queryParams.toString();
 
   const { data: response, mutate, isLoading } = useSWR<{ items: Article[]; total: number }>(
@@ -162,12 +173,20 @@ function ArticlesPageInner() {
   return (
     <div>
       {confirmDialog}
-      <div className="flex items-center justify-between mb-5">
+      <div className="flex items-center justify-between mb-5 gap-4 flex-wrap">
         <div>
           <h1 className="text-xl font-semibold text-zinc-100 tracking-tight">Makaleler</h1>
-          <p className="text-[13px] text-zinc-500 mt-0.5">{total} makale</p>
+          <p className="text-[13px] text-zinc-500 mt-0.5">
+            {query.trim() ? `"${query.trim()}" için ${total} sonuç` : `${total} makale`}
+          </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
+          <SearchInput
+            value={query}
+            onChange={setQuery}
+            placeholder="Başlık veya yazar ara…"
+            inputRef={searchRef}
+          />
           {/* Plain <a> intentional: the target is an API route returning a CSV file. */}
           <a
             href={`/api/admin/export/articles${filter ? `?status=${filter}` : ''}`}
@@ -178,7 +197,7 @@ function ArticlesPageInner() {
           </a>
           <Link
             href="/admin/articles/new"
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white text-zinc-950 rounded-md text-xs font-semibold hover:bg-zinc-200 transition-colors"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white text-zinc-950 rounded-md text-xs font-semibold hover:bg-zinc-200 transition-colors whitespace-nowrap"
           >
             + Yeni Makale
           </Link>
@@ -284,7 +303,9 @@ function ArticlesPageInner() {
                 {articles.length === 0 && (
                   <tr>
                     <td colSpan={8} className="px-4 py-8 text-center text-zinc-500 text-xs">
-                      Henüz makale yok.
+                      {query.trim()
+                        ? `"${query.trim()}" için sonuç bulunamadı`
+                        : 'Henüz makale yok.'}
                     </td>
                   </tr>
                 )}

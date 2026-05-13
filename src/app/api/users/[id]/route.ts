@@ -27,6 +27,10 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
       isActive: true,
       createdAt: true,
       permissions: true,
+      // 2FA durumu: secret yoksa hiç kurulmamış, secret var ama
+      // twoFactorEnabledAt yoksa setup yarım (QR taradı, doğrulamadı),
+      // ikisi de varsa aktif. UI'da rozet ve "sıfırla" butonu için.
+      twoFactorEnabledAt: true,
     },
   });
 

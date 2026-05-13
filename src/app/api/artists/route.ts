@@ -17,12 +17,16 @@ export async function GET(request: NextRequest) {
   const limit = Math.min(Math.max(1, parseInt(searchParams.get('limit') || '20')), 100);
   const type = searchParams.get('type');
   const all = searchParams.get('all') === 'true';
+  const q = searchParams.get('q')?.trim() || '';
 
   // Public ↔ admin shared endpoint. Anonymous → PUBLISHED only; admin → all.
   const isAdmin = await isAdminRequest();
   const where: Record<string, unknown> = {};
   if (type) where.type = type;
   if (!isAdmin) where.status = 'PUBLISHED';
+  if (q) {
+    where.name = { contains: q, mode: 'insensitive' };
+  }
 
   if (all) {
     const artists = await prisma.artist.findMany({

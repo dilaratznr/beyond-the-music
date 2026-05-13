@@ -29,6 +29,8 @@ export async function GET(request: NextRequest) {
   // admin can pass either slug or id (`?topicId=...`).
   const topicSlug = searchParams.get('topic');
   const topicId = searchParams.get('topicId');
+  // Admin liste sayfasından serbest metin arama (TR + EN başlık + yazar).
+  const q = searchParams.get('q')?.trim() || '';
 
   // Public API shared between public site (anonymous) and admin panel.
   // Anonymous → force PUBLISHED only; admin → respect optional ?status filter.
@@ -44,6 +46,15 @@ export async function GET(request: NextRequest) {
     // User-supplied status param is ignored for anonymous — never trust it
     // to expand visibility. Drafts/scheduled/pending stay hidden.
     where.status = 'PUBLISHED';
+  }
+  if (q) {
+    // TR ve EN başlıkta + yazar adında ara. İçerikte (contentTr/En)
+    // arama büyük HTML body'lerde DB'yi yorardı — başlık + yazar yeterli.
+    where.OR = [
+      { titleTr: { contains: q, mode: 'insensitive' } },
+      { titleEn: { contains: q, mode: 'insensitive' } },
+      { author: { name: { contains: q, mode: 'insensitive' } } },
+    ];
   }
 
   const [items, total] = await Promise.all([

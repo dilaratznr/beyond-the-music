@@ -29,6 +29,9 @@ interface ApiUser {
   isActive: boolean;
   createdAt: string;
   permissions?: ApiPermission[];
+  /** ISO string — 2FA tam aktive edildiyse set, null ise hiç kurulmamış
+   *  veya setup yarım kalmış. */
+  twoFactorEnabledAt?: string | null;
 }
 
 export default function EditUserPage() {
@@ -55,6 +58,11 @@ export default function EditUserPage() {
     emailError?: string;
   } | null>(null);
   const [resendCopied, setResendCopied] = useState(false);
+
+  // 2FA recovery: kullanıcı telefonunu/backup kodlarını kaybettiğinde
+  // Super Admin TOTP secret'ını sıfırlar; kullanıcı sonraki login'de
+  // yeniden setup'a yönlendirilir. Audit log otomatik kayıt yapar.
+  const [resetting2fa, setResetting2fa] = useState(false);
 
   const isSuperAdmin = session?.user?.role === 'SUPER_ADMIN';
   const currentUserId = (session?.user as { id?: string } | undefined)?.id;
@@ -284,6 +292,70 @@ export default function EditUserPage() {
                 {invitingId ? 'Gönderiliyor…' : 'Davet Linki Yeniden Gönder'}
               </button>
             </div>
+
+            {/* 2FA recovery — telefon/backup kodları kaybı için Super Admin
+                kullanıcının 2FA'sını sıfırlar. editingSelf ise gizli: kendi
+                2FA'sını bu butonla değil /admin/security/2fa'dan TOTP onayıyla
+                yönetmeli. */}
+            {!editingSelf && (
+              <div className="pt-4 border-t border-zinc-800/60">
+                <div className="flex items-start justify-between gap-4 flex-wrap">
+                  <div className="min-w-0">
+                    <p className="text-sm text-zinc-200 flex items-center gap-2">
+                      İki adımlı doğrulama
+                      <span
+                        className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold uppercase tracking-wider ring-1 ring-inset ${
+                          user.twoFactorEnabledAt
+                            ? 'bg-emerald-500/10 text-emerald-300 ring-emerald-500/30'
+                            : 'bg-zinc-900/60 text-zinc-400 ring-zinc-700'
+                        }`}
+                      >
+                        <span
+                          aria-hidden="true"
+                          className={`w-1.5 h-1.5 rounded-full ${
+                            user.twoFactorEnabledAt ? 'bg-emerald-400' : 'bg-zinc-500'
+                          }`}
+                        />
+                        {user.twoFactorEnabledAt ? 'Aktif' : 'Kapalı'}
+                      </span>
+                    </p>
+                    <p className="text-[11px] text-zinc-500 mt-1">
+                      Kullanıcı telefonunu veya yedek kodlarını kaybetmişse
+                      sıfırla. Sonraki login'de tekrar setup'a yönlendirilir.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    disabled={!user.twoFactorEnabledAt || resetting2fa}
+                    onClick={async () => {
+                      if (!confirm('Bu kullanıcının 2FA korumasını kaldırmak istediğinizden emin misiniz? Sonraki giriş denemesinde yeniden kuracak.')) return;
+                      setResetting2fa(true);
+                      try {
+                        const res = await fetch(`/api/admin/users/${id}/2fa/disable`, { method: 'POST' });
+                        const data = await res.json().catch(() => ({}));
+                        if (!res.ok) {
+                          toast(data.error || '2FA sıfırlama başarısız', 'error');
+                        } else {
+                          toast('2FA sıfırlandı');
+                          // Local state'i güncelle — refetch'e gerek yok
+                          setUser((u) => (u ? { ...u, twoFactorEnabledAt: null } : u));
+                        }
+                      } finally {
+                        setResetting2fa(false);
+                      }
+                    }}
+                    className="shrink-0 px-4 py-2 bg-zinc-900 text-zinc-200 text-xs font-semibold rounded-md border border-zinc-700 hover:bg-zinc-800 hover:border-zinc-600 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                    title={
+                      !user.twoFactorEnabledAt
+                        ? '2FA zaten kapalı'
+                        : '2FA korumasını kaldır'
+                    }
+                  >
+                    {resetting2fa ? 'Sıfırlanıyor…' : '2FAyı Sıfırla'}
+                  </button>
+                </div>
+              </div>
+            )}
 
             {resendResult && (
               <div className="p-4 rounded-md border bg-zinc-900/60 border-zinc-800">

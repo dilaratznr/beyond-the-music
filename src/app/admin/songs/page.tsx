@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import useSWR from 'swr';
 import Pagination from '@/components/admin/Pagination';
@@ -8,6 +8,8 @@ import DeleteButton from '@/components/admin/DeleteButton';
 import { IconExternal } from '@/components/admin/Icons';
 import BulkActionBar, { BulkCheckbox } from '@/components/admin/BulkActionBar';
 import { useBulkSelection } from '@/lib/bulk-selection';
+import SearchInput from '@/components/admin/SearchInput';
+import { useSearchShortcut } from '@/components/admin/useSearchShortcut';
 
 interface Song {
   id: string;
@@ -38,6 +40,13 @@ export default function SongsPage() {
   const [page, setPage] = useState(1);
   const [albumId, setAlbumId] = useState('');
   const [deepCutOnly, setDeepCutOnly] = useState(false);
+  const [query, setQuery] = useState('');
+  const searchRef = useRef<HTMLInputElement>(null);
+  useSearchShortcut(searchRef, { onClear: () => setQuery('') });
+
+  useEffect(() => {
+    setPage(1);
+  }, [query]);
 
   const { data: albumsResponse } = useSWR<
     { items?: AlbumOption[]; total?: number } | AlbumOption[]
@@ -49,6 +58,7 @@ export default function SongsPage() {
   const params = new URLSearchParams({ page: String(page), limit: String(PER_PAGE) });
   if (albumId) params.set('albumId', albumId);
   if (deepCutOnly) params.set('isDeepCut', 'true');
+  if (query.trim()) params.set('q', query.trim());
   const queryString = params.toString();
 
   const { data: response, mutate, isLoading } = useSWR<{ items: Song[]; total: number }>(
@@ -100,15 +110,22 @@ export default function SongsPage() {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-5">
+      <div className="flex items-center justify-between mb-5 gap-4 flex-wrap">
         <div>
           <h1 className="text-xl font-semibold text-zinc-100 tracking-tight">Şarkılar</h1>
           <p className="text-[13px] text-zinc-500 mt-0.5">
-            {total} şarkı{deepCutOnly ? ' · Deep Cut' : ''}
-            {activeAlbumLabel ? ` · ${activeAlbumLabel}` : ''}
+            {query.trim()
+              ? `"${query.trim()}" için ${total} sonuç`
+              : `${total} şarkı${deepCutOnly ? ' · Deep Cut' : ''}${activeAlbumLabel ? ` · ${activeAlbumLabel}` : ''}`}
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
+          <SearchInput
+            value={query}
+            onChange={setQuery}
+            placeholder="Şarkı, albüm veya sanatçı ara…"
+            inputRef={searchRef}
+          />
           {/* Plain <a>: API route returning a CSV, not a Next page. */}
           <a
             href={`/api/admin/export/songs${albumId ? `?albumId=${albumId}` : ''}${
@@ -121,7 +138,7 @@ export default function SongsPage() {
           </a>
           <Link
             href="/admin/songs/new"
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white text-zinc-950 rounded-md text-xs font-semibold hover:bg-zinc-200 transition-colors"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white text-zinc-950 rounded-md text-xs font-semibold hover:bg-zinc-200 transition-colors whitespace-nowrap"
           >
             + Yeni Şarkı
           </Link>
@@ -198,8 +215,16 @@ export default function SongsPage() {
         </div>
       ) : songs.length === 0 ? (
         <div className="text-center py-16 bg-zinc-900/40 rounded-lg border border-zinc-800">
-          <p className="text-sm text-zinc-100 font-medium">Şarkı bulunamadı</p>
-          <p className="text-xs text-zinc-500 mt-1">Filtreyi temizle veya yeni şarkı ekle</p>
+          <p className="text-sm text-zinc-100 font-medium">
+            {query.trim()
+              ? `"${query.trim()}" için sonuç bulunamadı`
+              : 'Şarkı bulunamadı'}
+          </p>
+          {!query.trim() && (
+            <p className="text-xs text-zinc-500 mt-1">
+              Filtreyi temizle veya yeni şarkı ekle
+            </p>
+          )}
         </div>
       ) : (
         <>
